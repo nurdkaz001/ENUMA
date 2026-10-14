@@ -9,6 +9,7 @@ from google import genai
 from pypdf import PdfReader
 
 # ==================== НАСТРОЙКИ ====================
+# Ключ автоматически берется из переменных окружения (на Render или в системе)
 GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
 # ====================================================
 
@@ -25,7 +26,8 @@ active_documents = {}
 
 @app.get("/", response_class=HTMLResponse)
 async def read_root(request: Request):
-    return templates.TemplateResponse("index.html", {"request": request})
+    # Исправленный синтаксис для совместимости с новыми версиями Starlette
+    return templates.TemplateResponse(request, "index.html", {"request": request})
 
 @app.post("/upload")
 async def upload_pdf(file: UploadFile = File(...)):
@@ -80,7 +82,7 @@ async def generate_content(doc_id: str = Form(...), action: str = Form(...)):
 
     try:
         response = client.models.generate_content(
-            model='gemini-3.8-flash',
+            model='gemini-2.5-flash',
             contents=f"{prompt_text}\n\nТекст документа:\n{optimized_text}"
         )
         return {"result": response.text}
