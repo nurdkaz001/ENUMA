@@ -70,10 +70,10 @@ async def generate_content(doc_id: str = Form(...), action: str = Form(...)):
     prompt_text = prompts.get(action, "Сделай подробную выжимку из текста.")
     optimized_text = user_text[:7000] # Ограничение для стабильной работы модели
 
-    try:
-        # Используем актуальную модель Gemini
+try:
+        # Используем актуальную модель из ошибки
         response = client.models.generate_content(
-            model='gemini-2.5-flash',
+            model='gemini-3.8-flash',
             contents=f"{prompt_text}\n\nТекст документа:\n{optimized_text}"
         )
         return {"result": response.text}
