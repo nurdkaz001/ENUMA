@@ -1,9 +1,8 @@
 from __future__ import annotations
 import os
 import shutil
-from fastapi import FastAPI, File, Form, UploadFile, Request
-from fastapi.responses import HTMLResponse, JSONResponse
-from fastapi.templating import Jinja2Templates
+from fastapi import FastAPI, File, Form, UploadFile
+from fastapi.responses import FileResponse, JSONResponse
 from google import genai
 from pypdf import PdfReader
 
@@ -14,15 +13,12 @@ app = FastAPI(title="StudyAI Platform")
 GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
 client = genai.Client(api_key=GEMINI_API_KEY)
 
-# Настройка шаблонов
-templates = Jinja2Templates(directory="templates")
-
 # Временное хранилище документов
 active_documents = {}
 
-@app.get("/", response_class=HTMLResponse)
-async def read_root(request: Request):
-    return templates.TemplateResponse("index.html", {"request": request})
+@app.get("/", response_class=FileResponse)
+async def read_root():
+    return "templates/index.html"
 
 @app.post("/upload")
 async def upload_pdf(file: UploadFile = File(...)):
