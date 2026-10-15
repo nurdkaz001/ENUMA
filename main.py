@@ -1,5 +1,6 @@
 from __future__ import annotations
 import os
+import time
 import shutil
 from fastapi import FastAPI, File, Form, UploadFile
 from fastapi.responses import FileResponse, JSONResponse
@@ -70,14 +71,20 @@ async def generate_content(doc_id: str = Form(...), action: str = Form(...)):
     prompt_text = prompts.get(action, "Сделай подробную выжимку из текста.")
     optimized_text = user_text[:7000]
 
-    try:
-        response = client.models.generate_content(
-            model='gemini-3.8-flash',
-            contents=f"{prompt_text}\n\nТекст документа:\n{optimized_text}"
-        )
-        return {"result": response.text}
-    except Exception as e:
-        return JSONResponse({"error": f"Ошибка генерации ИИ: {str(e)}"}, status_code=500)
+    # Автоматический повтор запроса при высокой нагрузке (ошибка 503)
+    max_retries = 3
+    for attempt in range(max_retries):
+        try:
+            response = client.models.generate_content(
+                model='gemini-3.8-flash',
+                contents=f"{prompt_text}\n\nТекст документа:\n{optimized_text}"
+            )
+            return {"result": response.text}
+        except Exception as e:
+            if "503" in str(e) and attempt < max_retries - 1:
+                time.sleep(2)  # Пауза перед повторной попыткой
+                continue
+            return JSONResponse({"error": f"Ошибка генерации ИИ: {str(e)}"}, status_code=500)
 
 if __name__ == "__main__":
     import uvicorn
