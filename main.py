@@ -1,23 +1,28 @@
 from __future__ import annotations
 import os
 import shutil
-from fastapi import FastAPI, File, Form, UploadFile
-from fastapi.responses import FileResponse, JSONResponse
+from fastapi import FastAPI, File, Form, UploadFile, Request
+from fastapi.responses import HTMLResponse, JSONResponse
+from fastapi.templating import Jinja2Templates
 from google import genai
 from pypdf import PdfReader
 
-app = FastAPI(title="EdTech AI Platform for Students")
+# Инициализация приложения
+app = FastAPI(title="StudyAI Platform")
 
+# Настройка клиента Gemini
 GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
 client = genai.Client(api_key=GEMINI_API_KEY)
 
+# Настройка шаблонов
+templates = Jinja2Templates(directory="templates")
+
+# Временное хранилище документов
 active_documents = {}
 
-@app.get("/", response_class=FileResponse)
-async def read_root():
-    return "templates/index.html"
-
-# ... (дальше идут ваши функции /upload и /generate без изменений)
+@app.get("/", response_class=HTMLResponse)
+async def read_root(request: Request):
+    return templates.TemplateResponse("index.html", {"request": request})
 
 @app.post("/upload")
 async def upload_pdf(file: UploadFile = File(...)):
@@ -29,7 +34,6 @@ async def upload_pdf(file: UploadFile = File(...)):
         with open(temp_filename, "wb") as buffer:
             shutil.copyfileobj(file.file, buffer)
 
-        # Чтение текста из PDF
         reader = PdfReader(temp_filename)
         text = ""
         for page in reader.pages:
@@ -41,7 +45,7 @@ async def upload_pdf(file: UploadFile = File(...)):
             os.remove(temp_filename)
 
         if len(text.strip()) < 30:
-            return JSONResponse({"error": "В PDF-файле не найден текст. Возможно, это отсканированная картинка."}, status_code=400)
+            return JSONResponse({"error": "В PDF-файле не найден текст."}, status_code=400)
 
         doc_id = str(os.urandom(4).hex())
         active_documents[doc_id] = text
@@ -57,7 +61,7 @@ async def upload_pdf(file: UploadFile = File(...)):
 async def generate_content(doc_id: str = Form(...), action: str = Form(...)):
     user_text = active_documents.get(doc_id)
     if not user_text:
-        return JSONResponse({"error": "Сессия устарела или файл не найден. Загрузите PDF заново."}, status_code=400)
+        return JSONResponse({"error": "Сессия устарела или файл не найден. Загрузите материал заново."}, status_code=400)
 
     prompts = {
         "summary": "Сделай структурированный краткий конспект на основе этого текста. Выдели главные тезисы, ключевые формулы и термины.",
@@ -68,10 +72,9 @@ async def generate_content(doc_id: str = Form(...), action: str = Form(...)):
     }
 
     prompt_text = prompts.get(action, "Сделай подробную выжимку из текста.")
-    optimized_text = user_text[:7000] # Ограничение для стабильной работы модели
+    optimized_text = user_text[:7000]
 
-try:
-        # Используем актуальную модель из ошибки
+    try:
         response = client.models.generate_content(
             model='gemini-3.8-flash',
             contents=f"{prompt_text}\n\nТекст документа:\n{optimized_text}"
