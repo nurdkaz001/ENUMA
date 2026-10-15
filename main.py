@@ -22,8 +22,10 @@ active_documents = {}
 
 @app.get("/", response_class=HTMLResponse)
 async def read_root(request: Request):
-    # Классический безопасный вызов шаблона, совместимый со всеми версиями Starlette
-    return templates.TemplateResponse("index.html", {"request": request})
+    # Безопасный рендеринг через окружение шаблонов Jinja2 напрямую
+    template = templates.get_template("index.html")
+    html_content = template.render({"request": request})
+    return HTMLResponse(content=html_content)
 
 @app.post("/upload")
 async def upload_pdf(file: UploadFile = File(...)):
