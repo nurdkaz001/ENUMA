@@ -5,7 +5,6 @@ import random
 import shutil
 import urllib.request
 import urllib.parse
-import json
 from fastapi import FastAPI, File, Form, UploadFile, Request
 from fastapi.responses import FileResponse, JSONResponse
 from google import genai
@@ -14,21 +13,22 @@ from supabase import create_client, Client
 
 app = FastAPI(title="StudyAI Platform")
 
+# Инициализация Gemini
 GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
 client = genai.Client(api_key=GEMINI_API_KEY)
 
+# Инициализация Supabase
 SUPABASE_URL = os.getenv("SUPABASE_URL")
 SUPABASE_KEY = os.getenv("SUPABASE_KEY")
 supabase: Client = create_client(SUPABASE_URL, SUPABASE_KEY)
 
 TELEGRAM_BOT_TOKEN = os.getenv("TELEGRAM_BOT_TOKEN", "")
-BOT_USERNAME = "HUB_preza_bot"  # Укажите юзернейм вашего бота без @
 
 active_documents = {}
 
 def send_telegram_message(chat_id: str, text: str):
     if not TELEGRAM_BOT_TOKEN:
-        print(f"⚠️ Telegram Token не задан. Сообщение для {chat_id}: {text}")
+        print(f"⚠️ Telegram Token не задан. Код для {chat_id}: {text}")
         return False
     url = f"https://api.telegram.org/bot{TELEGRAM_BOT_TOKEN}/sendMessage"
     data = urllib.parse.urlencode({"chat_id": chat_id, "text": text, "parse_mode": "Markdown"}).encode("utf-8")
@@ -44,7 +44,7 @@ def send_telegram_message(chat_id: str, text: str):
 async def read_root():
     return "templates/index.html"
 
-# Эндпоинт, который принимает вебхук от Telegram бота (когда пользователь нажимает /start)
+# Вебхук для Telegram бота (когда клиент жмет Старт в @HUB_preza_bot)
 @app.post("/api/telegram/webhook")
 async def telegram_webhook(request: Request):
     try:
@@ -55,23 +55,19 @@ async def telegram_webhook(request: Request):
         text = message.get("text", "")
         
         if text.startswith("/start"):
-            # Генерируем 6-значный код
             code = str(random.randint(100000, 999999))
             str_chat_id = str(chat_id)
             
-            # Сохраняем в Supabase код, привязанный к chat_id
             supabase.table("auth_codes").delete().eq("tg_id", str_chat_id).execute()
             supabase.table("auth_codes").insert({"tg_id": str_chat_id, "code": code}).execute()
             
-            # Отправляем ответ в Telegram
-            msg = f"👋 *Добро пожаловать в StudyAI Hub!*\n\nВаш код подтверждения для входа:\n`{code}`\n\nВведите этот код на сайте."
+            msg = f"👋 *StudyAI Hub — Авторизация*\n\nВаш 6-значный код для входа:\n`{code}`\n\nВведите его на сайте."
             send_telegram_message(str_chat_id, msg)
             
         return {"status": "ok"}
     except Exception as e:
         return {"status": "error", "message": str(e)}
 
-# Проверка введенного 6-значного кода
 @app.post("/api/auth/verify-code")
 async def verify_code(code: str = Form(...)):
     code_clean = code.strip()
@@ -79,22 +75,20 @@ async def verify_code(code: str = Form(...)):
         res = supabase.table("auth_codes").select("*").eq("code", code_clean).execute()
         
         if not res.data or len(res.data) == 0:
-            return JSONResponse({"error": "Неверный или устаревший код!"}, status_code=400)
+            return JSONResponse({"error": "Неверный или устаревший код подтверждения!"}, status_code=400)
         
         record = res.data[0]
         tg_id = record["tg_id"]
         
-        # Удаляем использованный код
         supabase.table("auth_codes").delete().eq("code", code_clean).execute()
         
-        # Проверяем или создаем пользователя
         user_res = supabase.table("users").select("*").eq("username", f"tg_{tg_id}").execute()
         
         if user_res.data and len(user_res.data) > 0:
             user = user_res.data[0]
         else:
             new_user = supabase.table("users").insert({
-                "username": f"tg_{tg_id}",
+                "username": f"Студент #{tg_id[-4:]}",
                 "password": "telegram_auth",
                 "score": 0,
                 "tokens": 3,
@@ -105,7 +99,7 @@ async def verify_code(code: str = Form(...)):
         return {
             "success": True,
             "user_id": user["id"],
-            "username": f"User #{tg_id[-4:]}",
+            "username": user["username"],
             "score": user.get("score", 0),
             "tokens": user.get("tokens", 3),
             "is_subscribed": user.get("is_subscribed", False)
@@ -148,17 +142,22 @@ async def generate_content(doc_id: str = Form(...), action: str = Form(...), use
     if not user_text and not doc_id.startswith("topic_"):
         return JSONResponse({"error": "Сессия устарела. Загрузите файл заново."}, status_code=400)
 
-    lang_instr = {"kz": "Мінсіз қазақ тілінде жауап бер.", "en": "Answer strictly in English.", "ru": "Отвечай строго на русском."}.get(lang, "Отвечай на русском.")
+    lang_instr = {
+        "kz": "Жауапты толығымен МІНСІЗ ҚАЗАҚ ТІЛІНДЕ жаз.",
+        "en": "Provide the response completely in ENGLISH.",
+        "ru": "Предоставь ответ полностью на РУССКОМ ЯЗЫКЕ."
+    }.get(lang, "Отвечай строго на русском.")
+
     prompts = {
-        "summary": f"{lang_instr} Сделай структурированный краткий конспект с формулами и терминами.",
+        "summary": f"{lang_instr} Сделай структурированный краткий конспект с формулами ($...$) и терминами.",
         "quiz": f"{lang_instr} Составь 10 тестовых вопросов с вариантами (A, B, C, D) и ответами в конце.",
-        "flashcards": f"{lang_instr} Создай 8 учебных карточек в формате:\n### Карточка X\n**Вопрос:** ...\n**Ответ:** ...\n---",
-        "simple": f"{lang_instr} Объясни материал простыми словами."
+        "flashcards": f"{lang_instr} Создай 8 учебных карточек. Оформи каждую СТРОГО в формате:\n### Карточка 1\n**Вопрос:** ...\n**Ответ:** ...\n---",
+        "simple": f"{lang_instr} Объясни материал простыми словами с яркими аналогиями."
     }
     
     try:
         response = client.models.generate_content(
-            model='gemini-2.5-flash',
+            model='gemini-3.8-flash',
             contents=f"{prompts.get(action, 'Сделай выжимку')}\n\nТекст:\n{(user_text or doc_id)[:7000]}"
         )
         res_text = response.text
