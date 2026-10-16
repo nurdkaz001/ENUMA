@@ -8,7 +8,6 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@500;600;700;800&display=swap" rel="stylesheet">
     
-    <!-- KaTeX для математических формул -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.css">
     <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.js"></script>
     <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/contrib/auto-render.min.js"></script>
@@ -17,13 +16,10 @@
         body { font-family: 'Plus Jakarta Sans', sans-serif; }
         .glow-btn { transition: all 0.25s cubic-bezier(0.34, 1.56, 0.64, 1); }
         .glow-btn:hover { transform: translateY(-2px); box-shadow: 0 12px 25px -5px rgba(99, 102, 241, 0.4); }
-        @keyframes float {
-            0%, 100% { transform: translateY(0px); }
-            50% { transform: translateY(-6px); }
-        }
+        @keyframes float { 0%, 100% { transform: translateY(0px); } 50% { transform: translateY(-6px); } }
         .animate-float { animation: float 4s ease-in-out infinite; }
         
-        /* 3D Карточки (Flashcards) */
+        /* 3D Переворачивающиеся Карточки */
         .perspective-1000 { perspective: 1000px; }
         .flashcard-inner {
             position: relative; width: 100%; min-height: 280px;
@@ -39,7 +35,6 @@
         }
         .flashcard-back { transform: rotateY(180deg); }
 
-        /* Ячейки OTP кода */
         .otp-input { width: 45px; height: 55px; text-align: center; font-size: 1.5rem; font-weight: 800; border-radius: 1rem; border: 2px solid #e2e8f0; background: #f8fafc; transition: all 0.2s; }
         .otp-input:focus { border-color: #6366f1; background: #fff; outline: none; box-shadow: 0 0 10px rgba(99, 102, 241, 0.2); }
     </style>
@@ -55,8 +50,7 @@
                         <div class="w-11 h-11 bg-gradient-to-tr from-indigo-600 to-purple-600 rounded-2xl flex items-center justify-center text-white text-xl shadow-lg shadow-indigo-500/30 animate-float">⚡</div>
                         <h1 class="text-lg font-extrabold bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent">StudyAI Hub</h1>
                     </div>
-                    <!-- Переключатель языка -->
-                    <select id="lang-select" onchange="changeLanguage()" class="bg-slate-100 text-xs font-extrabold px-2.5 py-1.5 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                    <select id="lang-select" onchange="changeLanguage()" class="bg-slate-100 text-xs font-extrabold px-2.5 py-1.5 rounded-xl border border-slate-200">
                         <option value="ru">🇷🇺 RU</option>
                         <option value="kz">🇰🇿 KZ</option>
                         <option value="en">🇬🇧 EN</option>
@@ -66,7 +60,7 @@
                 <div class="space-y-3">
                     <h2 class="text-xs font-extrabold text-slate-400 uppercase tracking-wider" id="lbl-step1">1. Материал</h2>
                     <input type="file" id="pdf-file" accept=".pdf" class="w-full text-xs text-slate-500 file:mr-2 file:py-2.5 file:px-3 file:rounded-xl file:border-0 file:text-xs file:font-bold file:bg-indigo-600 file:text-white hover:file:bg-indigo-500 cursor-pointer bg-slate-50 border border-slate-200 rounded-2xl transition">
-                    <input type="text" id="topic-input" placeholder="Или тема (напр: Алгебра)" class="w-full px-4 py-3 rounded-2xl bg-slate-50 border border-slate-200 text-slate-800 text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-indigo-500 transition">
+                    <input type="text" id="topic-input" placeholder="Или тема (напр: Алгебра)" class="w-full px-4 py-3 rounded-2xl bg-slate-50 border border-slate-200 text-slate-800 text-xs font-semibold">
                     <button onclick="uploadMaterial()" class="w-full bg-gradient-to-r from-indigo-600 to-purple-600 text-white font-extrabold py-3.5 rounded-2xl shadow-lg glow-btn text-xs" id="lbl-activate">
                         🚀 Активировать ИИ
                     </button>
@@ -74,17 +68,17 @@
 
                 <div class="space-y-2">
                     <h2 class="text-xs font-extrabold text-slate-400 uppercase tracking-wider" id="lbl-step2">2. Режимы обучения</h2>
-                    <button onclick="generate('quiz')" class="w-full text-left p-3.5 rounded-xl bg-slate-50 border border-slate-200 hover:border-indigo-400 hover:bg-indigo-50 text-xs font-bold flex items-center justify-between transition">
-                        <span id="btn-quiz">🎯 Тест (10 вопросов)</span> <span class="text-slate-400">→</span>
+                    <button onclick="generate('quiz', 1)" class="w-full text-left p-3.5 rounded-xl bg-slate-50 border border-slate-200 hover:border-indigo-400 hover:bg-indigo-50 text-xs font-bold flex items-center justify-between transition">
+                        <span id="btn-quiz">🎯 Тест (20 вопросов)</span> <span class="text-slate-400">→</span>
                     </button>
-                    <button onclick="generate('flashcards')" class="w-full text-left p-3.5 rounded-xl bg-slate-50 border border-slate-200 hover:border-pink-400 hover:bg-pink-50 text-xs font-bold flex items-center justify-between transition">
-                        <span id="btn-cards">🃏 Умные карточки</span> <span class="text-slate-400">→</span>
+                    <button onclick="generate('flashcards', 1)" class="w-full text-left p-3.5 rounded-xl bg-slate-50 border border-slate-200 hover:border-pink-400 hover:bg-pink-50 text-xs font-bold flex items-center justify-between transition">
+                        <span id="btn-cards">🃏 Зерек карточкалар</span> <span class="text-slate-400">→</span>
                     </button>
-                    <button onclick="generate('summary')" class="w-full text-left p-3.5 rounded-xl bg-slate-50 border border-slate-200 hover:border-purple-400 hover:bg-purple-50 text-xs font-bold flex items-center justify-between transition">
-                        <span id="btn-summary">📝 Краткий конспект</span> <span class="text-slate-400">→</span>
+                    <button onclick="generate('summary', 1)" class="w-full text-left p-3.5 rounded-xl bg-slate-50 border border-slate-200 hover:border-purple-400 hover:bg-purple-50 text-xs font-bold flex items-center justify-between transition">
+                        <span id="btn-summary">📝 Қысқаша конспект</span> <span class="text-slate-400">→</span>
                     </button>
-                    <button onclick="generate('simple')" class="w-full text-left p-3.5 rounded-xl bg-slate-50 border border-slate-200 hover:border-emerald-400 hover:bg-emerald-50 text-xs font-bold flex items-center justify-between transition">
-                        <span id="btn-simple">💡 Простое объяснение</span> <span class="text-slate-400">→</span>
+                    <button onclick="generate('simple', 1)" class="w-full text-left p-3.5 rounded-xl bg-slate-50 border border-slate-200 hover:border-emerald-400 hover:bg-emerald-50 text-xs font-bold flex items-center justify-between transition">
+                        <span id="btn-simple">💡 Қарапайым түсіндірме</span> <span class="text-slate-400">→</span>
                     </button>
                 </div>
             </div>
@@ -126,11 +120,10 @@
         </main>
     </div>
 
-    <!-- МОДАЛКА АВТОРИЗАЦИИ TELEGRAM С БОТОМ @enuuma_bot -->
+    <!-- МОДАЛКА АВТОРИЗАЦИИ TELEGRAM -->
     <div id="telegram-auth-modal" class="fixed inset-0 bg-slate-900/80 backdrop-blur-md z-50 flex items-center justify-center p-4">
         <div class="bg-white rounded-3xl p-8 max-w-md w-full shadow-2xl border border-indigo-100 space-y-6 text-center">
             <div class="w-16 h-16 bg-indigo-600 text-white rounded-2xl flex items-center justify-center text-3xl mx-auto shadow-lg animate-float">✈️</div>
-            
             <div>
                 <h3 class="text-2xl font-black text-slate-900">Войти в HUB</h3>
                 <div class="mt-4 text-left space-y-1.5 text-xs text-slate-600 bg-slate-50 p-4 rounded-2xl border border-slate-200">
@@ -138,8 +131,6 @@
                     <p>2. Введите 6-значный код ниже</p>
                 </div>
             </div>
-
-            <!-- 6 Ячеек для ввода кода -->
             <div class="flex justify-center gap-2" id="otp-container">
                 <input type="text" maxlength="1" class="otp-input" oninput="moveToNext(this, 1)" onkeydown="handleKeyDown(event, 1)">
                 <input type="text" maxlength="1" class="otp-input" oninput="moveToNext(this, 2)" onkeydown="handleKeyDown(event, 2)">
@@ -148,7 +139,6 @@
                 <input type="text" maxlength="1" class="otp-input" oninput="moveToNext(this, 5)" onkeydown="handleKeyDown(event, 5)">
                 <input type="text" maxlength="1" class="otp-input" oninput="moveToNext(this, 6)" onkeydown="handleKeyDown(event, 6)">
             </div>
-
             <button onclick="verifyCode()" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-extrabold py-4 rounded-2xl shadow-lg glow-btn text-sm">
                 Войти
             </button>
@@ -169,7 +159,7 @@
             </div>
             <div class="bg-slate-50 p-3.5 rounded-2xl border border-slate-200 text-left text-xs space-y-1 text-slate-600">
                 <p><b>💳 Реквизиты (Kaspi / Halyk):</b></p>
-                <p class="font-mono text-indigo-600 font-bold">+7 (777) 000-00-00 (Арман Б.)</p>
+                <p class="font-mono text-indigo-600 font-bold">+7 (775) 603-99-24</p>
             </div>
             <button onclick="activateSubscription()" class="w-full bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-extrabold py-4 rounded-2xl shadow-lg glow-btn text-sm">
                 ✓ Я оплатил 500 ₸, активировать безлимит
@@ -195,7 +185,7 @@
                     <div class="text-xs font-bold text-slate-500 mt-1">Подписка</div>
                 </div>
             </div>
-            <button onclick="openPayModal()" class="w-full bg-gradient-to-r from-amber-500 to-pink-500 hover:from-amber-600 hover:to-pink-600 text-white font-extrabold py-3.5 rounded-2xl text-xs shadow-lg shadow-amber-500/20 transition">
+            <button onclick="openPayModal()" class="w-full bg-gradient-to-r from-amber-500 to-pink-500 text-white font-extrabold py-3.5 rounded-2xl text-xs shadow-lg">
                 👑 Купить безлимит за 500 ₸
             </button>
             <div id="saves-container" class="overflow-y-auto space-y-2 flex-grow max-h-60 pr-1"></div>
@@ -208,11 +198,12 @@
         let selectedLang = 'ru';
         let cardsData = [];
         let currentCardIndex = 0;
+        let currentPage = 1;
 
         const translations = {
             ru: {
                 step1: "1. Материал", activate: "🚀 Активировать ИИ", step2: "2. Режимы обучения",
-                quiz: "🎯 Тест (10 вопросов)", cards: "🃏 Умные карточки", summary: "📝 Краткий конспект",
+                quiz: "🎯 Тест (20 вопросов)", cards: "🃏 Умные карточки", summary: "📝 Краткий конспект",
                 simple: "💡 Простое объяснение", cabinet: "Кабинет 👤", tokensText: "Токенов",
                 workspace: "✨ Рабочая зона ИИ", readyTitle: "Платформа готова!",
                 readyDesc: "Загрузите PDF файл или введите тему слева, затем выберите нужный режим обучения.",
@@ -220,7 +211,7 @@
             },
             kz: {
                 step1: "1. Материал", activate: "🚀 Жасанды интеллектті қосу", step2: "2. Оқу режимдері",
-                quiz: "🎯 Тест (10 сұрақ)", cards: "🃏 Зерек карточкалар", summary: "📝 Қысқаша конспект",
+                quiz: "🎯 Тест (20 сұрақ)", cards: "🃏 Зерек карточкалар", summary: "📝 Қысқаша конспект",
                 simple: "💡 Қарапайым түсіндірме", cabinet: "Кабинет 👤", tokensText: "Токендер",
                 workspace: "✨ Жұмыс аймағы", readyTitle: "Платформа дайын!",
                 readyDesc: "PDF файлын жүктеңіз немесе сол жаққа тақырып жазып, режимді таңдаңыз.",
@@ -228,7 +219,7 @@
             },
             en: {
                 step1: "1. Material", activate: "🚀 Activate AI", step2: "2. Study Modes",
-                quiz: "🎯 Quiz (10 questions)", cards: "🃏 Flashcards", summary: "📝 Summary",
+                quiz: "🎯 Quiz (20 questions)", cards: "🃏 Flashcards", summary: "📝 Summary",
                 simple: "💡 Simple Explanation", cabinet: "Cabinet 👤", tokensText: "Tokens",
                 workspace: "✨ AI Workspace", readyTitle: "Platform Ready!",
                 readyDesc: "Upload a PDF or enter a topic on the left, then select a study mode.",
@@ -265,15 +256,10 @@
         checkAuth();
 
         function moveToNext(element, index) {
-            let value = element.value;
-            if (value && index < 6) {
-                document.querySelectorAll('.otp-input')[index].focus();
-            }
+            if (element.value && index < 6) document.querySelectorAll('.otp-input')[index].focus();
         }
         function handleKeyDown(event, index) {
-            if (event.key === 'Backspace' && !event.target.value && index > 1) {
-                document.querySelectorAll('.otp-input')[index - 2].focus();
-            }
+            if (event.key === 'Backspace' && !event.target.value && index > 1) document.querySelectorAll('.otp-input')[index - 2].focus();
         }
 
         async function verifyCode() {
@@ -304,8 +290,9 @@
             }
         }
 
-        async function generate(action) {
+        async function generate(action, page = 1) {
             if (!currentUser) return checkAuth();
+            currentPage = page;
             const container = document.getElementById('result-container');
             container.innerHTML = `<div class="py-12"><div class="w-10 h-10 border-4 border-indigo-600 border-t-transparent rounded-full animate-spin mx-auto mb-2"></div><p class="text-xs font-bold text-indigo-600">Генерация ответа ИИ...</p></div>`;
 
@@ -315,6 +302,7 @@
             formData.append("user_id", currentUser.user_id);
             formData.append("lang", selectedLang);
             formData.append("title", document.getElementById('topic-input').value || "Урок");
+            formData.append("page", page);
 
             try {
                 const res = await fetch('/generate', { method: 'POST', body: formData });
@@ -328,6 +316,8 @@
 
                     if (action === 'flashcards') {
                         parseAndRenderFlashcards(data.result);
+                    } else if (action === 'quiz') {
+                        renderQuizResult(data.result, page);
                     } else {
                         renderGenericResult(data.result);
                     }
@@ -339,17 +329,38 @@
             } catch (e) { alert("Ошибка выполнения"); }
         }
 
+        // Парсинг 3D Карточек с защитой от сбоев
         function parseAndRenderFlashcards(rawText) {
             cardsData = [];
             currentCardIndex = 0;
-            const blocks = rawText.split(/###\s*Карточка\s*\d+/i).filter(b => b.trim().length > 0);
+
+            // Гибкое разбиение по заголовкам карточек
+            const blocks = rawText.split(/(?:###|\*\*|#)?\s*(?:Карточка|Карточкалар|Card)\s*\d+/i).filter(b => b.trim().length > 10);
+            
             blocks.forEach(block => {
-                const qMatch = block.match(/\*\*Вопрос:\*\*\s*([\s\S]*?)(?=\*\*Ответ:\*\*|$)/i);
-                const aMatch = block.match(/\*\*Ответ:\*\*\s*([\s\S]*?)(?=$)/i);
+                const qMatch = block.match(/(?:\*\*Вопрос:\*\*|\*\*Сұрақ:\*\*|Question:)\s*([\s\S]*?)(?=(?:\*\*Ответ:\*\*|\*\*Жауап:\*\*|Answer:)|$)/i);
+                const aMatch = block.match(/(?:\*\*Ответ:\*\*|\*\*Жауап:\*\*|Answer:)\s*([\s\S]*?)(?=$|---)/i);
                 if (qMatch && aMatch) {
-                    cardsData.push({ q: qMatch[1].replace(/\*\*/g, '').trim(), a: aMatch[1].replace(/\*\*/g, '').trim() });
+                    cardsData.push({ 
+                        q: qMatch[1].replace(/\*\*/g, '').trim(), 
+                        a: aMatch[1].replace(/\*\*/g, '').trim() 
+                    });
                 }
             });
+
+            if (cardsData.length === 0) {
+                // Запасной парсинг, если формат немного отличался
+                const lines = rawText.split('\n');
+                let curQ = "", curA = "";
+                lines.forEach(line => {
+                    if (line.includes('Сұрақ:') || line.includes('Вопрос:')) curQ = line.replace(/.*(?:Сұрақ:|Вопрос:)/, '').trim();
+                    if (line.includes('Жауап:') || line.includes('Ответ:')) {
+                        curA = line.replace(/.*(?:Жауап:|Ответ:)/, '').trim();
+                        if (curQ && curA) { cardsData.push({ q: curQ, a: curA }); curQ = ""; curA = ""; }
+                    }
+                });
+            }
+
             if (cardsData.length === 0) { renderGenericResult(rawText); return; }
             showCurrentCard();
         }
@@ -367,13 +378,13 @@
                         <div class="flashcard-inner shadow-xl rounded-3xl">
                             <div class="flashcard-front bg-gradient-to-br from-indigo-600 to-purple-700 text-white border border-indigo-200">
                                 <div>
-                                    <span class="text-[10px] font-black uppercase tracking-widest text-indigo-200 block mb-2">❓ Вопрос</span>
+                                    <span class="text-[10px] font-black uppercase tracking-widest text-indigo-200 block mb-2">❓ Вопрос / Сұрақ</span>
                                     <div class="text-base font-bold leading-relaxed">${card.q}</div>
                                 </div>
                             </div>
                             <div class="flashcard-back bg-gradient-to-br from-slate-800 to-indigo-950 text-white border border-slate-700">
                                 <div>
-                                    <span class="text-[10px] font-black uppercase tracking-widest text-emerald-400 block mb-2">💡 Ответ</span>
+                                    <span class="text-[10px] font-black uppercase tracking-widest text-emerald-400 block mb-2">💡 Ответ / Жауап</span>
                                     <div class="text-sm font-semibold leading-relaxed text-slate-100">${card.a}</div>
                                 </div>
                             </div>
@@ -390,6 +401,27 @@
 
         function prevCard() { if (currentCardIndex > 0) { currentCardIndex--; showCurrentCard(); } }
         function nextCard() { if (currentCardIndex < cardsData.length - 1) { currentCardIndex++; showCurrentCard(); } }
+
+        // Вывод 20 вопросов теста с кнопкой генерации следующих 20
+        function renderQuizResult(rawText, page) {
+            const container = document.getElementById('result-container');
+            let formattedHtml = rawText
+                .replace(/### (.*?)\n/g, '<h3 class="text-base font-extrabold text-indigo-600 mt-6 mb-2 border-b border-indigo-100 pb-1">$1</h3>')
+                .replace(/\*\*(.*?)\*\*/g, '<strong class="text-indigo-900">$1</strong>')
+                .replace(/\n/g, '<br>');
+
+            container.innerHTML = `
+                <div class="w-full space-y-4">
+                    <div class="bg-white border border-indigo-100 p-6 rounded-3xl text-left text-xs md:text-sm leading-relaxed max-h-[60vh] overflow-y-auto space-y-3">
+                        ${formattedHtml}
+                    </div>
+                    <button onclick="generate('quiz', ${page + 1})" class="w-full bg-gradient-to-r from-indigo-600 to-purple-600 text-white font-extrabold py-4 rounded-2xl shadow-lg glow-btn text-xs">
+                        🔄 Жалғастыру / Продолжить (тағы 20 жаңа сұрақ) ➔
+                    </button>
+                </div>
+            `;
+            renderMath(container);
+        }
 
         function renderGenericResult(rawText) {
             const container = document.getElementById('result-container');
