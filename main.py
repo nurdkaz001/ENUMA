@@ -2,29 +2,36 @@ from __future__ import annotations
 import os
 import time
 import shutil
-from fastapi import FastAPI, File, Form, UploadFile
-from fastapi.responses import FileResponse, JSONResponse
+from fastapi import FastAPI, File, Form, UploadFile, Request, JSONResponse
+from fastapi.responses import HTMLResponse
+from fastapi.templating import Jinja2Templates
 from google import genai
 from pypdf import PdfReader
 from supabase import create_client, Client
 
+# Инициализация приложения
 app = FastAPI(title="StudyAI Platform")
 
-# Настройка клиентов API
+# Настройка клиента Gemini
 GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
 client = genai.Client(api_key=GEMINI_API_KEY)
 
+# Настройка подключения к Supabase
 SUPABASE_URL = os.getenv("SUPABASE_URL")
 SUPABASE_KEY = os.getenv("SUPABASE_KEY")
 supabase: Client = create_client(SUPABASE_URL, SUPABASE_KEY)
 
+# Настройка шаблонов
+templates = Jinja2Templates(directory="templates")
+
+# Временное хранилище загруженных PDF-текстов
 active_documents = {}
 
-@app.get("/", response_class=FileResponse)
-async def read_root():
-    return "templates/index.html"
+@app.get("/", response_class=HTMLResponse)
+async def read_root(request: Request):
+    return templates.TemplateResponse("index.html", {"request": request})
 
-# Регистрация через Supabase
+# Регистрация пользователя через Supabase
 @app.post("/api/register")
 async def register(username: str = Form(...), password: str = Form(...)):
     try:
@@ -39,15 +46,18 @@ async def register(username: str = Form(...), password: str = Form(...)):
     except Exception as e:
         return JSONResponse({"error": "Такое имя пользователя уже занято или ошибка базы данных!"}, status_code=400)
 
-# Авторизация через Supabase
+# Авторизация пользователя через Supabase
 @app.post("/api/login")
 async def login(username: str = Form(...), password: str = Form(...)):
-    response = supabase.table("users").select("*").eq("username", username).eq("password", password).execute()
-    
-    if response.data and len(response.data) > 0:
-        user = response.data[0]
-        return {"success": True, "user_id": user["id"], "username": user["username"], "score": user["score"]}
-    return JSONResponse({"error": "Неверное имя пользователя или пароль."}, status_code=400)
+    try:
+        response = supabase.table("users").select("*").eq("username", username).eq("password", password).execute()
+        
+        if response.data and len(response.data) > 0:
+            user = response.data[0]
+            return {"success": True, "user_id": user["id"], "username": user["username"], "score": user["score"]}
+        return JSONResponse({"error": "Неверное имя пользователя или пароль."}, status_code=400)
+    except Exception as e:
+        return JSONResponse({"error": f"Ошибка авторизации: {str(e)}"}, status_code=500)
 
 @app.post("/upload")
 async def upload_pdf(file: UploadFile = File(...)):
@@ -115,10 +125,9 @@ async def generate_content(doc_id: str = Form(...), action: str = Form(...), use
                 continue
             return JSONResponse({"error": f"Ошибка генерации ИИ: {str(e)}"}, status_code=500)
 
-    # Сохранение в Supabase и начисление баллов
+    # Сохранение в Supabase и начисление баллов, если пользователь авторизован
     if user_id and user_id > 0:
         try:
-            # Сохранение материала
             supabase.table("saved_materials").insert({
                 "user_id": user_id,
                 "title": title,
@@ -126,12 +135,10 @@ async def generate_content(doc_id: str = Form(...), action: str = Form(...), use
                 "type": action
             }).execute()
 
-            # Получаем текущий счет
             user_res = supabase.table("users").select("score").eq("id", user_id).execute()
             current_score = user_res.data[0]["score"] if user_res.data else 0
             new_score = current_score + 15
 
-            # Обновляем счет в базе
             supabase.table("users").update({"score": new_score}).eq("id", user_id).execute()
 
             return {"result": result_text, "new_score": new_score}
@@ -140,7 +147,7 @@ async def generate_content(doc_id: str = Form(...), action: str = Form(...), use
 
     return {"result": result_text, "new_score": None}
 
-# Получение сохраненных материалов из Supabase
+# Получение сохраненных материалов пользователя из Supabase
 @app.get("/api/user/{user_id}/saves")
 async def get_user_saves(user_id: int):
     try:
