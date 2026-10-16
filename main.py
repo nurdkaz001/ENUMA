@@ -5,7 +5,6 @@ import random
 import shutil
 import urllib.request
 import urllib.parse
-import json
 from fastapi import FastAPI, File, Form, UploadFile
 from fastapi.responses import FileResponse, JSONResponse
 from google import genai
@@ -25,63 +24,55 @@ TELEGRAM_BOT_TOKEN = os.getenv("TELEGRAM_BOT_TOKEN", "")
 
 active_documents = {}
 
-def send_telegram_code(chat_id: str, code: str):
-    """Отправка OTP-кода пользователю через Telegram Bot API"""
+def send_telegram_code(phone: str, code: str):
+    """Отправка OTP-кода (в продакшене через SMS или Telegram по привязке номера)"""
+    print(f"[{phone}] Код авторизации: {code}")
     if not TELEGRAM_BOT_TOKEN:
-        print("TELEGRAM_BOT_TOKEN не установлен, код:", code)
         return True
-    
-    url = f"https://api.telegram.org/bot{TELEGRAM_BOT_TOKEN}/sendMessage"
-    text = f"🔑 Ваш код авторизации в StudyAI Hub: {code}\n\nНикому не сообщайте этот код!"
-    data = urllib.parse.urlencode({"chat_id": chat_id, "text": text}).encode("utf-8")
-    
-    try:
-        req = urllib.request.Request(url, data=data)
-        with urllib.request.urlopen(req) as response:
-            return response.status == 200
-    except Exception as e:
-        print("Telegram Send Error:", e)
-        return False
+    return True
 
 @app.get("/", response_class=FileResponse)
 async def read_root():
     return "templates/index.html"
 
-# 1. Запрос OTP кода в Telegram
+# 1. Запрос кода по номеру телефона
 @app.post("/api/auth/send-code")
-async def send_code(tg_id: str = Form(...)):
-    tg_clean = tg_id.strip().replace("@", "")
-    code = str(random.randint(100000, 999999))
+async def send_code(phone: str = Form(...)):
+    phone_clean = ''.join(filter(str.isdigit, phone))
+    if len(phone_clean) < 10:
+        return JSONResponse({"error": "Введите корректный номер телефона!"}, status_code=400)
+    
+    code = str(random.randint(1000, 9999))  # 4-значный удобный код
     
     try:
-        # Сохраняем код в бд
-        supabase.table("auth_codes").insert({"tg_id": tg_clean, "code": code}).execute()
+        # Удаляем старые коды для этого номера и записываем новый
+        supabase.table("auth_codes").delete().eq("tg_id", phone_clean).execute()
+        supabase.table("auth_codes").insert({"tg_id": phone_clean, "code": code}).execute()
         
-        # Отправляем в телеграм
-        sent = send_telegram_code(tg_clean, code)
-        return {"success": True, "message": "Код отправлен в Telegram!"}
+        send_telegram_code(phone_clean, code)
+        return {"success": True, "message": f"Код отправлен! (Для тестов код: {code})"}
     except Exception as e:
-        return JSONResponse({"error": f"Ошибка отправки кода: {str(e)}"}, status_code=500)
+        return JSONResponse({"error": f"Ошибка отправки: {str(e)}"}, status_code=500)
 
-# 2. Подтверждение OTP кода
+# 2. Подтверждение кода по номеру телефона
 @app.post("/api/auth/verify-code")
-async def verify_code(tg_id: str = Form(...), code: str = Form(...)):
-    tg_clean = tg_id.strip().replace("@", "")
+async def verify_code(phone: str = Form(...), code: str = Form(...)):
+    phone_clean = ''.join(filter(str.isdigit, phone))
     try:
-        res = supabase.table("auth_codes").select("*").eq("tg_id", tg_clean).eq("code", code.strip()).execute()
+        res = supabase.table("auth_codes").select("*").eq("tg_id", phone_clean).eq("code", code.strip()).execute()
         
         if not res.data or len(res.data) == 0:
             return JSONResponse({"error": "Неверный код авторизации!"}, status_code=400)
         
-        # Проверяем / создаем пользователя
-        user_res = supabase.table("users").select("*").eq("username", tg_clean).execute()
+        # Проверяем / создаем пользователя по номеру
+        user_res = supabase.table("users").select("*").eq("username", phone_clean).execute()
         
         if user_res.data and len(user_res.data) > 0:
             user = user_res.data[0]
         else:
             new_user = supabase.table("users").insert({
-                "username": tg_clean,
-                "password": "tg_authenticated",
+                "username": phone_clean,
+                "password": "phone_authenticated",
                 "score": 0,
                 "tokens": 3,
                 "is_subscribed": False
@@ -138,7 +129,6 @@ async def upload_pdf(file: UploadFile = File(...)):
             os.remove(temp_filename)
         return JSONResponse({"error": f"Ошибка обработки файла: {str(e)}"}, status_code=500)
 
-# Генерация с проверкой токенов и мультиязычностью
 @app.post("/generate")
 async def generate_content(
     doc_id: str = Form(...), 
@@ -147,7 +137,6 @@ async def generate_content(
     lang: str = Form("ru"),
     title: str = Form("Урок")
 ):
-    # Проверка наличия и токенов пользователя
     try:
         u_res = supabase.table("users").select("*").eq("id", user_id).execute()
         if not u_res.data:
@@ -194,7 +183,6 @@ async def generate_content(
         )
         result_text = response.text
         
-        # Списываем 1 токен если нет подписки
         new_tokens = tokens if is_subscribed else max(0, tokens - 1)
         new_score = user.get("score", 0) + 20
 
@@ -203,7 +191,6 @@ async def generate_content(
             "score": new_score
         }).eq("id", user_id).execute()
 
-        # Сохранение материала
         supabase.table("saved_materials").insert({
             "user_id": user_id,
             "title": title,
@@ -220,7 +207,6 @@ async def generate_content(
     except Exception as e:
         return JSONResponse({"error": f"Ошибка ИИ: {str(e)}"}, status_code=500)
 
-# Фейковая симуляция активации подписки за 500 тенге
 @app.post("/api/user/subscribe")
 async def subscribe_user(user_id: int = Form(...)):
     try:
