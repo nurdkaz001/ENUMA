@@ -109,7 +109,7 @@ async def generate_content(doc_id: str = Form(...), action: str = Form(...), use
     for attempt in range(max_retries):
         try:
             response = client.models.generate_content(
-                model='gemini-1.5-flash',
+                model='gemini-3.8-flash',
                 contents=f"{prompt_text}\n\nТекст документа:\n{optimized_text}"
             )
             result_text = response.text
