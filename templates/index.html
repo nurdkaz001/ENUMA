@@ -35,6 +35,13 @@
         }
         .flashcard-back { transform: rotateY(180deg); }
 
+        /* Анимация перехода для вопросов */
+        .quiz-slide-enter { animation: slideIn 0.35s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
+        @keyframes slideIn {
+            from { opacity: 0; transform: translateX(20px) scale(0.98); }
+            to { opacity: 1; transform: translateX(0) scale(1); }
+        }
+
         .otp-input { width: 45px; height: 55px; text-align: center; font-size: 1.5rem; font-weight: 800; border-radius: 1rem; border: 2px solid #e2e8f0; background: #f8fafc; transition: all 0.2s; }
         .otp-input:focus { border-color: #6366f1; background: #fff; outline: none; box-shadow: 0 0 10px rgba(99, 102, 241, 0.2); }
     </style>
@@ -69,7 +76,7 @@
                 <div class="space-y-2">
                     <h2 class="text-xs font-extrabold text-slate-400 uppercase tracking-wider" id="lbl-step2">2. Режимы обучения</h2>
                     <button onclick="generate('quiz', 1)" class="w-full text-left p-3.5 rounded-xl bg-slate-50 border border-slate-200 hover:border-indigo-400 hover:bg-indigo-50 text-xs font-bold flex items-center justify-between transition">
-                        <span id="btn-quiz">🎯 Тест (20 вопросов)</span> <span class="text-slate-400">→</span>
+                        <span id="btn-quiz">🎯 Интерактивный тест (20 вопросов)</span> <span class="text-slate-400">→</span>
                     </button>
                     <button onclick="generate('flashcards', 1)" class="w-full text-left p-3.5 rounded-xl bg-slate-50 border border-slate-200 hover:border-pink-400 hover:bg-pink-50 text-xs font-bold flex items-center justify-between transition">
                         <span id="btn-cards">🃏 Зерек карточкалар</span> <span class="text-slate-400">→</span>
@@ -200,10 +207,15 @@
         let currentCardIndex = 0;
         let currentPage = 1;
 
+        // Состояние пошагового теста
+        let quizQuestions = [];
+        let quizCurrentIndex = 0;
+        let userAnswers = {};
+
         const translations = {
             ru: {
                 step1: "1. Материал", activate: "🚀 Активировать ИИ", step2: "2. Режимы обучения",
-                quiz: "🎯 Тест (20 вопросов)", cards: "🃏 Умные карточки", summary: "📝 Краткий конспект",
+                quiz: "🎯 Интерактивный тест (20 вопросов)", cards: "🃏 Умные карточки", summary: "📝 Краткий конспект",
                 simple: "💡 Простое объяснение", cabinet: "Кабинет 👤", tokensText: "Токенов",
                 workspace: "✨ Рабочая зона ИИ", readyTitle: "Платформа готова!",
                 readyDesc: "Загрузите PDF файл или введите тему слева, затем выберите нужный режим обучения.",
@@ -211,7 +223,7 @@
             },
             kz: {
                 step1: "1. Материал", activate: "🚀 Жасанды интеллектті қосу", step2: "2. Оқу режимдері",
-                quiz: "🎯 Тест (20 сұрақ)", cards: "🃏 Зерек карточкалар", summary: "📝 Қысқаша конспект",
+                quiz: "🎯 Интерактивті тест (20 сұрақ)", cards: "🃏 Зерек карточкалар", summary: "📝 Қысқаша конспект",
                 simple: "💡 Қарапайым түсіндірме", cabinet: "Кабинет 👤", tokensText: "Токендер",
                 workspace: "✨ Жұмыс аймағы", readyTitle: "Платформа дайын!",
                 readyDesc: "PDF файлын жүктеңіз немесе сол жаққа тақырып жазып, режимді таңдаңыз.",
@@ -219,7 +231,7 @@
             },
             en: {
                 step1: "1. Material", activate: "🚀 Activate AI", step2: "2. Study Modes",
-                quiz: "🎯 Quiz (20 questions)", cards: "🃏 Flashcards", summary: "📝 Summary",
+                quiz: "🎯 Interactive Quiz (20 questions)", cards: "🃏 Flashcards", summary: "📝 Summary",
                 simple: "💡 Simple Explanation", cabinet: "Cabinet 👤", tokensText: "Tokens",
                 workspace: "✨ AI Workspace", readyTitle: "Platform Ready!",
                 readyDesc: "Upload a PDF or enter a topic on the left, then select a study mode.",
@@ -317,7 +329,7 @@
                     if (action === 'flashcards') {
                         parseAndRenderFlashcards(data.result);
                     } else if (action === 'quiz') {
-                        renderQuizResult(data.result, page);
+                        initQuiz(data.result);
                     } else {
                         renderGenericResult(data.result);
                     }
@@ -329,12 +341,180 @@
             } catch (e) { alert("Ошибка выполнения"); }
         }
 
-        // Парсинг 3D Карточек с защитой от сбоев
+        // --- ДВИЖОК ПОШАГОВОГО КВИЗА ---
+        function initQuiz(rawText) {
+            try {
+                let cleanJson = rawText.replace(/```json/g, '').replace(/```/g, '').trim();
+                quizQuestions = JSON.parse(cleanJson);
+            } catch (e) {
+                // Если ИИ выдал не чистый JSON, парсим из текста
+                quizQuestions = parseQuizFromText(rawText);
+            }
+
+            if (!quizQuestions || quizQuestions.length === 0) {
+                renderGenericResult(rawText);
+                return;
+            }
+
+            quizCurrentIndex = 0;
+            userAnswers = {};
+            renderQuizStep();
+        }
+
+        function parseQuizFromText(text) {
+            let questions = [];
+            let blocks = text.split(/(?:Вопрос|Сұрақ|Question)\s*\d+:/i).filter(b => b.trim().length > 10);
+            blocks.forEach((b, i) => {
+                let lines = b.trim().split('\n').map(l => l.trim()).filter(l => l);
+                let qText = lines[0] || "Вопрос";
+                let opts = lines.filter(l => /^[A-D][\)\.]/i.test(l));
+                let ansMatch = b.match(/(?:Правильный ответ|Дұрыс жауап|Correct answer):\s*([A-D])/i);
+                questions.push({
+                    id: i + 1,
+                    question: qText,
+                    options: opts.length === 4 ? opts : ["A) Вариант 1", "B) Вариант 2", "C) Вариант 3", "D) Вариант 4"],
+                    answer: ansMatch ? ansMatch[1].toUpperCase() : "A",
+                    explanation: "Разбор правильного ответа от ИИ."
+                });
+            });
+            return questions;
+        }
+
+        function renderQuizStep() {
+            const container = document.getElementById('result-container');
+            const q = quizQuestions[quizCurrentIndex];
+            const total = quizQuestions.length;
+            const progress = Math.round(((quizCurrentIndex + 1) / total) * 100);
+            const selectedOpt = userAnswers[quizCurrentIndex];
+
+            let optionsHtml = q.options.map((opt, idx) => {
+                let optKey = String.fromCharCode(65 + idx); // A, B, C, D
+                let isSelected = selectedOpt === optKey;
+                return `
+                    <button onclick="selectQuizAnswer('${optKey}')" class="w-full text-left p-4 rounded-2xl border-2 transition-all flex items-center justify-between ${isSelected ? 'border-indigo-600 bg-indigo-50/80 text-indigo-900 shadow-md font-extrabold' : 'border-slate-100 bg-slate-50/60 hover:bg-slate-100 text-slate-700 font-semibold'}">
+                        <span class="text-xs md:text-sm">${opt}</span>
+                        <div class="w-6 h-6 rounded-full border-2 flex items-center justify-center text-xs ${isSelected ? 'border-indigo-600 bg-indigo-600 text-white font-bold' : 'border-slate-300'}">
+                            ${isSelected ? '✓' : ''}
+                        </div>
+                    </button>
+                `;
+            }).join('');
+
+            container.innerHTML = `
+                <div class="w-full max-w-2xl mx-auto space-y-6 text-left quiz-slide-enter">
+                    <!-- Прогресс Бар -->
+                    <div>
+                        <div class="flex justify-between items-center text-xs font-black text-slate-400 mb-2">
+                            <span class="text-indigo-600 uppercase tracking-wider">Сұрақ / Вопрос ${quizCurrentIndex + 1} из ${total}</span>
+                            <span>${progress}%</span>
+                        </div>
+                        <div class="w-full bg-slate-100 h-2.5 rounded-full overflow-hidden">
+                            <div class="bg-gradient-to-r from-indigo-500 to-purple-600 h-full transition-all duration-300" style="width: ${progress}%"></div>
+                        </div>
+                    </div>
+
+                    <!-- Карточка Вопроса -->
+                    <div class="bg-white border border-indigo-100 p-6 md:p-8 rounded-3xl shadow-sm space-y-6">
+                        <h3 class="text-base md:text-lg font-extrabold text-slate-900 leading-snug">${q.question}</h3>
+                        <div class="space-y-3">
+                            ${optionsHtml}
+                        </div>
+                    </div>
+
+                    <!-- Кнопки Навигации -->
+                    <div class="flex justify-between items-center pt-2">
+                        <button onclick="quizPrev()" ${quizCurrentIndex === 0 ? 'disabled class="opacity-30 cursor-not-allowed"' : ''} class="bg-slate-100 hover:bg-slate-200 text-slate-700 px-6 py-3 rounded-2xl text-xs font-bold transition">
+                            ← Назад
+                        </button>
+
+                        ${quizCurrentIndex === total - 1 ? `
+                            <button onclick="finishQuiz()" class="glow-btn bg-emerald-600 hover:bg-emerald-500 text-white px-8 py-3.5 rounded-2xl text-xs font-extrabold shadow-lg shadow-emerald-500/25 transition">
+                                Проверить тест 🎯
+                            </button>
+                        ` : `
+                            <button onclick="quizNext()" class="glow-btn bg-indigo-600 hover:bg-indigo-500 text-white px-8 py-3.5 rounded-2xl text-xs font-extrabold shadow-lg shadow-indigo-500/25 transition">
+                                Вперед →
+                            </button>
+                        `}
+                    </div>
+                </div>
+            `;
+            renderMath(container);
+        }
+
+        function selectQuizAnswer(ansKey) {
+            userAnswers[quizCurrentIndex] = ansKey;
+            renderQuizStep();
+        }
+
+        function quizPrev() {
+            if (quizCurrentIndex > 0) {
+                quizCurrentIndex--;
+                renderQuizStep();
+            }
+        }
+
+        function quizNext() {
+            if (quizCurrentIndex < quizQuestions.length - 1) {
+                quizCurrentIndex++;
+                renderQuizStep();
+            }
+        }
+
+        // Финальный экран с оценкой и разбором ошибок
+        function finishQuiz() {
+            const container = document.getElementById('result-container');
+            let score = 0;
+            quizQuestions.forEach((q, idx) => {
+                if (userAnswers[idx] === q.answer) score++;
+            });
+
+            const total = quizQuestions.length;
+            const percent = Math.round((score / total) * 100);
+
+            let reviewHtml = quizQuestions.map((q, idx) => {
+                let userAns = userAnswers[idx];
+                let isCorrect = userAns === q.answer;
+                return `
+                    <div class="p-5 rounded-2xl border text-left space-y-2 ${isCorrect ? 'bg-emerald-50/60 border-emerald-200' : 'bg-rose-50/60 border-rose-200'}">
+                        <div class="flex justify-between items-start">
+                            <span class="text-xs font-extrabold ${isCorrect ? 'text-emerald-700' : 'text-rose-700'}">Вопрос ${idx + 1}: ${isCorrect ? '✓ Правильно' : '✕ Ошибка'}</span>
+                            <span class="text-[10px] font-bold px-2 py-0.5 rounded-full ${isCorrect ? 'bg-emerald-100 text-emerald-800' : 'bg-rose-100 text-rose-800'}">Ваш ответ: ${userAns || 'Нет'}</span>
+                        </div>
+                        <p class="text-xs md:text-sm font-bold text-slate-800">${q.question}</p>
+                        <p class="text-xs text-slate-600"><b>Правильный ответ:</b> ${q.answer}</p>
+                        ${q.explanation ? `<p class="text-[11px] text-slate-500 bg-white/70 p-2.5 rounded-xl border border-slate-100">💡 <b>Разбор:</b> ${q.explanation}</p>` : ''}
+                    </div>
+                `;
+            }).join('');
+
+            container.innerHTML = `
+                <div class="w-full max-w-2xl mx-auto space-y-6 text-center quiz-slide-enter">
+                    <!-- Итоговый Балл -->
+                    <div class="bg-gradient-to-br from-indigo-600 to-purple-700 text-white p-8 rounded-3xl shadow-xl space-y-3 relative overflow-hidden">
+                        <div class="text-5xl font-black">${percent}%</div>
+                        <h3 class="text-lg font-extrabold">Вы набрали ${score} из ${total} баллов!</h3>
+                        <p class="text-xs text-indigo-100">${percent >= 80 ? '🎉 Великолепный результат! Вы отлично усвоили материал.' : '💪 Хорошая попытка! Изучите ошибки ниже и попробуйте еще раз.'}</p>
+                    </div>
+
+                    <!-- Разбор ответов -->
+                    <div class="space-y-3 max-h-[50vh] overflow-y-auto pr-1">
+                        ${reviewHtml}
+                    </div>
+
+                    <!-- Следующие 20 вопросов -->
+                    <button onclick="generate('quiz', ${currentPage + 1})" class="w-full bg-gradient-to-r from-indigo-600 to-purple-600 text-white font-extrabold py-4 rounded-2xl shadow-lg glow-btn text-xs">
+                        🔄 Продвинутый уровень: пройти следующие 20 новых вопросов ➔
+                    </button>
+                </div>
+            `;
+            renderMath(container);
+        }
+
+        // --- КАРТОЧКИ И ОБЩИЙ РЕНДЕР ---
         function parseAndRenderFlashcards(rawText) {
             cardsData = [];
             currentCardIndex = 0;
-
-            // Гибкое разбиение по заголовкам карточек
             const blocks = rawText.split(/(?:###|\*\*|#)?\s*(?:Карточка|Карточкалар|Card)\s*\d+/i).filter(b => b.trim().length > 10);
             
             blocks.forEach(block => {
@@ -347,19 +527,6 @@
                     });
                 }
             });
-
-            if (cardsData.length === 0) {
-                // Запасной парсинг, если формат немного отличался
-                const lines = rawText.split('\n');
-                let curQ = "", curA = "";
-                lines.forEach(line => {
-                    if (line.includes('Сұрақ:') || line.includes('Вопрос:')) curQ = line.replace(/.*(?:Сұрақ:|Вопрос:)/, '').trim();
-                    if (line.includes('Жауап:') || line.includes('Ответ:')) {
-                        curA = line.replace(/.*(?:Жауап:|Ответ:)/, '').trim();
-                        if (curQ && curA) { cardsData.push({ q: curQ, a: curA }); curQ = ""; curA = ""; }
-                    }
-                });
-            }
 
             if (cardsData.length === 0) { renderGenericResult(rawText); return; }
             showCurrentCard();
@@ -401,27 +568,6 @@
 
         function prevCard() { if (currentCardIndex > 0) { currentCardIndex--; showCurrentCard(); } }
         function nextCard() { if (currentCardIndex < cardsData.length - 1) { currentCardIndex++; showCurrentCard(); } }
-
-        // Вывод 20 вопросов теста с кнопкой генерации следующих 20
-        function renderQuizResult(rawText, page) {
-            const container = document.getElementById('result-container');
-            let formattedHtml = rawText
-                .replace(/### (.*?)\n/g, '<h3 class="text-base font-extrabold text-indigo-600 mt-6 mb-2 border-b border-indigo-100 pb-1">$1</h3>')
-                .replace(/\*\*(.*?)\*\*/g, '<strong class="text-indigo-900">$1</strong>')
-                .replace(/\n/g, '<br>');
-
-            container.innerHTML = `
-                <div class="w-full space-y-4">
-                    <div class="bg-white border border-indigo-100 p-6 rounded-3xl text-left text-xs md:text-sm leading-relaxed max-h-[60vh] overflow-y-auto space-y-3">
-                        ${formattedHtml}
-                    </div>
-                    <button onclick="generate('quiz', ${page + 1})" class="w-full bg-gradient-to-r from-indigo-600 to-purple-600 text-white font-extrabold py-4 rounded-2xl shadow-lg glow-btn text-xs">
-                        🔄 Жалғастыру / Продолжить (тағы 20 жаңа сұрақ) ➔
-                    </button>
-                </div>
-            `;
-            renderMath(container);
-        }
 
         function renderGenericResult(rawText) {
             const container = document.getElementById('result-container');
