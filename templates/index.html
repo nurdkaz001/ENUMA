@@ -3,38 +3,60 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>StudyAI Hub — Умный ИИ Наставник</title>
+    <title>StudyAI Hub — Премиум Обучение</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@500;600;700;800&display=swap" rel="stylesheet">
+    
+    <!-- KaTeX для красивого отображения формул -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.css">
+    <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.js"></script>
+    <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/contrib/auto-render.min.js"></script>
+
     <style>
         body { font-family: 'Plus Jakarta Sans', sans-serif; }
         @keyframes float {
             0%, 100% { transform: translateY(0px); }
-            50% { transform: translateY(-8px); }
+            50% { transform: translateY(-6px); }
         }
         .animate-float { animation: float 4s ease-in-out infinite; }
-        .glow-btn { transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1); }
-        .glow-btn:hover { transform: translateY(-3px) scale(1.02); box-shadow: 0 12px 25px -5px rgba(99, 102, 241, 0.4); }
-        .card-hover { transition: all 0.3s ease; }
-        .card-hover:hover { transform: translateY(-4px); box-shadow: 0 20px 30px -10px rgba(0,0,0,0.08); }
+        .glow-btn { transition: all 0.25s cubic-bezier(0.34, 1.56, 0.64, 1); }
+        .glow-btn:hover { transform: translateY(-2px) scale(1.02); box-shadow: 0 10px 20px -5px rgba(99, 102, 241, 0.4); }
+        
         /* 3D Flip Cards */
         .perspective-1000 { perspective: 1000px; }
-        .flashcard-inner { transition: transform 0.6s; transform-style: preserve-3d; cursor: pointer; }
+        .flashcard-inner {
+            position: relative;
+            width: 100%;
+            min-height: 280px;
+            transition: transform 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+            transform-style: preserve-3d;
+            cursor: pointer;
+        }
         .flashcard-inner.flipped { transform: rotateY(180deg); }
-        .flashcard-front, .flashcard-back { -webkit-backface-visibility: hidden; backface-visibility: hidden; }
+        .flashcard-front, .flashcard-back {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            -webkit-backface-visibility: hidden;
+            backface-visibility: hidden;
+            border-radius: 1.5rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 2rem;
+            text-align: center;
+        }
         .flashcard-back { transform: rotateY(180deg); }
     </style>
 </head>
 <body class="bg-gradient-to-tr from-indigo-50 via-purple-50 to-pink-50 text-slate-800 min-h-screen flex flex-col selection:bg-indigo-600 selection:text-white">
 
-    <!-- Основной контейнер с Левым Сайдбаром -->
     <div class="flex flex-col lg:flex-row min-h-screen">
         
-        <!-- ЛЕВЫЙ САЙДБАР (Панель управления) -->
+        <!-- ЛЕВЫЙ САЙДБАР -->
         <aside class="w-full lg:w-80 bg-white/90 backdrop-blur-xl border-r border-indigo-100 p-6 flex flex-col justify-between shadow-xl z-20">
             <div class="space-y-8">
-                <!-- Логотип -->
                 <div class="flex items-center space-x-3 cursor-pointer">
                     <div class="w-12 h-12 bg-gradient-to-tr from-indigo-600 via-purple-600 to-pink-500 rounded-2xl flex items-center justify-center text-white text-2xl shadow-lg shadow-indigo-500/30 animate-float">
                         ⚡
@@ -43,21 +65,18 @@
                         <h1 class="text-xl font-extrabold bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600 bg-clip-text text-transparent">
                             StudyAI Hub
                         </h1>
-                        <p class="text-[11px] font-bold text-slate-400">Платформа нового поколения</p>
+                        <p class="text-[11px] font-bold text-slate-400">Премиум ИИ Наставник</p>
                     </div>
                 </div>
 
-                <!-- 1. Загрузка материала -->
+                <!-- Шаг 1 -->
                 <div class="space-y-3">
                     <h2 class="text-xs font-extrabold text-slate-400 uppercase tracking-wider flex items-center space-x-2">
                         <span class="w-5 h-5 bg-indigo-100 text-indigo-600 rounded-lg flex items-center justify-center text-[10px]">1</span>
-                        <span>Источник знаний</span>
+                        <span>Материал</span>
                     </h2>
+                    <input type="file" id="pdf-file" accept=".pdf" class="w-full text-xs text-slate-500 file:mr-3 file:py-2.5 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-bold file:bg-indigo-600 file:text-white hover:file:bg-indigo-500 cursor-pointer bg-slate-50 border border-slate-200 rounded-2xl transition">
                     
-                    <div class="space-y-2">
-                        <input type="file" id="pdf-file" accept=".pdf" class="w-full text-xs text-slate-500 file:mr-3 file:py-2.5 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-bold file:bg-indigo-600 file:text-white hover:file:bg-indigo-500 cursor-pointer bg-slate-50 border border-slate-200 rounded-2xl transition">
-                    </div>
-
                     <div class="relative flex py-1 items-center">
                         <div class="flex-grow border-t border-slate-200"></div>
                         <span class="flex-shrink mx-3 text-[10px] font-bold text-slate-400">ИЛИ ТЕМА</span>
@@ -65,19 +84,18 @@
                     </div>
 
                     <input type="text" id="topic-input" placeholder="Например: Линейная алгебра" class="w-full px-4 py-3 rounded-2xl bg-slate-50 border border-slate-200 text-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-500 text-xs font-semibold transition">
-
+                    
                     <button onclick="uploadMaterial()" class="w-full bg-gradient-to-r from-indigo-600 to-purple-600 text-white font-extrabold py-3 rounded-2xl shadow-lg shadow-indigo-500/25 glow-btn text-xs">
                         🚀 Активировать ИИ
                     </button>
                 </div>
 
-                <!-- 2. Режимы обучения -->
+                <!-- Шаг 2 -->
                 <div class="space-y-3">
                     <h2 class="text-xs font-extrabold text-slate-400 uppercase tracking-wider flex items-center space-x-2">
                         <span class="w-5 h-5 bg-purple-100 text-purple-600 rounded-lg flex items-center justify-center text-[10px]">2</span>
-                        <span>Режимы ИИ</span>
+                        <span>Режимы</span>
                     </h2>
-                    
                     <div class="grid grid-cols-1 gap-2">
                         <button onclick="generate('quiz')" class="w-full text-left px-3.5 py-3 rounded-xl bg-slate-50 border border-slate-200 hover:border-indigo-400 hover:bg-indigo-50/50 transition text-xs font-bold flex items-center justify-between group">
                             <span class="flex items-center space-x-2"><span class="text-base">🎯</span> <span class="text-slate-700">Тест (10 вопросов)</span></span>
@@ -103,7 +121,7 @@
                 </div>
             </div>
 
-            <!-- Блок профиля внизу сайдбара -->
+            <!-- Профиль -->
             <div class="pt-6 border-t border-slate-100 mt-6">
                 <div id="auth-container">
                     <button onclick="openAuthModal()" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white py-3 rounded-2xl font-extrabold text-xs shadow-md glow-btn">
@@ -125,9 +143,9 @@
             </div>
         </aside>
 
-        <!-- ПРАВАЯ ОБЛАСТЬ (Рабочее пространство с результатом) -->
+        <!-- ПРАВАЯ ОБЛАСТЬ (РЕЗУЛЬТАТ) -->
         <main class="flex-grow p-6 lg:p-10 flex flex-col justify-between max-w-6xl mx-auto w-full">
-            <div class="bg-white/80 backdrop-blur-xl border border-indigo-100/80 p-8 rounded-3xl shadow-xl shadow-indigo-500/5 flex-grow flex flex-col card-hover relative">
+            <div class="bg-white/90 backdrop-blur-xl border border-indigo-100/80 p-8 rounded-3xl shadow-xl shadow-indigo-500/5 flex-grow flex flex-col relative">
                 <div class="border-b border-slate-100 pb-5 mb-6 flex items-center justify-between">
                     <h2 class="text-lg font-extrabold text-slate-900 flex items-center space-x-2">
                         <span>✨ Рабочая зона ИИ</span>
@@ -135,12 +153,12 @@
                     <span id="status-badge" class="text-xs bg-indigo-50 text-indigo-700 px-4 py-1.5 rounded-full font-extrabold border border-indigo-100">Ожидание выбора</span>
                 </div>
 
-                <div id="result-container" class="prose max-w-none text-slate-700 text-sm leading-relaxed space-y-4 flex-grow flex flex-col justify-center items-center text-center py-20">
-                    <div class="w-20 h-20 bg-indigo-50 text-indigo-600 rounded-3xl flex items-center justify-center text-4xl mx-auto shadow-inner animate-bounce">
+                <div id="result-container" class="flex-grow flex flex-col justify-center items-center text-center py-12">
+                    <div class="w-20 h-20 bg-indigo-50 text-indigo-600 rounded-3xl flex items-center justify-center text-4xl mx-auto shadow-inner animate-bounce mb-4">
                         💡
                     </div>
-                    <h3 class="text-base font-bold text-slate-800">Платформа готова к работе!</h3>
-                    <p class="text-xs text-slate-400 max-w-sm">Загрузи материал или введи тему в панели слева, затем выбери режим обучения.</p>
+                    <h3 class="text-base font-bold text-slate-800 mb-2">Платформа готова к работе!</h3>
+                    <p class="text-xs text-slate-400 max-w-sm">Загрузите материал или введите тему слева, затем выберите режим обучения.</p>
                 </div>
             </div>
         </main>
@@ -151,7 +169,6 @@
         <div class="bg-white rounded-3xl p-8 max-w-md w-full shadow-2xl border border-indigo-100 space-y-6 relative">
             <button onclick="closeAuthModal()" class="absolute top-5 right-5 text-slate-400 hover:text-slate-600 font-bold">✕</button>
             <h3 class="text-xl font-extrabold text-slate-900 text-center" id="auth-title">Вход в StudyAI Hub</h3>
-            
             <div class="space-y-4">
                 <div>
                     <label class="block text-xs font-bold text-slate-500 mb-1 uppercase">Имя пользователя</label>
@@ -162,7 +179,6 @@
                     <input type="password" id="auth-password" class="w-full px-4 py-3 rounded-2xl bg-slate-50 border border-slate-200 text-sm focus:ring-2 focus:ring-indigo-500 focus:outline-none">
                 </div>
                 <button onclick="submitAuth()" id="auth-btn" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-extrabold py-3.5 rounded-2xl shadow-lg shadow-indigo-500/20 text-sm transition">Войти</button>
-                
                 <div class="text-center">
                     <button onclick="toggleAuthMode()" class="text-xs font-bold text-indigo-600 hover:underline" id="auth-switch-text">Нет аккаунта? Зарегистрироваться</button>
                 </div>
@@ -170,75 +186,46 @@
         </div>
     </div>
 
-    <!-- Модальное окно Личного кабинета (С Графиком, Рейтингом и Сохранениями) -->
+    <!-- Личный кабинет -->
     <div id="cabinet-modal" class="fixed inset-0 bg-slate-900/50 backdrop-blur-md z-50 hidden flex items-center justify-center p-4">
         <div class="bg-white rounded-3xl p-8 max-w-3xl w-full shadow-2xl border border-indigo-100 space-y-6 relative max-h-[90vh] flex flex-col">
             <button onclick="closeCabinet()" class="absolute top-5 right-5 text-slate-400 hover:text-slate-600 font-bold">✕</button>
-            
             <div class="flex items-center justify-between border-b border-slate-100 pb-4">
                 <div>
                     <h3 class="text-xl font-extrabold text-slate-900">Личный кабинет студента</h3>
                     <p class="text-xs text-slate-400" id="cabinet-user-sub">Статус: Активен</p>
                 </div>
-                <button onclick="logout()" class="text-xs text-rose-600 font-bold hover:underline">Выйти из аккаунта</button>
+                <button onclick="logout()" class="text-xs text-rose-600 font-bold hover:underline">Выйти</button>
             </div>
 
-            <!-- Вкладки кабинета -->
             <div class="flex space-x-2 border-b border-slate-100 pb-3">
-                <button onclick="switchTab('stats')" id="tab-stats-btn" class="px-4 py-2 rounded-xl text-xs font-extrabold bg-indigo-600 text-white shadow-md transition">📈 Прогресс и График</button>
-                <button onclick="switchTab('leaderboard')" id="tab-lead-btn" class="px-4 py-2 rounded-xl text-xs font-extrabold bg-slate-100 text-slate-600 hover:bg-slate-200 transition">🏆 Глобальный рейтинг</button>
-                <button onclick="switchTab('saves')" id="tab-saves-btn" class="px-4 py-2 rounded-xl text-xs font-extrabold bg-slate-100 text-slate-600 hover:bg-slate-200 transition">📚 Сохраненные уроки</button>
+                <button onclick="switchTab('stats')" id="tab-stats-btn" class="px-4 py-2 rounded-xl text-xs font-extrabold bg-indigo-600 text-white shadow-md transition">📈 Прогресс</button>
+                <button onclick="switchTab('leaderboard')" id="tab-lead-btn" class="px-4 py-2 rounded-xl text-xs font-extrabold bg-slate-100 text-slate-600 hover:bg-slate-200 transition">🏆 Рейтинг</button>
+                <button onclick="switchTab('saves')" id="tab-saves-btn" class="px-4 py-2 rounded-xl text-xs font-extrabold bg-slate-100 text-slate-600 hover:bg-slate-200 transition">📚 Сохранения</button>
             </div>
             
             <div class="overflow-y-auto space-y-4 flex-grow pr-2">
-                <!-- Вкладка 1: Статистика и График -->
                 <div id="tab-stats" class="space-y-6">
                     <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
                         <div class="bg-indigo-50 border border-indigo-100 p-5 rounded-2xl text-center">
                             <div class="text-2xl font-black text-indigo-600" id="stat-score">0</div>
-                            <div class="text-xs font-bold text-slate-500 mt-1">Заработано XP</div>
+                            <div class="text-xs font-bold text-slate-500 mt-1">XP</div>
                         </div>
                         <div class="bg-purple-50 border border-purple-100 p-5 rounded-2xl text-center">
                             <div class="text-2xl font-black text-purple-600" id="stat-rank">Студент</div>
-                            <div class="text-xs font-bold text-slate-500 mt-1">Уровень знаний</div>
+                            <div class="text-xs font-bold text-slate-500 mt-1">Уровень</div>
                         </div>
                         <div class="bg-pink-50 border border-pink-100 p-5 rounded-2xl text-center">
                             <div class="text-2xl font-black text-pink-600" id="stat-saves-count">0</div>
-                            <div class="text-xs font-bold text-slate-500 mt-1">Сохранено материалов</div>
-                        </div>
-                    </div>
-
-                    <div class="bg-slate-50 border border-slate-200 p-6 rounded-2xl space-y-3">
-                        <h4 class="text-sm font-extrabold text-slate-800 flex items-center space-x-2">
-                            <span>📊 График роста активности по XP</span>
-                        </h4>
-                        <p class="text-xs text-slate-500">Ваша динамика набора баллов за активное обучение и прохождение тестов:</p>
-                        <!-- График на CSS / SVG -->
-                        <div class="h-32 flex items-end justify-between px-6 pt-6 border-b border-slate-200 space-x-2">
-                            <div class="w-1/6 bg-indigo-200 rounded-t-lg h-[30%] flex items-center justify-center text-[10px] font-bold text-indigo-700">Пн</div>
-                            <div class="w-1/6 bg-indigo-300 rounded-t-lg h-[45%] flex items-center justify-center text-[10px] font-bold text-indigo-700">Вт</div>
-                            <div class="w-1/6 bg-indigo-400 rounded-t-lg h-[60%] flex items-center justify-center text-[10px] font-bold text-indigo-700">Ср</div>
-                            <div class="w-1/6 bg-purple-500 rounded-t-lg h-[75%] flex items-center justify-center text-[10px] font-bold text-white">Чт</div>
-                            <div class="w-1/6 bg-purple-600 rounded-t-lg h-[90%] flex items-center justify-center text-[10px] font-bold text-white">Пт</div>
-                            <div class="w-1/6 bg-gradient-to-t from-indigo-600 to-pink-600 rounded-t-lg h-[100%] flex items-center justify-center text-[10px] font-bold text-white shadow-md">Сегодня</div>
+                            <div class="text-xs font-bold text-slate-500 mt-1">Материалов</div>
                         </div>
                     </div>
                 </div>
-
-                <!-- Вкладка 2: Глобальный рейтинг -->
-                <div id="tab-leaderboard" class="hidden space-y-3">
-                    <h4 class="text-xs font-extrabold text-slate-400 uppercase tracking-wider mb-2">🏆 Топ студентов платформы</h4>
-                    <div id="leaderboard-list" class="space-y-2">
-                        <!-- Динамически заполняется -->
-                    </div>
+                <div id="tab-leaderboard" class="hidden space-y-2">
+                    <div id="leaderboard-list"></div>
                 </div>
-
-                <!-- Вкладка 3: Сохраненные материалы -->
                 <div id="tab-saves" class="hidden space-y-3">
-                    <h4 class="text-xs font-extrabold text-slate-400 uppercase tracking-wider mb-2">📚 Ваши учебные конспекты и тесты</h4>
-                    <div id="saves-container" class="space-y-3">
-                        <div class="text-center py-10 text-slate-400 text-sm">Загрузка материалов...</div>
-                    </div>
+                    <div id="saves-container"></div>
                 </div>
             </div>
         </div>
@@ -247,7 +234,20 @@
     <script>
         let currentDocId = null;
         let currentUser = JSON.parse(localStorage.getItem('studyai_user')) || null;
-        let currentQuizData = [];
+        let cardsData = [];
+        let currentCardIndex = 0;
+
+        function renderMath(element) {
+            if (window.renderMathInElement) {
+                renderMathInElement(element, {
+                    delimiters: [
+                        {left: '$$', right: '$$', display: true},
+                        {left: '$', right: '$', display: false}
+                    ],
+                    throwOnError: false
+                });
+            }
+        }
 
         function updateAuthUI() {
             if (currentUser) {
@@ -266,24 +266,21 @@
         let isRegisterMode = false;
         function openAuthModal() { document.getElementById('auth-modal').classList.remove('hidden'); }
         function closeAuthModal() { document.getElementById('auth-modal').classList.add('hidden'); }
-
         function toggleAuthMode() {
             isRegisterMode = !isRegisterMode;
-            document.getElementById('auth-title').textContent = isRegisterMode ? 'Регистрация в StudyAI' : 'Вход в StudyAI Hub';
-            document.getElementById('auth-btn').textContent = isRegisterMode ? 'Создать аккаунт' : 'Войти';
-            document.getElementById('auth-switch-text').textContent = isRegisterMode ? 'Уже есть аккаунт? Войти' : 'Нет аккаунта? Зарегистрироваться';
+            document.getElementById('auth-title').textContent = isRegisterMode ? 'Регистрация' : 'Вход';
+            document.getElementById('auth-btn').textContent = isRegisterMode ? 'Создать' : 'Войти';
+            document.getElementById('auth-switch-text').textContent = isRegisterMode ? 'Есть аккаунт? Войти' : 'Нет аккаунта? Зарегистрироваться';
         }
 
         async function submitAuth() {
             const username = document.getElementById('auth-username').value.trim();
             const password = document.getElementById('auth-password').value.trim();
-            if (!username || !password) { alert('Заполните все поля!'); return; }
-
+            if (!username || !password) return alert('Заполните поля!');
             const endpoint = isRegisterMode ? '/api/register' : '/api/login';
             const formData = new FormData();
             formData.append('username', username);
             formData.append('password', password);
-
             try {
                 const res = await fetch(endpoint, { method: 'POST', body: formData });
                 const data = await res.json();
@@ -293,24 +290,15 @@
                     updateAuthUI();
                     closeAuthModal();
                 } else { alert(data.error); }
-            } catch (err) { alert('Ошибка соединения с сервером'); }
+            } catch (err) { alert('Ошибка сервера'); }
         }
 
-        function logout() {
-            currentUser = null;
-            localStorage.removeItem('studyai_user');
-            updateAuthUI();
-            closeCabinet();
-        }
+        function logout() { currentUser = null; localStorage.removeItem('studyai_user'); updateAuthUI(); closeCabinet(); }
 
         async function openCabinet() {
             if (!currentUser) return;
             document.getElementById('cabinet-modal').classList.remove('hidden');
-            document.getElementById('cabinet-user-sub').textContent = `Студент: ${currentUser.username}`;
             document.getElementById('stat-score').textContent = currentUser.score;
-            document.getElementById('stat-rank').textContent = currentUser.score > 150 ? 'Эксперт ⚡' : (currentUser.score > 50 ? 'Практик 🎯' : 'Новичок 📚');
-
-            // Загрузка сохранений и рейтинга
             try {
                 const res = await fetch(`/api/user/${currentUser.user_id}/saves`);
                 const data = await res.json();
@@ -319,62 +307,30 @@
                 document.getElementById('stat-score').textContent = data.score;
                 document.getElementById('stat-saves-count').textContent = data.saves.length;
                 localStorage.setItem('studyai_user', JSON.stringify(currentUser));
-
-                const container = document.getElementById('saves-container');
-                if (!data.saves || data.saves.length === 0) {
-                    container.innerHTML = `<div class="text-center py-10 text-slate-400 text-xs">У вас пока нет сохраненных материалов.</div>`;
-                } else {
-                    container.innerHTML = data.saves.map(s => `
-                        <div class="p-4 bg-slate-50 border border-slate-200 rounded-2xl space-y-1.5">
-                            <div class="flex items-center justify-between">
-                                <span class="text-[10px] font-extrabold uppercase px-2.5 py-1 bg-indigo-100 text-indigo-700 rounded-full">${s.type}</span>
-                                <span class="text-[10px] font-bold text-slate-400">${s.title || 'Урок'}</span>
-                            </div>
-                            <div class="text-xs text-slate-700 whitespace-pre-wrap max-h-24 overflow-y-auto">${s.content}</div>
-                        </div>
-                    `).join('');
-                }
-            } catch (err) {}
-
-            // Загрузка глобального рейтинга
-            try {
+                
+                document.getElementById('saves-container').innerHTML = data.saves.length === 0 ? 
+                    `<div class="text-center py-10 text-slate-400 text-xs">Нет сохраненных материалов</div>` :
+                    data.saves.map(s => `<div class="p-4 bg-slate-50 border border-slate-200 rounded-2xl space-y-1"><span class="text-[10px] font-bold px-2 py-0.5 bg-indigo-100 text-indigo-700 rounded-full">${s.type}</span><div class="text-xs text-slate-700">${s.content}</div></div>`).join('');
+                
                 const leadRes = await fetch('/api/leaderboard');
                 const leadData = await leadRes.json();
-                const leadContainer = document.getElementById('leaderboard-list');
-                if (leadData.leaderboard) {
-                    leadContainer.innerHTML = leadData.leaderboard.map((u, index) => `
-                        <div class="flex items-center justify-between p-3.5 bg-slate-50 border border-slate-200 rounded-2xl text-xs font-bold">
-                            <div class="flex items-center space-x-3">
-                                <span class="w-6 h-6 rounded-xl bg-indigo-100 text-indigo-700 flex items-center justify-center">${index + 1}</span>
-                                <span class="text-slate-800">${u.username} ${u.username === currentUser.username ? '(Вы)' : ''}</span>
-                            </div>
-                            <span class="text-indigo-600">${u.score} XP 🏆</span>
-                        </div>
-                    `).join('');
-                }
-            } catch (err) {}
+                document.getElementById('leaderboard-list').innerHTML = leadData.leaderboard.map((u, i) => `
+                    <div class="flex items-center justify-between p-3 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold">
+                        <span>${i+1}. ${u.username}</span>
+                        <span class="text-indigo-600">${u.score} XP</span>
+                    </div>
+                `).join('');
+            } catch (e) {}
         }
         function closeCabinet() { document.getElementById('cabinet-modal').classList.add('hidden'); }
 
         function switchTab(tab) {
-            document.getElementById('tab-stats').classList.add('hidden');
-            document.getElementById('tab-leaderboard').classList.add('hidden');
-            document.getElementById('tab-saves').classList.add('hidden');
-            
-            document.getElementById('tab-stats-btn').className = "px-4 py-2 rounded-xl text-xs font-extrabold bg-slate-100 text-slate-600 hover:bg-slate-200 transition";
-            document.getElementById('tab-lead-btn').className = "px-4 py-2 rounded-xl text-xs font-extrabold bg-slate-100 text-slate-600 hover:bg-slate-200 transition";
-            document.getElementById('tab-saves-btn').className = "px-4 py-2 rounded-xl text-xs font-extrabold bg-slate-100 text-slate-600 hover:bg-slate-200 transition";
-
-            if (tab === 'stats') {
-                document.getElementById('tab-stats').classList.remove('hidden');
-                document.getElementById('tab-stats-btn').className = "px-4 py-2 rounded-xl text-xs font-extrabold bg-indigo-600 text-white shadow-md transition";
-            } else if (tab === 'leaderboard') {
-                document.getElementById('tab-leaderboard').classList.remove('hidden');
-                document.getElementById('tab-lead-btn').className = "px-4 py-2 rounded-xl text-xs font-extrabold bg-indigo-600 text-white shadow-md transition";
-            } else if (tab === 'saves') {
-                document.getElementById('tab-saves').classList.remove('hidden');
-                document.getElementById('tab-saves-btn').className = "px-4 py-2 rounded-xl text-xs font-extrabold bg-indigo-600 text-white shadow-md transition";
-            }
+            ['stats', 'leaderboard', 'saves'].forEach(t => {
+                document.getElementById(`tab-${t}`).classList.add('hidden');
+                document.getElementById(`tab-${t.substring(0,4)}-btn`).className = "px-4 py-2 rounded-xl text-xs font-extrabold bg-slate-100 text-slate-600 transition";
+            });
+            document.getElementById(`tab-${tab}`).classList.remove('hidden');
+            document.getElementById(`tab-${tab.substring(0,4)}-btn`).className = "px-4 py-2 rounded-xl text-xs font-extrabold bg-indigo-600 text-white shadow-md transition";
         }
 
         async function uploadMaterial() {
@@ -384,91 +340,121 @@
             const container = document.getElementById('result-container');
 
             if (fileInput.files.length > 0) {
-                badge.textContent = "Анализируем PDF...";
+                badge.textContent = "Загрузка...";
                 const formData = new FormData();
                 formData.append("file", fileInput.files[0]);
-
-                try {
-                    const response = await fetch('/upload', { method: 'POST', body: formData });
-                    const data = await response.json();
-                    if (response.ok) {
-                        currentDocId = data.doc_id;
-                        badge.textContent = "Материал загружен";
-                        container.innerHTML = `<div class="p-6 bg-emerald-50 border border-emerald-200 text-emerald-900 rounded-2xl text-xs font-bold flex items-center space-x-3 shadow-sm"><span>🎉</span> <span>${data.message} Выберите режим ИИ в сайдбаре слева.</span></div>`;
-                    } else { alert(data.error); }
-                } catch (err) { alert("Ошибка соединения"); }
+                const res = await fetch('/upload', { method: 'POST', body: formData });
+                const data = await res.json();
+                if (res.ok) {
+                    currentDocId = data.doc_id;
+                    badge.textContent = "Готово";
+                    container.innerHTML = `<div class="p-6 bg-emerald-50 text-emerald-900 rounded-2xl text-xs font-bold">🎉 Файл обработан! Выберите режим слева.</div>`;
+                } else alert(data.error);
             } else if (topicInput.trim() !== "") {
                 currentDocId = "topic_" + Date.now();
                 badge.textContent = "Тема активна";
-                container.innerHTML = `<div class="p-6 bg-indigo-50 border border-indigo-200 text-indigo-900 rounded-2xl text-xs font-bold flex items-center space-x-3 shadow-sm"><span>📚</span> <span>Тема: <b>${topicInput}</b>. Выберите режим ИИ слева.</span></div>`;
-            } else {
-                alert("Пожалуйста, загрузите PDF-файл или введите тему.");
-            }
+                container.innerHTML = `<div class="p-6 bg-indigo-50 text-indigo-900 rounded-2xl text-xs font-bold">📚 Тема: ${topicInput}. Выберите режим слева.</div>`;
+            } else alert('Загрузите файл или введите тему.');
         }
 
         async function generate(action) {
             const container = document.getElementById('result-container');
             const badge = document.getElementById('status-badge');
-            const topicInput = document.getElementById('topic-input').value || "Урок";
-            
             badge.textContent = "ИИ думает...";
-            container.innerHTML = `<div class="flex flex-col items-center justify-center py-20 space-y-4"><div class="w-12 h-12 border-4 border-indigo-600 border-t-transparent rounded-full animate-spin"></div><p class="text-xs font-bold text-indigo-600 uppercase tracking-widest">Создаем задание...</p></div>`;
+            container.innerHTML = `<div class="py-16"><div class="w-10 h-10 border-4 border-indigo-600 border-t-transparent rounded-full animate-spin mx-auto mb-3"></div><p class="text-xs font-bold text-indigo-600">Генерация...</p></div>`;
 
-            try {
-                const formData = new FormData();
-                formData.append("doc_id", currentDocId || "default");
-                formData.append("action", action);
-                formData.append("title", topicInput);
-                if (currentUser) formData.append("user_id", currentUser.user_id);
+            const formData = new FormData();
+            formData.append("doc_id", currentDocId || "default");
+            formData.append("action", action);
+            formData.append("title", document.getElementById('topic-input').value || "Урок");
+            if (currentUser) formData.append("user_id", currentUser.user_id);
 
-                const response = await fetch('/generate', { method: 'POST', body: formData });
-                const data = await response.json();
+            const res = await fetch('/generate', { method: 'POST', body: formData });
+            const data = await res.json();
 
-                if (response.ok) {
-                    badge.textContent = "Готово!";
-                    
-                    if (action === 'flashcards') {
-                        renderFlashcards(data.result);
-                    } else if (action === 'quiz') {
-                        renderQuiz(data.result);
-                    } else {
-                        container.innerHTML = `<div class="whitespace-pre-wrap text-left text-xs leading-relaxed">${data.result}</div>`;
-                    }
-
-                    if (data.new_score !== null && currentUser) {
-                        currentUser.score = data.new_score;
-                        document.getElementById('user-score').textContent = currentUser.score;
-                        localStorage.setItem('studyai_user', JSON.stringify(currentUser));
-                    }
+            if (res.ok) {
+                badge.textContent = "Готово!";
+                if (action === 'flashcards') {
+                    parseAndRenderFlashcards(data.result);
                 } else {
-                    container.innerHTML = `<div class="p-5 bg-rose-50 text-rose-700 rounded-2xl text-xs font-bold border border-rose-200">❌ ${data.error}</div>`;
-                    badge.textContent = "Ошибка";
+                    renderGenericResult(data.result);
                 }
-            } catch (err) {
-                container.innerHTML = `<div class="p-5 bg-rose-50 text-rose-700 rounded-2xl text-xs font-bold border border-rose-200">❌ Ошибка связи с сервером.</div>`;
+                if (data.new_score !== null && currentUser) {
+                    currentUser.score = data.new_score;
+                    document.getElementById('user-score').textContent = currentUser.score;
+                    localStorage.setItem('studyai_user', JSON.stringify(currentUser));
+                }
+            } else {
+                container.innerHTML = `<div class="p-4 bg-rose-50 text-rose-700 rounded-xl text-xs font-bold">${data.error}</div>`;
             }
         }
 
-        function renderFlashcards(text) {
+        function parseAndRenderFlashcards(rawText) {
+            cardsData = [];
+            currentCardIndex = 0;
+            const blocks = rawText.split(/###\s*Карточка\s*\d+/i).filter(b => b.trim().length > 0);
+            blocks.forEach(block => {
+                const qMatch = block.match(/\*\*Вопрос:\*\*\s*([\s\S]*?)(?=\*\*Ответ:\*\*|$)/i);
+                const aMatch = block.match(/\*\*Ответ:\*\*\s*([\s\S]*?)(?=$)/i);
+                if (qMatch && aMatch) {
+                    cardsData.push({ q: qMatch[1].replace(/\*\*/g, '').trim(), a: aMatch[1].replace(/\*\*/g, '').trim() });
+                }
+            });
+            if (cardsData.length === 0) { renderGenericResult(rawText); return; }
+            showCurrentCard();
+        }
+
+        function showCurrentCard() {
             const container = document.getElementById('result-container');
+            const card = cardsData[currentCardIndex];
             container.innerHTML = `
-                <div class="space-y-4 text-center">
-                    <h3 class="text-sm font-extrabold text-indigo-600 uppercase">🃏 Учебные карточки</h3>
-                    <div class="p-6 bg-gradient-to-br from-indigo-900 to-purple-900 text-white rounded-3xl shadow-xl min-h-[180px] flex items-center justify-center text-sm font-bold whitespace-pre-wrap">
-                        ${text}
+                <div class="space-y-6 max-w-xl mx-auto w-full text-left">
+                    <div class="flex justify-between items-center text-xs font-bold text-slate-400">
+                        <span class="bg-indigo-50 text-indigo-600 px-3 py-1 rounded-full border border-indigo-100">КАРТОЧКА ${currentCardIndex + 1} ИЗ ${cardsData.length}</span>
+                        <span><i class="fa-solid fa-hand-pointer mr-1"></i> Нажмите, чтобы перевернуть</span>
+                    </div>
+                    <div class="perspective-1000" onclick="this.querySelector('.flashcard-inner').classList.toggle('flipped')">
+                        <div class="flashcard-inner shadow-xl rounded-3xl">
+                            <div class="flashcard-front bg-gradient-to-br from-indigo-600 to-purple-700 text-white border border-indigo-200">
+                                <div>
+                                    <span class="text-[10px] font-black uppercase tracking-widest text-indigo-200 block mb-2">❓ Вопрос</span>
+                                    <div class="text-base font-bold leading-relaxed">${card.q}</div>
+                                </div>
+                            </div>
+                            <div class="flashcard-back bg-gradient-to-br from-slate-800 to-indigo-950 text-white border border-slate-700">
+                                <div>
+                                    <span class="text-[10px] font-black uppercase tracking-widest text-emerald-400 block mb-2">💡 Ответ</span>
+                                    <div class="text-sm font-semibold leading-relaxed text-slate-100">${card.a}</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="flex justify-between items-center pt-2">
+                        <button onclick="prevCard()" ${currentCardIndex === 0 ? 'disabled class="opacity-30 cursor-not-allowed"' : ''} class="bg-slate-100 hover:bg-slate-200 text-slate-700 px-5 py-2.5 rounded-xl text-xs font-bold transition">Назад</button>
+                        <button onclick="nextCard()" ${currentCardIndex === cardsData.length - 1 ? 'disabled class="opacity-30 cursor-not-allowed"' : ''} class="glow-btn bg-indigo-600 hover:bg-indigo-700 text-white px-5 py-2.5 rounded-xl text-xs font-bold transition">Вперед</button>
                     </div>
                 </div>
             `;
+            renderMath(container);
         }
 
-        function renderQuiz(text) {
+        function prevCard() { if (currentCardIndex > 0) { currentCardIndex--; showCurrentCard(); } }
+        function nextCard() { if (currentCardIndex < cardsData.length - 1) { currentCardIndex++; showCurrentCard(); } }
+
+        function renderGenericResult(rawText) {
             const container = document.getElementById('result-container');
+            let formattedHtml = rawText
+                .replace(/### (.*?)\n/g, '<h3 class="text-base font-extrabold text-indigo-600 mt-6 mb-2 border-b border-indigo-100 pb-1">$1</h3>')
+                .replace(/\*\*(.*?)\*\*/g, '<strong class="text-indigo-900">$1</strong>')
+                .replace(/---/g, '<hr class="border-slate-200 my-4">')
+                .replace(/\n/g, '<br>');
+
             container.innerHTML = `
-                <div class="space-y-4 text-left">
-                    <h3 class="text-sm font-extrabold text-indigo-600 uppercase">🎯 Интерактивный тест (10 вопросов)</h3>
-                    <div class="whitespace-pre-wrap text-xs leading-relaxed p-4 bg-slate-50 border border-slate-200 rounded-2xl">${text}</div>
+                <div class="bg-white border border-indigo-100/80 p-6 rounded-3xl shadow-sm text-slate-700 text-xs md:text-sm leading-relaxed space-y-3 text-left w-full max-h-[70vh] overflow-y-auto">
+                    ${formattedHtml}
                 </div>
             `;
+            renderMath(container);
         }
     </script>
 </body>
