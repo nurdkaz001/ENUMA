@@ -7,15 +7,18 @@ import urllib.request
 import urllib.parse
 from fastapi import FastAPI, File, Form, UploadFile, Request
 from fastapi.responses import FileResponse, JSONResponse
-from google import genai
+from openai import OpenAI
 from pypdf import PdfReader
 from supabase import create_client, Client
 
 app = FastAPI(title="StudyAI Platform")
 
-# Инициализация Gemini
-GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
-client = genai.Client(api_key=GEMINI_API_KEY)
+# Инициализация DeepSeek API через OpenAI-совместимый клиент
+DEEPSEEK_API_KEY = os.getenv("DEEPSEEK_API_KEY", "sk-69b0f*****9b80")
+ai_client = OpenAI(
+    api_key=DEEPSEEK_API_KEY,
+    base_url="https://api.deepseek.com"
+)
 
 # Инициализация Supabase
 SUPABASE_URL = os.getenv("SUPABASE_URL")
@@ -44,7 +47,7 @@ def send_telegram_message(chat_id: str, text: str):
 async def read_root():
     return "templates/index.html"
 
-# Вебхук для Telegram бота (когда клиент жмет Старт в @HUB_preza_bot)
+# Вебхук для Telegram бота (@enuuma_bot)
 @app.post("/api/telegram/webhook")
 async def telegram_webhook(request: Request):
     try:
@@ -126,8 +129,15 @@ async def upload_pdf(file: UploadFile = File(...)):
         if os.path.exists(temp_filename): os.remove(temp_filename)
         return JSONResponse({"error": str(e)}, status_code=500)
 
+# Генерация через DeepSeek API
 @app.post("/generate")
-async def generate_content(doc_id: str = Form(...), action: str = Form(...), user_id: int = Form(...), lang: str = Form("ru"), title: str = Form("Урок")):
+async def generate_content(
+    doc_id: str = Form(...), 
+    action: str = Form(...), 
+    user_id: int = Form(...), 
+    lang: str = Form("ru"), 
+    title: str = Form("Урок")
+):
     try:
         u_res = supabase.table("users").select("*").eq("id", user_id).execute()
         if not u_res.data: return JSONResponse({"error": "Пользователь не найден."}, status_code=401)
@@ -156,17 +166,27 @@ async def generate_content(doc_id: str = Form(...), action: str = Form(...), use
     }
     
     try:
-        response = client.models.generate_content(
-            model='gemini-3.8-flash',
-            contents=f"{prompts.get(action, 'Сделай выжимку')}\n\nТекст:\n{(user_text or doc_id)[:7000]}"
+        prompt_text = prompts.get(action, "Сделай подробную выжимку.")
+        content_text = (user_text or doc_id)[:7000]
+
+        # Вызов модели DeepSeek V3
+        response = ai_client.chat.completions.create(
+            model="deepseek-chat",
+            messages=[
+                {"role": "system", "content": "Ты экспертный преподаватель и ИИ-наставник для студентов."},
+                {"role": "user", "content": f"{prompt_text}\n\nТекст документа:\n{content_text}"}
+            ],
+            stream=False
         )
-        res_text = response.text
+        res_text = response.choices[0].message.content
+
         new_tokens = tokens if is_sub else max(0, tokens - 1)
         supabase.table("users").update({"tokens": new_tokens}).eq("id", user_id).execute()
         supabase.table("saved_materials").insert({"user_id": user_id, "title": title, "content": res_text, "type": action}).execute()
+        
         return {"result": res_text, "tokens_left": new_tokens, "is_subscribed": is_sub}
     except Exception as e:
-        return JSONResponse({"error": str(e)}, status_code=500)
+        return JSONResponse({"error": f"Ошибка DeepSeek API: {str(e)}"}, status_code=500)
 
 @app.post("/api/user/subscribe")
 async def subscribe_user(user_id: int = Form(...)):
