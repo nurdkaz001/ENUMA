@@ -2,8 +2,8 @@ from __future__ import annotations
 import os
 import time
 import shutil
-from fastapi import FastAPI, File, Form, UploadFile, Request, JSONResponse
-from fastapi.responses import HTMLResponse
+from fastapi import FastAPI, File, Form, UploadFile, Request
+from fastapi.responses import HTMLResponse, JSONResponse
 from fastapi.templating import Jinja2Templates
 from google import genai
 from pypdf import PdfReader
