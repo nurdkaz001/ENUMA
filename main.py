@@ -88,12 +88,12 @@ async def verify_code(code: str = Form(...)):
             user = user_res.data[0]
         else:
             new_user = supabase.table("users").insert({
-                "username": f"Студент #{tg_id[-4:]}",
-                "password": "telegram_auth",
-                "score": 0,
-                "tokens": 3,
-                "is_subscribed": False
-            }).execute()
+    "username": f"tg_{tg_id}",  # Полный и уникальный Telegram ID
+    "password": "telegram_auth",
+    "score": 0,
+    "tokens": 3,
+    "is_subscribed": False
+}).execute()
             user = new_user.data[0]
 
         return {
