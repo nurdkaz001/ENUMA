@@ -2,33 +2,27 @@ from __future__ import annotations
 import os
 import time
 import shutil
-from fastapi import FastAPI, File, Form, UploadFile
+from fastapi import FastAPI, File, Form, UploadFile, Request
 from fastapi.responses import FileResponse, JSONResponse
 from google import genai
 from pypdf import PdfReader
 from supabase import create_client, Client
 
-# Инициализация приложения
 app = FastAPI(title="StudyAI Platform")
 
-# Настройка клиента Gemini
 GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
 client = genai.Client(api_key=GEMINI_API_KEY)
 
-# Настройка подключения к Supabase
 SUPABASE_URL = os.getenv("SUPABASE_URL")
 SUPABASE_KEY = os.getenv("SUPABASE_KEY")
 supabase: Client = create_client(SUPABASE_URL, SUPABASE_KEY)
 
-# Временное хранилище загруженных PDF-текстов
 active_documents = {}
 
-# Отдаем index.html напрямую через FileResponse (100% стабильно)
 @app.get("/", response_class=FileResponse)
 async def read_root():
     return "templates/index.html"
 
-# Регистрация пользователя через Supabase
 @app.post("/api/register")
 async def register(username: str = Form(...), password: str = Form(...)):
     try:
@@ -37,24 +31,30 @@ async def register(username: str = Form(...), password: str = Form(...)):
             "password": password,
             "score": 0
         }).execute()
-        
         user = response.data[0]
         return {"success": True, "user_id": user["id"], "username": user["username"], "score": user["score"]}
     except Exception as e:
         return JSONResponse({"error": "Такое имя пользователя уже занято или ошибка базы данных!"}, status_code=400)
 
-# Авторизация пользователя через Supabase
 @app.post("/api/login")
 async def login(username: str = Form(...), password: str = Form(...)):
     try:
         response = supabase.table("users").select("*").eq("username", username).eq("password", password).execute()
-        
         if response.data and len(response.data) > 0:
             user = response.data[0]
             return {"success": True, "user_id": user["id"], "username": user["username"], "score": user["score"]}
         return JSONResponse({"error": "Неверное имя пользователя или пароль."}, status_code=400)
     except Exception as e:
         return JSONResponse({"error": f"Ошибка авторизации: {str(e)}"}, status_code=500)
+
+# Глобальный рейтинг студентов для личного кабинета
+@app.get("/api/leaderboard")
+async def get_leaderboard():
+    try:
+        res = supabase.table("users").select("username, score").order("score", desc=True).limit(10).execute()
+        return {"leaderboard": res.data if res.data else []}
+    except Exception as e:
+        return JSONResponse({"error": str(e)}, status_code=500)
 
 @app.post("/upload")
 async def upload_pdf(file: UploadFile = File(...)):
@@ -81,9 +81,7 @@ async def upload_pdf(file: UploadFile = File(...)):
 
         doc_id = str(os.urandom(4).hex())
         active_documents[doc_id] = text
-
         return {"doc_id": doc_id, "message": "Файл успешно обработан!"}
-
     except Exception as e:
         if os.path.exists(temp_filename):
             os.remove(temp_filename)
@@ -97,8 +95,8 @@ async def generate_content(doc_id: str = Form(...), action: str = Form(...), use
 
     prompts = {
         "summary": "Сделай структурированный краткий конспект на основе этого текста. Выдели главные тезисы, ключевые формулы и термины.",
-        "quiz": "Составь 5 качественных тестовых вопросов с вариантами ответов (A, B, C, D) и укажи правильные ответы в самом конце.",
-        "flashcards": "Создай 6 учебных карточек (Вопрос — Ответ) для заучивания ключевых понятий из текста.",
+        "quiz": "Составь 10 качественных тестовых вопросов с вариантами ответов (A, B, C, D) и укажи правильные ответы в самом конце.",
+        "flashcards": "Создай 8 учебных карточек (Вопрос — Ответ) для заучивания ключевых понятий из текста.",
         "simple": "Объясни сложные идеи из этого текста максимально простыми словами, используя понятные аналогии.",
         "plan": "Составь эффективный пошаговый план подготовки и изучения этого материала."
     }
@@ -111,7 +109,7 @@ async def generate_content(doc_id: str = Form(...), action: str = Form(...), use
     for attempt in range(max_retries):
         try:
             response = client.models.generate_content(
-                model='gemini-3.8-flash',
+                model='gemini-1.5-flash',
                 contents=f"{prompt_text}\n\nТекст документа:\n{optimized_text}"
             )
             result_text = response.text
@@ -122,7 +120,6 @@ async def generate_content(doc_id: str = Form(...), action: str = Form(...), use
                 continue
             return JSONResponse({"error": f"Ошибка генерации ИИ: {str(e)}"}, status_code=500)
 
-    # Сохранение в Supabase и начисление баллов, если пользователь авторизован
     if user_id and user_id > 0:
         try:
             supabase.table("saved_materials").insert({
@@ -134,17 +131,15 @@ async def generate_content(doc_id: str = Form(...), action: str = Form(...), use
 
             user_res = supabase.table("users").select("score").eq("id", user_id).execute()
             current_score = user_res.data[0]["score"] if user_res.data else 0
-            new_score = current_score + 15
+            new_score = current_score + 20
 
             supabase.table("users").update({"score": new_score}).eq("id", user_id).execute()
-
             return {"result": result_text, "new_score": new_score}
         except Exception as db_err:
             print("DB Save Error:", db_err)
 
     return {"result": result_text, "new_score": None}
 
-# Получение сохраненных материалов пользователя из Supabase
 @app.get("/api/user/{user_id}/saves")
 async def get_user_saves(user_id: int):
     try:
