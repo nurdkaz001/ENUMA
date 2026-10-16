@@ -5,6 +5,7 @@ import random
 import shutil
 import urllib.request
 import urllib.parse
+import json
 from fastapi import FastAPI, File, Form, UploadFile, Request
 from fastapi.responses import FileResponse, JSONResponse
 from openai import OpenAI
@@ -19,9 +20,9 @@ ai_client = OpenAI(
     base_url="https://api.deepseek.com"
 )
 
-SUPABASE_URL = os.getenv("SUPABASE_URL")
-SUPABASE_KEY = os.getenv("SUPABASE_KEY")
-supabase: Client = create_client(SUPABASE_URL, SUPABASE_KEY)
+SUPABASE_URL = os.getenv("SUPABASE_URL", "")
+SUPABASE_KEY = os.getenv("SUPABASE_KEY", "")
+supabase: Client = create_client(SUPABASE_URL, SUPABASE_KEY) if SUPABASE_URL and SUPABASE_KEY else None
 
 TELEGRAM_BOT_TOKEN = os.getenv("TELEGRAM_BOT_TOKEN", "")
 
@@ -52,12 +53,12 @@ async def telegram_webhook(request: Request):
         chat_id = chat.get("id")
         text = message.get("text", "")
         
-        if text.startswith("/start"):
+        if text.startswith("/start") and chat_id:
             code = str(random.randint(100000, 999999))
             str_chat_id = str(chat_id)
-            
-            supabase.table("auth_codes").delete().eq("tg_id", str_chat_id).execute()
-            supabase.table("auth_codes").insert({"tg_id": str_chat_id, "code": code}).execute()
+            if supabase:
+                supabase.table("auth_codes").delete().eq("tg_id", str_chat_id).execute()
+                supabase.table("auth_codes").insert({"tg_id": str_chat_id, "code": code}).execute()
             
             msg = f"👋 *StudyAI Hub — Авторизация*\n\nВаш 6-значный код для входа:\n`{code}`\n\nВведите его на сайте."
             send_telegram_message(str_chat_id, msg)
@@ -70,8 +71,10 @@ async def telegram_webhook(request: Request):
 async def verify_code(code: str = Form(...)):
     code_clean = code.strip()
     try:
+        if not supabase:
+            return JSONResponse({"error": "База данных не подключена"}, status_code=500)
+
         res = supabase.table("auth_codes").select("*").eq("code", code_clean).execute()
-        
         if not res.data or len(res.data) == 0:
             return JSONResponse({"error": "Неверный или устаревший код подтверждения!"}, status_code=400)
         
@@ -130,58 +133,85 @@ async def generate_content(
     user_id: int = Form(...), 
     lang: str = Form("ru"), 
     title: str = Form("Урок"),
-    page: int = Form(1)  # Страница для генерации следующих 20 вопросов
+    page: int = Form(1)
 ):
     try:
-        u_res = supabase.table("users").select("*").eq("id", user_id).execute()
-        if not u_res.data: return JSONResponse({"error": "Пользователь не найден."}, status_code=401)
-        user = u_res.data[0]
-        tokens, is_sub = user.get("tokens", 0), user.get("is_subscribed", False)
-        if not is_sub and tokens <= 0:
-            return JSONResponse({"error": "PAYMENT_REQUIRED", "message": "Токены закончились! Оформите подписку за 500 ₸."}, status_code=402)
+        if supabase:
+            u_res = supabase.table("users").select("*").eq("id", user_id).execute()
+            if not u_res.data: return JSONResponse({"error": "Пользователь не найден."}, status_code=401)
+            user = u_res.data[0]
+            tokens, is_sub = user.get("tokens", 0), user.get("is_subscribed", False)
+            if not is_sub and tokens <= 0:
+                return JSONResponse({"error": "PAYMENT_REQUIRED", "message": "Токены закончились! Оформите подписку за 500 ₸."}, status_code=402)
+        else:
+            tokens, is_sub = 3, True
     except Exception:
-        return JSONResponse({"error": "Ошибка лимитов"}, status_code=500)
+        return JSONResponse({"error": "Ошибка проверки токенов"}, status_code=500)
 
     user_text = active_documents.get(doc_id)
     if not user_text and not doc_id.startswith("topic_"):
         return JSONResponse({"error": "Сессия устарела. Загрузите файл заново."}, status_code=400)
 
     lang_instr = {
-        "kz": "Жауапты СТРОГО МІНСІЗ ҚАЗАҚ ТІЛІНДЕ жаз. Басқа тіл араластырма.",
+        "kz": "Жауапты СТРОГО МІНСІЗ ҚАЗАҚ ТІЛІНДЕ жаз.",
         "en": "Provide the response STRICTLY IN ENGLISH.",
         "ru": "Предоставь ответ СТРОГО НА РУССКОМ ЯЗЫКЕ."
     }.get(lang, "Отвечай строго на русском.")
 
-    # Вычисление смещения вопросов для исключения повторов
     start_q = (page - 1) * 20 + 1
     end_q = page * 20
 
-    prompts = {
-        "summary": f"{lang_instr}\nСделай качественный структурированный конспект. Не повторяй формулировки вопросов в ответах.",
-        "quiz": f"{lang_instr}\nСоставь СТРОГО 20 УНИКАЛЬНЫХ тестовых вопросов (с номера {start_q} по номер {end_q}). Вопросы НЕ ДОЛЖНЫ повторяться с предыдущими! Оформи каждый вопрос так:\nВопрос N: ...\nA) ...\nB) ...\nC) ...\nD) ...\nПравильный ответ: ...\n",
-        "flashcards": f"{lang_instr}\nСоздай 10 ИНТЕРАКТИВНЫХ УЧЕБНЫХ КАРТОЧЕК. ВАЖНО: Ответ должен быть четким и кратким пояснением, НЕ ПОВТОРЯЙ формулировку вопроса в ответе!\nКаждую карточку оформляй СТРОГО по шаблону:\n\n### Карточка X\n**Вопрос:** [Только суть вопроса]\n**Ответ:** [Краткий, четкий и точный ответ без дублирования вопроса]\n---",
-        "simple": f"{lang_instr}\nОбъясни сложный материал максимально простыми словами."
-    }
-    
+    if action == "quiz":
+        prompt_text = f"""{lang_instr}
+Составь СТРОГО 20 УНИКАЛЬНЫХ тестовых вопросов (с номера {start_q} по номер {end_q}).
+Верни ответ СТРОГО в формате валидного JSON-массива без какого-либо дополнительного текста или тегов markdown!
+
+Формат каждого элемента JSON:
+{{
+  "id": 1,
+  "question": "Текст вопроса...",
+  "options": [
+    "A) Вариант 1",
+    "B) Вариант 2",
+    "C) Вариант 3",
+    "D) Вариант 4"
+  ],
+  "answer": "A",
+  "explanation": "Краткое понятное объяснение, почему именно этот вариант правильный."
+}}
+"""
+    elif action == "flashcards":
+        prompt_text = f"""{lang_instr}
+Создай 10 ИНТЕРАКТИВНЫХ УЧЕБНЫХ КАРТОЧЕК. Ответ должен быть четким и кратким пояснением, НЕ ПОВТОРЯЙ формулировку вопроса в ответе!
+Каждую карточку оформляй СТРОГО по шаблону:
+
+### Карточка X
+**Вопрос:** [Только суть вопроса]
+**Ответ:** [Краткий, четкий и точный ответ без дублирования вопроса]
+---"""
+    elif action == "summary":
+        prompt_text = f"{lang_instr}\nСделай качественный структурированный конспект с формулами ($...$) и главными терминами."
+    else:
+        prompt_text = f"{lang_instr}\nОбъясни сложный материал максимально простыми словами с яркими аналогиями."
+
     try:
-        prompt_text = prompts.get(action, "Сделай выжимку.")
         content_text = (user_text or doc_id)[:7000]
 
         response = ai_client.chat.completions.create(
             model="deepseek-chat",
             messages=[
-                {"role": "system", "content": "Ты профессиональный ИИ-методист и преподаватель. Ты никогда не дублируешь текст вопроса внутри ответа и строго соблюдаешь требуемый формат карточек и тестов."},
+                {"role": "system", "content": "Ты профессиональный ИИ-методист и преподаватель. Всегда строго следуешь формату и никогда не дублируешь вопрос в ответе."},
                 {"role": "user", "content": f"{prompt_text}\n\nТекст материала:\n{content_text}"}
             ],
-            stream=False,
             temperature=0.3
         )
         res_text = response.choices[0].message.content
 
         new_tokens = tokens if is_sub else max(0, tokens - 1)
-        supabase.table("users").update({"tokens": new_tokens}).eq("id", user_id).execute()
-        supabase.table("saved_materials").insert({"user_id": user_id, "title": title, "content": res_text, "type": action}).execute()
-        
+        if supabase:
+            supabase.table("users").update({"tokens": new_tokens}).eq("id", user_id).execute()
+            supabase.table("saved_materials").insert({"user_id": user_id, "title": title, "content": res_text, "type": action}).execute()
+
         return {"result": res_text, "tokens_left": new_tokens, "is_subscribed": is_sub, "page": page}
     except Exception as e:
         return JSONResponse({"error": f"Ошибка DeepSeek API: {str(e)}"}, status_code=500)
@@ -189,7 +219,8 @@ async def generate_content(
 @app.post("/api/user/subscribe")
 async def subscribe_user(user_id: int = Form(...)):
     try:
-        supabase.table("users").update({"is_subscribed": True}).eq("id", user_id).execute()
+        if supabase:
+            supabase.table("users").update({"is_subscribed": True}).eq("id", user_id).execute()
         return {"success": True}
     except Exception as e:
         return JSONResponse({"error": str(e)}, status_code=500)
@@ -197,9 +228,11 @@ async def subscribe_user(user_id: int = Form(...)):
 @app.get("/api/user/{user_id}/saves")
 async def get_user_saves(user_id: int):
     try:
-        saves = supabase.table("saved_materials").select("*").eq("user_id", user_id).order("id", desc=True).execute()
-        user = supabase.table("users").select("*").eq("id", user_id).execute().data[0]
-        return {"username": user.get("username"), "tokens": user.get("tokens"), "is_subscribed": user.get("is_subscribed"), "saves": saves.data or []}
+        if supabase:
+            saves = supabase.table("saved_materials").select("*").eq("user_id", user_id).order("id", desc=True).execute()
+            user = supabase.table("users").select("*").eq("id", user_id).execute().data[0]
+            return {"username": user.get("username"), "tokens": user.get("tokens"), "is_subscribed": user.get("is_subscribed"), "saves": saves.data or []}
+        return {"username": "Студент", "tokens": 3, "is_subscribed": True, "saves": []}
     except Exception as e:
         return JSONResponse({"error": str(e)}, status_code=500)
 
