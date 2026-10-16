@@ -13,14 +13,12 @@ from supabase import create_client, Client
 
 app = FastAPI(title="StudyAI Platform")
 
-# Инициализация DeepSeek API через OpenAI-совместимый клиент
-DEEPSEEK_API_KEY = os.getenv("DEEPSEEK_API_KEY", "sk-69b0f*****9b80")
+DEEPSEEK_API_KEY = os.getenv("DEEPSEEK_API_KEY", "")
 ai_client = OpenAI(
     api_key=DEEPSEEK_API_KEY,
     base_url="https://api.deepseek.com"
 )
 
-# Инициализация Supabase
 SUPABASE_URL = os.getenv("SUPABASE_URL")
 SUPABASE_KEY = os.getenv("SUPABASE_KEY")
 supabase: Client = create_client(SUPABASE_URL, SUPABASE_KEY)
@@ -31,7 +29,6 @@ active_documents = {}
 
 def send_telegram_message(chat_id: str, text: str):
     if not TELEGRAM_BOT_TOKEN:
-        print(f"⚠️ Telegram Token не задан. Код для {chat_id}: {text}")
         return False
     url = f"https://api.telegram.org/bot{TELEGRAM_BOT_TOKEN}/sendMessage"
     data = urllib.parse.urlencode({"chat_id": chat_id, "text": text, "parse_mode": "Markdown"}).encode("utf-8")
@@ -39,15 +36,13 @@ def send_telegram_message(chat_id: str, text: str):
         req = urllib.request.Request(url, data=data)
         with urllib.request.urlopen(req) as response:
             return response.status == 200
-    except Exception as e:
-        print("Telegram Send Error:", e)
+    except Exception:
         return False
 
 @app.get("/", response_class=FileResponse)
 async def read_root():
     return "templates/index.html"
 
-# Вебхук для Telegram бота (@enuuma_bot)
 @app.post("/api/telegram/webhook")
 async def telegram_webhook(request: Request):
     try:
@@ -84,7 +79,6 @@ async def verify_code(code: str = Form(...)):
         tg_id = record["tg_id"]
         
         supabase.table("auth_codes").delete().eq("code", code_clean).execute()
-        
         user_res = supabase.table("users").select("*").eq("username", f"tg_{tg_id}").execute()
         
         if user_res.data and len(user_res.data) > 0:
@@ -129,14 +123,14 @@ async def upload_pdf(file: UploadFile = File(...)):
         if os.path.exists(temp_filename): os.remove(temp_filename)
         return JSONResponse({"error": str(e)}, status_code=500)
 
-# Генерация через DeepSeek API
 @app.post("/generate")
 async def generate_content(
     doc_id: str = Form(...), 
     action: str = Form(...), 
     user_id: int = Form(...), 
     lang: str = Form("ru"), 
-    title: str = Form("Урок")
+    title: str = Form("Урок"),
+    page: int = Form(1)  # Страница для генерации следующих 20 вопросов
 ):
     try:
         u_res = supabase.table("users").select("*").eq("id", user_id).execute()
@@ -153,30 +147,34 @@ async def generate_content(
         return JSONResponse({"error": "Сессия устарела. Загрузите файл заново."}, status_code=400)
 
     lang_instr = {
-        "kz": "Жауапты толығымен МІНСІЗ ҚАЗАҚ ТІЛІНДЕ жаз.",
-        "en": "Provide the response completely in ENGLISH.",
-        "ru": "Предоставь ответ полностью на РУССКОМ ЯЗЫКЕ."
+        "kz": "Жауапты СТРОГО МІНСІЗ ҚАЗАҚ ТІЛІНДЕ жаз. Басқа тіл араластырма.",
+        "en": "Provide the response STRICTLY IN ENGLISH.",
+        "ru": "Предоставь ответ СТРОГО НА РУССКОМ ЯЗЫКЕ."
     }.get(lang, "Отвечай строго на русском.")
 
+    # Вычисление смещения вопросов для исключения повторов
+    start_q = (page - 1) * 20 + 1
+    end_q = page * 20
+
     prompts = {
-        "summary": f"{lang_instr} Сделай структурированный краткий конспект с формулами ($...$) и терминами.",
-        "quiz": f"{lang_instr} Составь 10 тестовых вопросов с вариантами (A, B, C, D) и ответами в конце.",
-        "flashcards": f"{lang_instr} Создай 8 учебных карточек. Оформи каждую СТРОГО в формате:\n### Карточка 1\n**Вопрос:** ...\n**Ответ:** ...\n---",
-        "simple": f"{lang_instr} Объясни материал простыми словами с яркими аналогиями."
+        "summary": f"{lang_instr}\nСделай качественный структурированный конспект. Не повторяй формулировки вопросов в ответах.",
+        "quiz": f"{lang_instr}\nСоставь СТРОГО 20 УНИКАЛЬНЫХ тестовых вопросов (с номера {start_q} по номер {end_q}). Вопросы НЕ ДОЛЖНЫ повторяться с предыдущими! Оформи каждый вопрос так:\nВопрос N: ...\nA) ...\nB) ...\nC) ...\nD) ...\nПравильный ответ: ...\n",
+        "flashcards": f"{lang_instr}\nСоздай 10 ИНТЕРАКТИВНЫХ УЧЕБНЫХ КАРТОЧЕК. ВАЖНО: Ответ должен быть четким и кратким пояснением, НЕ ПОВТОРЯЙ формулировку вопроса в ответе!\nКаждую карточку оформляй СТРОГО по шаблону:\n\n### Карточка X\n**Вопрос:** [Только суть вопроса]\n**Ответ:** [Краткий, четкий и точный ответ без дублирования вопроса]\n---",
+        "simple": f"{lang_instr}\nОбъясни сложный материал максимально простыми словами."
     }
     
     try:
-        prompt_text = prompts.get(action, "Сделай подробную выжимку.")
+        prompt_text = prompts.get(action, "Сделай выжимку.")
         content_text = (user_text or doc_id)[:7000]
 
-        # Вызов модели DeepSeek V3
         response = ai_client.chat.completions.create(
             model="deepseek-chat",
             messages=[
-                {"role": "system", "content": "Ты экспертный преподаватель и ИИ-наставник для студентов."},
-                {"role": "user", "content": f"{prompt_text}\n\nТекст документа:\n{content_text}"}
+                {"role": "system", "content": "Ты профессиональный ИИ-методист и преподаватель. Ты никогда не дублируешь текст вопроса внутри ответа и строго соблюдаешь требуемый формат карточек и тестов."},
+                {"role": "user", "content": f"{prompt_text}\n\nТекст материала:\n{content_text}"}
             ],
-            stream=False
+            stream=False,
+            temperature=0.3
         )
         res_text = response.choices[0].message.content
 
@@ -184,7 +182,7 @@ async def generate_content(
         supabase.table("users").update({"tokens": new_tokens}).eq("id", user_id).execute()
         supabase.table("saved_materials").insert({"user_id": user_id, "title": title, "content": res_text, "type": action}).execute()
         
-        return {"result": res_text, "tokens_left": new_tokens, "is_subscribed": is_sub}
+        return {"result": res_text, "tokens_left": new_tokens, "is_subscribed": is_sub, "page": page}
     except Exception as e:
         return JSONResponse({"error": f"Ошибка DeepSeek API: {str(e)}"}, status_code=500)
 
