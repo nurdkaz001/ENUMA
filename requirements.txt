@@ -1,6 +1,6 @@
 fastapi
 uvicorn
-google-genai
+python-multipart
 pypdf
 supabase
-python-multipart
+openai
