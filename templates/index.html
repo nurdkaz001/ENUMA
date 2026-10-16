@@ -126,7 +126,7 @@
         </main>
     </div>
 
-    <!-- МОДАЛКА АВТОРИЗАЦИИ TELEGRAM (КАК НА СКРИНШОТЕ С 6 ЯЧЕЙКАМИ) -->
+    <!-- МОДАЛКА АВТОРИЗАЦИИ TELEGRAM С БОТОМ @enuuma_bot -->
     <div id="telegram-auth-modal" class="fixed inset-0 bg-slate-900/80 backdrop-blur-md z-50 flex items-center justify-center p-4">
         <div class="bg-white rounded-3xl p-8 max-w-md w-full shadow-2xl border border-indigo-100 space-y-6 text-center">
             <div class="w-16 h-16 bg-indigo-600 text-white rounded-2xl flex items-center justify-center text-3xl mx-auto shadow-lg animate-float">✈️</div>
@@ -134,7 +134,7 @@
             <div>
                 <h3 class="text-2xl font-black text-slate-900">Войти в HUB</h3>
                 <div class="mt-4 text-left space-y-1.5 text-xs text-slate-600 bg-slate-50 p-4 rounded-2xl border border-slate-200">
-                    <p>1. Откройте <a href="https://t.me/HUB_preza_bot" target="_blank" class="text-indigo-600 font-extrabold underline">@HUB_preza_bot</a> — код придёт автоматически</p>
+                    <p>1. Откройте <a href="https://t.me/enuuma_bot" target="_blank" class="text-indigo-600 font-extrabold underline">@enuuma_bot</a> — код придёт автоматически</p>
                     <p>2. Введите 6-значный код ниже</p>
                 </div>
             </div>
@@ -264,7 +264,6 @@
         }
         checkAuth();
 
-        // Управление ячейками ввода OTP кода
         function moveToNext(element, index) {
             let value = element.value;
             if (value && index < 6) {
@@ -340,7 +339,6 @@
             } catch (e) { alert("Ошибка выполнения"); }
         }
 
-        // Парсинг карточек в 3D формат
         function parseAndRenderFlashcards(rawText) {
             cardsData = [];
             currentCardIndex = 0;
