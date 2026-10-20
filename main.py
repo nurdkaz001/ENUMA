@@ -74,8 +74,11 @@ async def admin_toggle_subscription(
     try:
         if not supabase:
             return JSONResponse({"error": "База данных не подключена"}, status_code=500)
-        supabase.table("users").update({"is_subscribed": status}).eq("id", user_id).execute()
-        return {"success": True, "user_id": user_id, "is_subscribed": status}
+        
+        # Исправлено: приведение к булевому типу и корректный апдейт в Supabase
+        is_sub_bool = True if str(status).lower() in ["true", "1", "yes"] else False
+        supabase.table("users").update({"is_subscribed": is_sub_bool}).eq("id", user_id).execute()
+        return {"success": True, "user_id": user_id, "is_subscribed": is_sub_bool}
     except Exception as e:
         return JSONResponse({"error": str(e)}, status_code=500)
 
@@ -203,7 +206,12 @@ async def generate_content(
 Контекст и задачи студента:
 "{custom_prompt}"
 
-Составь оптимальный, структурированный календарный план выполнения задач, дай мотивационные рекомендации и распиши по дням."""
+Составь оптимальный календарный план, а также верни в самом конце структурированный блок в формате JSON для автоматического добавления задач в календарь:
+```json
+[
+  {{"title": "Название задачи", "date": "YYYY-MM-DD", "desc": "Краткая инфа о задаче"}}
+]
+```"""
     elif action == "quiz":
         prompt_text = f"""{lang_instr}
 Составь СТРОГО 20 УНИКАЛЬНЫХ тестовых вопросов (с номера {start_q} по номер {end_q}).
