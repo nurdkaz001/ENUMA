@@ -82,24 +82,28 @@ async def verify_code(code: str = Form(...)):
         tg_id = record["tg_id"]
         
         supabase.table("auth_codes").delete().eq("code", code_clean).execute()
-        user_res = supabase.table("users").select("*").eq("username", f"tg_{tg_id}").execute()
+        
+        # Используем tg_id в качестве уникального логина для избежания ошибки 23505
+        unique_username = f"tg_{tg_id}"
+        user_res = supabase.table("users").select("*").eq("username", unique_username).execute()
         
         if user_res.data and len(user_res.data) > 0:
             user = user_res.data[0]
         else:
             new_user = supabase.table("users").insert({
-    "username": f"tg_{tg_id}",  # Полный и уникальный Telegram ID
-    "password": "telegram_auth",
-    "score": 0,
-    "tokens": 3,
-    "is_subscribed": False
-}).execute()
+                "username": unique_username,
+                "password": "telegram_auth",
+                "score": 0,
+                "tokens": 3,
+                "is_subscribed": False
+            }).execute()
             user = new_user.data[0]
 
         return {
             "success": True,
             "user_id": user["id"],
-            "username": user["username"],
+            "username": unique_username,
+            "display_name": f"Студент #{str(tg_id)[-4:]}",
             "score": user.get("score", 0),
             "tokens": user.get("tokens", 3),
             "is_subscribed": user.get("is_subscribed", False)
@@ -128,12 +132,13 @@ async def upload_pdf(file: UploadFile = File(...)):
 
 @app.post("/generate")
 async def generate_content(
-    doc_id: str = Form(...), 
+    doc_id: str = Form("default"), 
     action: str = Form(...), 
     user_id: int = Form(...), 
     lang: str = Form("ru"), 
     title: str = Form("Урок"),
-    page: int = Form(1)
+    page: int = Form(1),
+    custom_prompt: str = Form("")
 ):
     try:
         if supabase:
@@ -148,10 +153,7 @@ async def generate_content(
     except Exception:
         return JSONResponse({"error": "Ошибка проверки токенов"}, status_code=500)
 
-    user_text = active_documents.get(doc_id)
-    if not user_text and not doc_id.startswith("topic_"):
-        return JSONResponse({"error": "Сессия устарела. Загрузите файл заново."}, status_code=400)
-
+    user_text = active_documents.get(doc_id, "")
     lang_instr = {
         "kz": "Жауапты СТРОГО МІНСІЗ ҚАЗАҚ ТІЛІНДЕ жаз.",
         "en": "Provide the response STRICTLY IN ENGLISH.",
@@ -161,7 +163,15 @@ async def generate_content(
     start_q = (page - 1) * 20 + 1
     end_q = page * 20
 
-    if action == "quiz":
+    if action == "planner":
+        prompt_text = f"""{lang_instr}
+Ты персональный ИИ-ассистент по тайм-менеджменту и планированию для студентов.
+Запрос студента или контекст его задач:
+"{custom_prompt}"
+
+Сформируй четкий, мотивирующий ответ, отчет по задачам или рекомендации по перепланированию графика.
+Используй списки, жирный шрифт и эмодзи. Ответ должен быть визуально понятным и структурным."""
+    elif action == "quiz":
         prompt_text = f"""{lang_instr}
 Составь СТРОГО 20 УНИКАЛЬНЫХ тестовых вопросов (с номера {start_q} по номер {end_q}).
 Верни ответ СТРОГО в формате валидного JSON-массива без какого-либо дополнительного текста или тегов markdown!
@@ -178,8 +188,7 @@ async def generate_content(
   ],
   "answer": "A",
   "explanation": "Краткое понятное объяснение, почему именно этот вариант правильный."
-}}
-"""
+}}"""
     elif action == "flashcards":
         prompt_text = f"""{lang_instr}
 Создай 10 ИНТЕРАКТИВНЫХ УЧЕБНЫХ КАРТОЧЕК. Ответ должен быть четким и кратким пояснением, НЕ ПОВТОРЯЙ формулировку вопроса в ответе!
@@ -195,13 +204,13 @@ async def generate_content(
         prompt_text = f"{lang_instr}\nОбъясни сложный материал максимально простыми словами с яркими аналогиями."
 
     try:
-        content_text = (user_text or doc_id)[:7000]
+        content_text = (user_text or doc_id)[:7000] if action != "planner" else custom_prompt
 
         response = ai_client.chat.completions.create(
             model="deepseek-chat",
             messages=[
-                {"role": "system", "content": "Ты профессиональный ИИ-методист и преподаватель. Всегда строго следуешь формату и никогда не дублируешь вопрос в ответе."},
-                {"role": "user", "content": f"{prompt_text}\n\nТекст материала:\n{content_text}"}
+                {"role": "system", "content": "Ты экспертный ИИ-наставник и органайзер для студентов."},
+                {"role": "user", "content": f"{prompt_text}\n\nКонтекст:\n{content_text}"}
             ],
             temperature=0.3
         )
@@ -215,6 +224,20 @@ async def generate_content(
         return {"result": res_text, "tokens_left": new_tokens, "is_subscribed": is_sub, "page": page}
     except Exception as e:
         return JSONResponse({"error": f"Ошибка DeepSeek API: {str(e)}"}, status_code=500)
+
+@app.post("/api/user/add-score")
+async def add_score(user_id: int = Form(...), points: int = Form(50)):
+    try:
+        if supabase:
+            u_res = supabase.table("users").select("score").eq("id", user_id).execute()
+            if u_res.data:
+                current_score = u_res.data[0].get("score", 0)
+                new_score = current_score + points
+                supabase.table("users").update({"score": new_score}).eq("id", user_id).execute()
+                return {"success": True, "new_score": new_score}
+        return {"success": True, "new_score": 50}
+    except Exception as e:
+        return JSONResponse({"error": str(e)}, status_code=500)
 
 @app.post("/api/user/subscribe")
 async def subscribe_user(user_id: int = Form(...)):
@@ -231,8 +254,8 @@ async def get_user_saves(user_id: int):
         if supabase:
             saves = supabase.table("saved_materials").select("*").eq("user_id", user_id).order("id", desc=True).execute()
             user = supabase.table("users").select("*").eq("id", user_id).execute().data[0]
-            return {"username": user.get("username"), "tokens": user.get("tokens"), "is_subscribed": user.get("is_subscribed"), "saves": saves.data or []}
-        return {"username": "Студент", "tokens": 3, "is_subscribed": True, "saves": []}
+            return {"username": user.get("username"), "score": user.get("score", 0), "tokens": user.get("tokens"), "is_subscribed": user.get("is_subscribed"), "saves": saves.data or []}
+        return {"username": "Студент", "score": 100, "tokens": 3, "is_subscribed": True, "saves": []}
     except Exception as e:
         return JSONResponse({"error": str(e)}, status_code=500)
 
