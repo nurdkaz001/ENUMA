@@ -101,7 +101,6 @@
                     </button>
                 </div>
 
-                <!-- 3. Календарь и ИИ-Органайзер -->
                 <div class="space-y-2 pt-1 border-t border-slate-100">
                     <h2 class="text-xs font-extrabold text-slate-400 uppercase tracking-wider">3. Органайзер</h2>
                     <button onclick="openPlannerView()" class="w-full text-left p-3.5 rounded-xl bg-gradient-to-r from-amber-500/10 to-orange-500/10 border border-amber-300 hover:border-amber-500 text-amber-900 text-xs font-black flex items-center justify-between transition shadow-sm">
@@ -111,7 +110,7 @@
                 </div>
             </div>
 
-            <div class="pt-4 border-t border-slate-100">
+            <div class="pt-4 border-t border-slate-100 space-y-2">
                 <div id="user-profile-widget" class="flex items-center justify-between bg-indigo-50/80 border border-indigo-100 p-3 rounded-2xl shadow-sm">
                     <div class="flex items-center space-x-2.5">
                         <div class="w-8 h-8 rounded-xl bg-indigo-600 text-white font-extrabold flex items-center justify-center text-xs shadow-md">📱</div>
@@ -127,6 +126,11 @@
                         Кабинет 👤
                     </button>
                 </div>
+
+                <!-- Кнопка Входа в Админ Панель -->
+                <button onclick="openAdminModal()" class="w-full bg-slate-100 hover:bg-slate-200 text-slate-600 font-extrabold py-2 rounded-xl text-[11px] transition">
+                    ⚙️ Админ-панель
+                </button>
             </div>
         </aside>
 
@@ -147,6 +151,54 @@
                 </div>
             </div>
         </main>
+    </div>
+
+    <!-- МОДАЛКА АДМИН-ПАНЕЛИ -->
+    <div id="admin-modal" class="fixed inset-0 bg-slate-900/80 backdrop-blur-md z-50 hidden flex items-center justify-center p-4">
+        <div class="bg-white rounded-3xl p-8 max-w-4xl w-full shadow-2xl space-y-6 relative border border-slate-200 max-h-[90vh] flex flex-col">
+            <button onclick="closeAdminModal()" class="absolute top-5 right-5 text-slate-400 hover:text-slate-600 font-bold">✕</button>
+            
+            <div class="flex items-center space-x-3 border-b pb-4">
+                <div class="w-10 h-10 bg-slate-900 text-white rounded-xl flex items-center justify-center font-bold text-lg">👑</div>
+                <div>
+                    <h3 class="text-lg font-black text-slate-900">Админ-панель управления подписками</h3>
+                    <p class="text-xs text-slate-400">Выдавайте подписки за 500 ₸ и следите за активностью пользователей</p>
+                </div>
+            </div>
+
+            <!-- Экран ввода пароля Админа -->
+            <div id="admin-auth-section" class="space-y-4 max-w-md mx-auto text-center py-6 w-full">
+                <input type="password" id="admin-secret-input" placeholder="Введите секретный ключ администратора" class="w-full px-4 py-3 rounded-2xl border border-slate-300 text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-slate-900">
+                <button onclick="loginAdmin()" class="w-full bg-slate-900 hover:bg-slate-800 text-white font-extrabold py-3.5 rounded-2xl text-xs transition">
+                    Войти в Админку
+                </button>
+            </div>
+
+            <!-- Таблица Пользователей (показывается после ввода ключа) -->
+            <div id="admin-table-section" class="hidden flex-grow overflow-y-auto space-y-4">
+                <div class="flex justify-between items-center bg-slate-50 p-3 rounded-2xl border text-xs font-bold text-slate-600">
+                    <span>Всего пользователей в базе: <b id="admin-users-count" class="text-indigo-600">0</b></span>
+                    <button onclick="loadAdminUsers()" class="text-indigo-600 hover:underline">🔄 Обновить данные</button>
+                </div>
+                <div class="overflow-x-auto border rounded-2xl">
+                    <table class="w-full text-left text-xs">
+                        <thead class="bg-slate-100 text-slate-500 uppercase text-[10px] font-black border-b">
+                            <tr>
+                                <th class="p-3">ID</th>
+                                <th class="p-3">Telegram Username</th>
+                                <th class="p-3">Токены</th>
+                                <th class="p-3">Баллы XP</th>
+                                <th class="p-3">Подписка</th>
+                                <th class="p-3 text-right">Действие</th>
+                            </tr>
+                        </thead>
+                        <tbody id="admin-users-tbody" class="divide-y divide-slate-100">
+                            <!-- Пользователи подгружаются скриптом -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
     </div>
 
     <!-- МОДАЛКА АВТОРИЗАЦИИ TELEGRAM -->
@@ -174,7 +226,7 @@
         </div>
     </div>
 
-    <!-- МОДАЛКА ОПЛАТЫ ПОДПИСКИ (500 ₸) -->
+    <!-- МОДАЛКА ОПЛАТЫ ПОДПИСКИ -->
     <div id="pay-modal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-md z-50 hidden flex items-center justify-center p-4">
         <div class="bg-white rounded-3xl p-8 max-w-md w-full shadow-2xl text-center space-y-6 relative border border-amber-100">
             <button onclick="closePayModal()" class="absolute top-5 right-5 text-slate-400 hover:text-slate-600 font-bold">✕</button>
@@ -232,6 +284,7 @@
         let cardsData = [];
         let currentCardIndex = 0;
         let currentPage = 1;
+        let adminSecretKey = '';
 
         let quizQuestions = [];
         let quizCurrentIndex = 0;
@@ -331,6 +384,74 @@
                     throwOnError: false
                 });
             }
+        }
+
+        // --- ЛОГИКА АДМИН-ПАНЕЛИ ---
+        function openAdminModal() {
+            document.getElementById('admin-modal').classList.remove('hidden');
+        }
+        function closeAdminModal() {
+            document.getElementById('admin-modal').classList.add('hidden');
+        }
+
+        async function loginAdmin() {
+            adminSecretKey = document.getElementById('admin-secret-input').value.trim();
+            if (!adminSecretKey) return alert('Введите ключ администратора');
+            
+            await loadAdminUsers();
+        }
+
+        async function loadAdminUsers() {
+            try {
+                const res = await fetch(`/api/admin/users?admin_key=${encodeURIComponent(adminSecretKey)}`);
+                const data = await res.json();
+                
+                if (res.ok) {
+                    document.getElementById('admin-auth-section').classList.add('hidden');
+                    document.getElementById('admin-table-section').classList.remove('hidden');
+                    document.getElementById('admin-users-count').textContent = data.users.length;
+                    
+                    let tbody = document.getElementById('admin-users-tbody');
+                    tbody.innerHTML = data.users.map(u => `
+                        <tr class="hover:bg-slate-50 font-medium">
+                            <td class="p-3 font-bold text-slate-400">#${u.id}</td>
+                            <td class="p-3 font-bold text-slate-800">${u.username}</td>
+                            <td class="p-3 text-indigo-600 font-black">${u.is_subscribed ? '∞' : u.tokens}</td>
+                            <td class="p-3 text-amber-600 font-black">⭐ ${u.score || 0}</td>
+                            <td class="p-3">
+                                <span class="px-2.5 py-1 rounded-full text-[10px] font-black ${u.is_subscribed ? 'bg-emerald-100 text-emerald-800' : 'bg-slate-100 text-slate-500'}">
+                                    ${u.is_subscribed ? '👑 Безлимит (500₸)' : 'Бесплатный'}
+                                </span>
+                            </td>
+                            <td class="p-3 text-right">
+                                <button onclick="toggleUserSub(${u.id}, ${!u.is_subscribed})" class="px-3 py-1.5 rounded-xl font-extrabold text-[11px] transition ${u.is_subscribed ? 'bg-rose-100 text-rose-700 hover:bg-rose-200' : 'bg-emerald-600 text-white hover:bg-emerald-700 shadow-sm'}">
+                                    ${u.is_subscribed ? '✕ Отменить' : '⚡ Выдать подписку (500₸)'}
+                                </button>
+                            </td>
+                        </tr>
+                    `).join('');
+                } else {
+                    alert(data.error || 'Неверный админ-ключ!');
+                }
+            } catch (e) { alert('Ошибка соединения с сервером'); }
+        }
+
+        async function toggleUserSub(userId, newStatus) {
+            const formData = new FormData();
+            formData.append('user_id', userId);
+            formData.append('status', newStatus);
+            formData.append('admin_key', adminSecretKey);
+
+            try {
+                const res = await fetch('/api/admin/toggle-subscription', { method: 'POST', body: formData });
+                const data = await res.json();
+                if (res.ok) {
+                    alert(newStatus ? 'Подписка на 500 ₸ успешно выдана!' : 'Подписка отменена');
+                    loadAdminUsers();
+                } else {
+                    alert(data.error);
+                }
+            } catch (e) { alert('Ошибка при изменении статуса'); }
         }
 
         // --- КАЛЕНДАРЬ И ПЛАНЕР ---
