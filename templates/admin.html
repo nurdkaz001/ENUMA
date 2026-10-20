@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Админ-панель — StudyAI Hub</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@500;600;700;800;900&display=swap" rel="stylesheet">
+    <style> body { font-family: 'Plus Jakarta Sans', sans-serif; } </style>
+</head>
+<body class="bg-slate-900 text-slate-100 min-h-screen flex items-center justify-center p-4">
+
+    <div class="max-w-4xl w-full bg-slate-800/90 border border-slate-700/80 rounded-3xl p-6 md:p-8 shadow-2xl backdrop-blur-xl">
+        <div class="flex items-center justify-between border-b border-slate-700 pb-5 mb-6">
+            <div class="flex items-center space-x-3">
+                <div class="w-12 h-12 bg-gradient-to-tr from-indigo-500 to-purple-600 rounded-2xl flex items-center justify-center text-white font-black text-xl shadow-lg">👑</div>
+                <div>
+                    <h1 class="text-xl font-black text-white">Панель Администратора</h1>
+                    <p class="text-xs text-slate-400">Управление подписками за 500 ₸</p>
+                </div>
+            </div>
+            <a href="/" class="text-xs font-bold text-slate-400 hover:text-white transition">← На сайт</a>
+        </div>
+
+        <div id="admin-auth-box" class="max-w-md mx-auto py-10 text-center space-y-4">
+            <div class="text-4xl mb-2">🔒</div>
+            <h2 class="text-lg font-bold text-white">Введите секретный ключ администратора</h2>
+            <input type="password" id="admin-key-input" placeholder="Пароль (по умолчанию: admin12345)" class="w-full px-4 py-3 rounded-2xl bg-slate-900 border border-slate-700 text-xs text-white font-semibold focus:outline-none focus:ring-2 focus:ring-indigo-500">
+            <button onclick="loginAdmin()" class="w-full bg-indigo-600 hover:bg-indigo-500 text-white font-extrabold py-3.5 rounded-2xl text-xs transition shadow-lg">Войти в Админку</button>
+        </div>
+
+        <div id="admin-dashboard" class="hidden space-y-4">
+            <div class="flex justify-between items-center bg-slate-900/60 p-4 rounded-2xl border border-slate-700/60">
+                <span class="text-xs font-extrabold text-slate-300">Пользователей в базе: <b id="users-count" class="text-indigo-400 text-sm">0</b></span>
+                <button onclick="fetchUsers()" class="text-xs font-bold bg-slate-800 hover:bg-slate-700 text-indigo-400 px-4 py-2 rounded-xl border border-slate-700">🔄 Обновить</button>
+            </div>
+
+            <div class="overflow-x-auto border border-slate-700 rounded-2xl bg-slate-900/40">
+                <table class="w-full text-left text-xs">
+                    <thead class="bg-slate-900/80 text-slate-400 uppercase text-[10px] font-black border-b border-slate-700">
+                        <tr>
+                            <th class="p-3.5">ID</th>
+                            <th class="p-3.5">Telegram / Логин</th>
+                            <th class="p-3.5">Токенов</th>
+                            <th class="p-3.5">Баллы (XP)</th>
+                            <th class="p-3.5">Статус подписки</th>
+                            <th class="p-3.5 text-right">Действие</th>
+                        </tr>
+                    </thead>
+                    <tbody id="users-tbody" class="divide-y divide-slate-700/60"></tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let secretKey = '';
+        async function loginAdmin() {
+            secretKey = document.getElementById('admin-key-input').value.trim();
+            if (!secretKey) return alert('Введите пароль!');
+            await fetchUsers();
+        }
+
+        async function fetchUsers() {
+            try {
+                const res = await fetch(`/api/admin/users?admin_key=${encodeURIComponent(secretKey)}`);
+                const data = await res.json();
+                if (res.ok) {
+                    document.getElementById('admin-auth-box').classList.add('hidden');
+                    document.getElementById('admin-dashboard').classList.remove('hidden');
+                    document.getElementById('users-count').textContent = data.users.length;
+
+                    document.getElementById('users-tbody').innerHTML = data.users.map(u => `
+                        <tr class="hover:bg-slate-800/50">
+                            <td class="p-3.5 font-bold text-slate-400">#${u.id}</td>
+                            <td class="p-3.5 font-bold text-slate-100">${u.username}</td>
+                            <td class="p-3.5 font-black text-indigo-400">${u.is_subscribed ? '∞' : u.tokens}</td>
+                            <td class="p-3.5 font-black text-amber-400">⭐ ${u.score || 0}</td>
+                            <td class="p-3.5">
+                                <span class="px-3 py-1 rounded-full text-[10px] font-black ${u.is_subscribed ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30' : 'bg-slate-700 text-slate-400'}">
+                                    ${u.is_subscribed ? '👑 Безлимит (500₸)' : 'Бесплатный'}
+                                </span>
+                            </td>
+                            <td class="p-3.5 text-right">
+                                <button onclick="toggleSubscription(${u.id}, ${!u.is_subscribed})" class="px-3.5 py-2 rounded-xl font-extrabold text-[11px] transition ${u.is_subscribed ? 'bg-rose-500/20 hover:bg-rose-500/30 text-rose-300 border border-rose-500/30' : 'bg-emerald-600 hover:bg-emerald-500 text-white shadow-md'}">
+                                    ${u.is_subscribed ? '✕ Отменить' : '⚡ Выдать подписку (500₸)'}
+                                </button>
+                            </td>
+                        </tr>
+                    `).join('');
+                } else { alert(data.error || 'Неверный ключ'); }
+            } catch (e) { alert('Ошибка сервера'); }
+        }
+
+        async function toggleSubscription(userId, newStatus) {
+            const formData = new FormData();
+            formData.append('user_id', userId);
+            formData.append('status', newStatus);
+            formData.append('admin_key', secretKey);
+            try {
+                const res = await fetch('/api/admin/toggle-subscription', { method: 'POST', body: formData });
+                if (res.ok) { fetchUsers(); } else { alert('Ошибка'); }
+            } catch (e) { alert('Ошибка сети'); }
+        }
+    </script>
+</body>
+</html>
