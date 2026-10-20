@@ -14,6 +14,9 @@ from supabase import create_client, Client
 
 app = FastAPI(title="StudyAI Platform")
 
+# Секретный ключ для входа в админ-панель (измените на свой в Render Environment!)
+ADMIN_SECRET = os.getenv("ADMIN_SECRET", "admin12345")
+
 DEEPSEEK_API_KEY = os.getenv("DEEPSEEK_API_KEY", "")
 ai_client = OpenAI(
     api_key=DEEPSEEK_API_KEY,
@@ -43,6 +46,40 @@ def send_telegram_message(chat_id: str, text: str):
 @app.get("/", response_class=FileResponse)
 async def read_root():
     return "templates/index.html"
+
+# --- АДМИН-ПАНЕЛЬ API ---
+
+@app.get("/api/admin/users")
+async def admin_get_users(admin_key: str):
+    if admin_key != ADMIN_SECRET:
+        return JSONResponse({"error": "Доступ запрещен! Неверный ключ администратора."}, status_code=403)
+    try:
+        if not supabase:
+            return JSONResponse({"error": "База данных не подключена"}, status_code=500)
+        res = supabase.table("users").select("*").order("id", desc=True).execute()
+        return {"users": res.data or []}
+    except Exception as e:
+        return JSONResponse({"error": str(e)}, status_code=500)
+
+@app.post("/api/admin/toggle-subscription")
+async def admin_toggle_subscription(
+    user_id: int = Form(...),
+    status: bool = Form(...),
+    admin_key: str = Form(...)
+):
+    if admin_key != ADMIN_SECRET:
+        return JSONResponse({"error": "Доступ запрещен! Неверный ключ администратора."}, status_code=403)
+    try:
+        if not supabase:
+            return JSONResponse({"error": "База данных не подключена"}, status_code=500)
+        
+        # Обновляем статус подписки
+        supabase.table("users").update({"is_subscribed": status}).eq("id", user_id).execute()
+        return {"success": True, "user_id": user_id, "is_subscribed": status}
+    except Exception as e:
+        return JSONResponse({"error": str(e)}, status_code=500)
+
+# --- АВТОРИЗАЦИЯ ТЕЛЕГРАМ ---
 
 @app.post("/api/telegram/webhook")
 async def telegram_webhook(request: Request):
