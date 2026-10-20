@@ -83,7 +83,6 @@ async def verify_code(code: str = Form(...)):
         
         supabase.table("auth_codes").delete().eq("code", code_clean).execute()
         
-        # Используем tg_id в качестве уникального логина для избежания ошибки 23505
         unique_username = f"tg_{tg_id}"
         user_res = supabase.table("users").select("*").eq("username", unique_username).execute()
         
@@ -169,8 +168,7 @@ async def generate_content(
 Запрос студента или контекст его задач:
 "{custom_prompt}"
 
-Сформируй четкий, мотивирующий ответ, отчет по задачам или рекомендации по перепланированию графика.
-Используй списки, жирный шрифт и эмодзи. Ответ должен быть визуально понятным и структурным."""
+Сформируй четкий, мотивирующий ответ, отчет по задачам или рекомендации по перепланированию графика."""
     elif action == "quiz":
         prompt_text = f"""{lang_instr}
 Составь СТРОГО 20 УНИКАЛЬНЫХ тестовых вопросов (с номера {start_q} по номер {end_q}).
