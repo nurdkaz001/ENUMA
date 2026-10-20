@@ -14,7 +14,7 @@ from supabase import create_client, Client
 
 app = FastAPI(title="StudyAI Platform")
 
-# Секретный ключ для входа в админ-панель (измените на свой в Render Environment!)
+# Секретный ключ для входа в админ-панель
 ADMIN_SECRET = os.getenv("ADMIN_SECRET", "admin12345")
 
 DEEPSEEK_API_KEY = os.getenv("DEEPSEEK_API_KEY", "")
@@ -43,9 +43,15 @@ def send_telegram_message(chat_id: str, text: str):
     except Exception:
         return False
 
+# --- СТРАНИЦЫ САЙТА ---
+
 @app.get("/", response_class=FileResponse)
 async def read_root():
     return "templates/index.html"
+
+@app.get("/admin", response_class=FileResponse)
+async def read_admin():
+    return "templates/admin.html"
 
 # --- АДМИН-ПАНЕЛЬ API ---
 
@@ -73,7 +79,6 @@ async def admin_toggle_subscription(
         if not supabase:
             return JSONResponse({"error": "База данных не подключена"}, status_code=500)
         
-        # Обновляем статус подписки
         supabase.table("users").update({"is_subscribed": status}).eq("id", user_id).execute()
         return {"success": True, "user_id": user_id, "is_subscribed": status}
     except Exception as e:
