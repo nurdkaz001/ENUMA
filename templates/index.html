@@ -46,7 +46,6 @@
             100% { opacity: 0; transform: translateY(-30px) scale(1); }
         }
         .score-anim { animation: scorePop 1.2s ease-out forwards; }
-
         .calendar-day { transition: all 0.2s ease; }
         .calendar-day:hover { transform: translateY(-2px); }
 
@@ -60,6 +59,16 @@
         <div class="bg-gradient-to-r from-amber-400 to-yellow-500 text-slate-900 font-black px-5 py-3 rounded-2xl shadow-xl flex items-center space-x-2 border border-yellow-300 score-anim">
             <span class="text-xl">⭐</span>
             <span id="score-popup-text">+50 XP</span>
+        </div>
+    </div>
+
+    <!-- Модальное мини-окно для дня календаря -->
+    <div id="day-modal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+        <div class="bg-white rounded-3xl p-6 max-w-md w-full shadow-2xl space-y-4 relative border border-indigo-100">
+            <button onclick="closeDayModal()" class="absolute top-4 right-4 text-slate-400 hover:text-slate-600 font-bold">✕</button>
+            <h3 id="day-modal-title" class="text-base font-extrabold text-slate-900 border-b pb-2">Задачи на день</h3>
+            <div id="day-modal-tasks" class="space-y-2 max-h-60 overflow-y-auto"></div>
+            <button onclick="closeDayModal()" class="w-full bg-slate-100 hover:bg-slate-200 text-slate-700 py-2.5 rounded-xl text-xs font-bold">Закрыть</button>
         </div>
     </div>
 
@@ -240,8 +249,8 @@
         let userAnswers = {};
 
         let studentTasks = JSON.parse(localStorage.getItem('studyai_tasks')) || [
-            { id: 1, title: 'Лабораторная №2 по Высшей математике', date: '2026-10-22', done: false, xp: 50 },
-            { id: 2, title: 'Подготовка к тесту по C++', date: '2026-10-25', done: false, xp: 50 }
+            { id: 1, title: 'Лабораторная №2 по Высшей математике', date: '2026-10-22', desc: 'Решение матриц и определителей', done: false, xp: 50 },
+            { id: 2, title: 'Подготовка к тесту по C++', date: '2026-10-25', desc: 'Повторить указатели и циклы', done: false, xp: 50 }
         ];
 
         function checkAuth() {
@@ -290,7 +299,7 @@
             }
         }
 
-        // --- КРАСИВЫЙ ИНТЕРАКТИВНЫЙ КАЛЕНДАРЬ И ИИ-ПЛАНЕР ---
+        // --- КАЛЕНДАРЬ И ИИ-ПЛАНЕР ---
         function openPlannerView() {
             const container = document.getElementById('result-container');
             renderAdvancedCalendar(container);
@@ -312,13 +321,14 @@
 
             for (let day = 1; day <= totalDays; day++) {
                 let dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
-                let hasTasks = studentTasks.some(t => t.date === dateStr && !t.done);
+                let dayTasks = studentTasks.filter(t => t.date === dateStr);
+                let hasTasks = dayTasks.some(t => !t.done);
                 let isToday = day === now.getDate();
 
                 daysHtml += `
-                    <div onclick="filterTasksByDate('${dateStr}')" class="calendar-day p-3 rounded-2xl border text-center cursor-pointer transition flex flex-col items-center justify-center ${isToday ? 'bg-indigo-600 text-white font-black shadow-lg' : 'bg-slate-50 border-slate-200 hover:border-indigo-400 hover:bg-indigo-50/50'}">
+                    <div onclick="showDayTasks('${dateStr}', ${day})" class="calendar-day p-3 rounded-2xl border text-center cursor-pointer transition flex flex-col items-center justify-center relative ${isToday ? 'bg-indigo-600 text-white font-black shadow-lg' : 'bg-slate-50 border-slate-200 hover:border-indigo-400 hover:bg-indigo-50/50'}">
                         <span class="text-xs font-extrabold">${day}</span>
-                        ${hasTasks ? '<span class="w-1.5 h-1.5 bg-amber-500 rounded-full mt-1 animate-pulse"></span>' : ''}
+                        ${dayTasks.length > 0 ? `<span class="absolute top-1 right-1 w-4 h-4 bg-amber-500 text-white text-[9px] font-bold rounded-full flex items-center justify-center">${dayTasks.length}</span>` : ''}
                     </div>
                 `;
             }
@@ -331,6 +341,7 @@
                         </button>
                         <div>
                             <p class="text-xs md:text-sm font-bold ${t.done ? 'line-through text-slate-400' : 'text-slate-800'}">${t.title}</p>
+                            <p class="text-[11px] text-slate-500">${t.desc || 'Без описания'}</p>
                             <span class="text-[10px] font-extrabold text-indigo-500">⏳ Дедлайн: ${t.date}</span>
                         </div>
                     </div>
@@ -347,7 +358,7 @@
                         <div>
                             <span class="text-[10px] font-black uppercase tracking-widest text-amber-200">ИИ-Календарь & Расписание</span>
                             <h3 class="text-xl font-black">📅 Полный Календарь Дедлайнов</h3>
-                            <p class="text-xs text-amber-100 mt-1">ИИ распределяет ваши задачи. За выполнение заданий начисляется +50 XP!</p>
+                            <p class="text-xs text-amber-100 mt-1">Нажмите на любой день, чтобы посмотреть или добавить задачи. За выполнение — +50 XP!</p>
                         </div>
                         <div class="bg-white/20 backdrop-blur-md px-4 py-3 rounded-2xl text-center border border-white/30">
                             <span class="text-xs text-amber-100 font-bold block">Ваш счет XP</span>
@@ -355,26 +366,22 @@
                         </div>
                     </div>
 
-                    <!-- ВИЗУАЛЬНЫЙ КАЛЕНДАРЬ -->
                     <div class="bg-white border border-indigo-100 p-6 rounded-3xl shadow-sm space-y-4">
                         <div class="flex justify-between items-center">
                             <h4 class="text-sm font-black text-slate-800">${monthNames[month]} ${year}</h4>
-                            <span class="text-xs text-indigo-600 font-bold">Интерактивный месяц</span>
+                            <span class="text-xs text-indigo-600 font-bold">Нажмите на день для просмотра</span>
                         </div>
                         <div class="grid grid-cols-7 gap-2 text-center text-[10px] font-extrabold text-slate-400 uppercase">
                             <div>Пн</div><div>Вт</div><div>Ср</div><div>Чт</div><div>Пт</div><div>Сб</div><div>Вс</div>
                         </div>
-                        <div class="grid grid-cols-7 gap-2">
-                            ${daysHtml}
-                        </div>
+                        <div class="grid grid-cols-7 gap-2">${daysHtml}</div>
                     </div>
 
                     <div class="bg-white border border-indigo-100 p-5 rounded-3xl space-y-4 shadow-sm">
-                        <h4 class="text-xs font-black uppercase text-slate-400 tracking-wider">➕ Добавить задачу вручную</h4>
+                        <h4 class="text-xs font-black uppercase text-slate-400 tracking-wider">➕ Новая задача</h4>
                         <div class="flex flex-col md:flex-row gap-3">
                             <div class="relative flex-grow">
-                                <input type="text" id="task-title-input" placeholder="Например: Выучить билеты по физике" class="w-full px-4 py-3 rounded-2xl bg-slate-50 border border-slate-200 text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-indigo-500 pr-10">
-                                <button onclick="startVoiceRecognition()" title="Голосовой ввод" class="absolute right-3 top-2.5 text-indigo-600 hover:text-indigo-800 p-1">🎙️</button>
+                                <input type="text" id="task-title-input" placeholder="Название задачи..." class="w-full px-4 py-3 rounded-2xl bg-slate-50 border border-slate-200 text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-indigo-500">
                             </div>
                             <input type="date" id="task-date-input" class="px-4 py-3 rounded-2xl bg-slate-50 border border-slate-200 text-xs font-extrabold text-slate-700">
                             <button onclick="addNewTask()" class="bg-indigo-600 hover:bg-indigo-700 text-white font-extrabold px-6 py-3 rounded-2xl text-xs shadow-md glow-btn">Добавить</button>
@@ -383,24 +390,19 @@
 
                     <div class="space-y-3">
                         <div class="flex justify-between items-center">
-                            <h4 class="text-xs font-black uppercase text-slate-400 tracking-wider">📋 Активные задачи</h4>
-                            <span class="text-xs text-indigo-600 font-extrabold">${studentTasks.filter(t => !t.done).length} задач</span>
+                            <h4 class="text-xs font-black uppercase text-slate-400 tracking-wider">📋 Все задачи</h4>
+                            <span class="text-xs text-indigo-600 font-extrabold">${studentTasks.filter(t => !t.done).length} активных</span>
                         </div>
-                        <div class="space-y-2 max-h-60 overflow-y-auto pr-1">
-                            ${studentTasks.length === 0 ? '<p class="text-xs text-slate-400 text-center py-6">Задач пока нет.</p>' : tasksListHtml}
-                        </div>
+                        <div class="space-y-2 max-h-60 overflow-y-auto pr-1">${tasksListHtml}</div>
                     </div>
 
-                    <!-- ИИ ПЛАНИРОВЩИК -->
                     <div class="bg-gradient-to-br from-indigo-900 to-purple-950 text-white p-6 rounded-3xl space-y-4 shadow-xl">
                         <div class="flex items-center justify-between">
-                            <span class="text-xs font-black text-indigo-300 uppercase tracking-widest flex items-center gap-2">
-                                <span>🤖 Полный ИИ-Планировщик графика</span>
-                            </span>
+                            <span class="text-xs font-black text-indigo-300 uppercase tracking-widest">🤖 Авто-Планировщик ИИ</span>
                         </div>
-                        <p class="text-xs text-slate-300">Попросите ИИ проанализировать ваши задачи и составить детальное расписание.</p>
+                        <p class="text-xs text-slate-300">ИИ составит расписание и автоматически расставит задачи по датам в календарь с краткой информацией.</p>
                         <div class="flex gap-2">
-                            <input type="text" id="ai-planner-query" placeholder="Например: Распредели мои задачи на эту неделю по дням" class="flex-grow px-4 py-3 rounded-2xl bg-white/10 border border-white/20 text-white text-xs placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-400">
+                            <input type="text" id="ai-planner-query" placeholder="Например: Распредели мои экзамены и лабы на эту неделю" class="flex-grow px-4 py-3 rounded-2xl bg-white/10 border border-white/20 text-white text-xs placeholder:text-slate-400 focus:outline-none">
                             <button onclick="askAIPlanner()" class="bg-gradient-to-r from-amber-400 to-yellow-500 text-slate-900 font-black px-6 py-3 rounded-2xl text-xs glow-btn">Запустить ИИ</button>
                         </div>
                         <div id="ai-planner-response" class="hidden p-4 rounded-2xl bg-white/10 border border-white/15 text-xs text-slate-200 leading-relaxed whitespace-pre-wrap"></div>
@@ -409,9 +411,26 @@
             `;
         }
 
-        function filterTasksByDate(dateStr) {
-            document.getElementById('task-date-input').value = dateStr;
-            alert('Выбрана дата: ' + dateStr + '. Теперь вы можете добавить задачу на этот день!');
+        function showDayTasks(dateStr, dayNum) {
+            const modal = document.getElementById('day-modal');
+            document.getElementById('day-modal-title').textContent = `Задачи на ${dayNum}-е число (${dateStr})`;
+            const dayTasks = studentTasks.filter(t => t.date === dateStr);
+            
+            let html = dayTasks.length === 0 ? '<p class="text-xs text-slate-400 text-center py-4">На этот день задач нет.</p>' :
+                dayTasks.map(t => `
+                    <div class="p-3 bg-slate-50 border rounded-xl text-xs space-y-1">
+                        <div class="font-bold text-slate-800">${t.title}</div>
+                        <div class="text-slate-500">${t.desc || 'Нет дополнительной информации'}</div>
+                        <div class="text-[10px] text-indigo-600 font-extrabold">Статус: ${t.done ? 'Выполнено ✓' : 'В процессе'}</div>
+                    </div>
+                `).join('');
+            
+            document.getElementById('day-modal-tasks').innerHTML = html;
+            modal.classList.remove('hidden');
+        }
+
+        function closeDayModal() {
+            document.getElementById('day-modal').classList.add('hidden');
         }
 
         function addNewTask() {
@@ -422,6 +441,7 @@
                 id: Date.now(),
                 title: title,
                 date: date || new Date().toISOString().split('T')[0],
+                desc: 'Создано вручную студентом',
                 done: false,
                 xp: 50
             };
@@ -467,38 +487,46 @@
             setTimeout(() => { popup.classList.add('hidden'); }, 1200);
         }
 
-        function startVoiceRecognition() {
-            const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-            if (!SpeechRecognition) return alert('Голосовой ввод не поддерживается');
-            const recognition = new SpeechRecognition();
-            recognition.lang = 'ru-RU';
-            recognition.start();
-            recognition.onresult = (event) => {
-                document.getElementById('task-title-input').value = event.results[0][0].transcript;
-            };
-        }
-
         async function askAIPlanner() {
             if (!currentUser) return checkAuth();
             const query = document.getElementById('ai-planner-query').value.trim();
             const respDiv = document.getElementById('ai-planner-response');
             respDiv.classList.remove('hidden');
-            respDiv.innerHTML = '⏳ ИИ составляет ваш персональный план...';
-
-            let contextText = `Задачи студента:\n` + studentTasks.map(t => `- [${t.done ? 'Выполнено' : 'Активно'}] ${t.title} (Дедлайн: ${t.date})`).join('\n') + `\n\nЗапрос: ${query || 'Составь идеальный график'}`;
+            respDiv.innerHTML = '⏳ ИИ распределяет задачи в календарь...';
 
             const formData = new FormData();
             formData.append("doc_id", "planner");
             formData.append("action", "planner");
             formData.append("user_id", currentUser.user_id);
             formData.append("lang", selectedLang);
-            formData.append("custom_prompt", contextText);
+            formData.append("custom_prompt", query || 'Спланируй мои задачи на неделю');
 
             try {
                 const res = await fetch('/generate', { method: 'POST', body: formData });
                 const data = await res.json();
                 if (res.ok) {
                     respDiv.innerHTML = data.result;
+                    
+                    // Попытка извлечь JSON с задачами от ИИ для автоматического добавления в календарь
+                    try {
+                        let jsonMatch = data.result.match(/```json([\s\S]*?)```/);
+                        if (jsonMatch) {
+                            let aiTasks = JSON.parse(jsonMatch[1].trim());
+                            aiTasks.forEach(at => {
+                                studentTasks.unshift({
+                                    id: Date.now() + Math.random(),
+                                    title: at.title,
+                                    date: at.date || new Date().toISOString().split('T')[0],
+                                    desc: at.desc || 'Сгенерировано ИИ',
+                                    done: false,
+                                    xp: 50
+                                });
+                            });
+                            localStorage.setItem('studyai_tasks', JSON.stringify(studentTasks));
+                            setTimeout(() => openPlannerView(), 1500);
+                        }
+                    } catch (e) {}
+
                     renderMath(respDiv);
                 } else {
                     respDiv.innerHTML = '❌ Ошибка: ' + data.error;
@@ -564,7 +592,7 @@
                 let optKey = String.fromCharCode(65 + idx);
                 let isSelected = selectedOpt === optKey;
                 return `
-                    <button onclick="selectQuizAnswer('${optKey}')" class="w-full text-left p-4 rounded-2xl border-2 transition-all flex items-center justify-between ${isSelected ? 'border-indigo-600 bg-indigo-50/80 text-indigo-900 shadow-md font-extrabold' : 'border-slate-100 bg-slate-50/60 hover:bg-slate-100 text-slate-700 font-semibold'}">
+                    <button onclick="selectQuizAnswer('${optKey}')" class="w-full text-left p-4 rounded-2xl border-2 transition-all flex items-center justify-between ${isSelected ? 'border-indigo-600 bg-indigo-50/80 text-indigo-950 shadow-md font-extrabold' : 'border-slate-100 bg-slate-50/60 hover:bg-slate-100 text-slate-700 font-semibold'}">
                         <span class="text-xs md:text-sm">${opt}</span>
                         <div class="w-6 h-6 rounded-full border-2 flex items-center justify-center text-xs ${isSelected ? 'border-indigo-600 bg-indigo-600 text-white font-bold' : 'border-slate-300'}">${isSelected ? '✓' : ''}</div>
                     </button>
