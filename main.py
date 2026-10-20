@@ -14,7 +14,6 @@ from supabase import create_client, Client
 
 app = FastAPI(title="StudyAI Platform")
 
-# Секретный ключ для входа в админ-панель
 ADMIN_SECRET = os.getenv("ADMIN_SECRET", "admin12345")
 
 DEEPSEEK_API_KEY = os.getenv("DEEPSEEK_API_KEY", "")
@@ -43,8 +42,6 @@ def send_telegram_message(chat_id: str, text: str):
     except Exception:
         return False
 
-# --- СТРАНИЦЫ САЙТА ---
-
 @app.get("/", response_class=FileResponse)
 async def read_root():
     return "templates/index.html"
@@ -54,7 +51,6 @@ async def read_admin():
     return "templates/admin.html"
 
 # --- АДМИН-ПАНЕЛЬ API ---
-
 @app.get("/api/admin/users")
 async def admin_get_users(admin_key: str):
     if admin_key != ADMIN_SECRET:
@@ -78,14 +74,12 @@ async def admin_toggle_subscription(
     try:
         if not supabase:
             return JSONResponse({"error": "База данных не подключена"}, status_code=500)
-        
         supabase.table("users").update({"is_subscribed": status}).eq("id", user_id).execute()
         return {"success": True, "user_id": user_id, "is_subscribed": status}
     except Exception as e:
         return JSONResponse({"error": str(e)}, status_code=500)
 
 # --- АВТОРИЗАЦИЯ ТЕЛЕГРАМ ---
-
 @app.post("/api/telegram/webhook")
 async def telegram_webhook(request: Request):
     try:
@@ -122,7 +116,6 @@ async def verify_code(code: str = Form(...)):
         
         record = res.data[0]
         tg_id = record["tg_id"]
-        
         supabase.table("auth_codes").delete().eq("code", code_clean).execute()
         
         unique_username = f"tg_{tg_id}"
@@ -207,55 +200,45 @@ async def generate_content(
     if action == "planner":
         prompt_text = f"""{lang_instr}
 Ты персональный ИИ-ассистент по тайм-менеджменту и планированию для студентов.
-Запрос студента или контекст его задач:
+Контекст и задачи студента:
 "{custom_prompt}"
 
-Сформируй четкий, мотивирующий ответ, отчет по задачам или рекомендации по перепланированию графика."""
+Составь оптимальный, структурированный календарный план выполнения задач, дай мотивационные рекомендации и распиши по дням."""
     elif action == "quiz":
         prompt_text = f"""{lang_instr}
 Составь СТРОГО 20 УНИКАЛЬНЫХ тестовых вопросов (с номера {start_q} по номер {end_q}).
 Верни ответ СТРОГО в формате валидного JSON-массива без какого-либо дополнительного текста или тегов markdown!
-
 Формат каждого элемента JSON:
 {{
   "id": 1,
   "question": "Текст вопроса...",
-  "options": [
-    "A) Вариант 1",
-    "B) Вариант 2",
-    "C) Вариант 3",
-    "D) Вариант 4"
-  ],
+  "options": ["A) Вариант 1", "B) Вариант 2", "C) Вариант 3", "D) Вариант 4"],
   "answer": "A",
-  "explanation": "Краткое понятное объяснение, почему именно этот вариант правильный."
+  "explanation": "Объяснение."
 }}"""
     elif action == "flashcards":
         prompt_text = f"""{lang_instr}
-Создай 10 ИНТЕРАКТИВНЫХ УЧЕБНЫХ КАРТОЧЕК. Ответ должен быть четким и кратким пояснением, НЕ ПОВТОРЯЙ формулировку вопроса в ответе!
-Каждую карточку оформляй СТРОГО по шаблону:
-
+Создай 10 ИНТЕРАКТИВНЫХ УЧЕБНЫХ КАРТОЧЕК. Оформляй СТРОГО по шаблону:
 ### Карточка X
-**Вопрос:** [Только суть вопроса]
-**Ответ:** [Краткий, четкий и точный ответ без дублирования вопроса]
+**Вопрос:** [...]
+**Ответ:** [...]
 ---"""
     elif action == "summary":
-        prompt_text = f"{lang_instr}\nСделай качественный структурированный конспект с формулами ($...$) и главными терминами."
+        prompt_text = f"{lang_instr}\nСделай качественный конспект с формулами ($...$) и главными терминами."
     else:
-        prompt_text = f"{lang_instr}\nОбъясни сложный материал максимально простыми словами с яркими аналогиями."
+        prompt_text = f"{lang_instr}\nОбъясни материал простыми словами."
 
     try:
         content_text = (user_text or doc_id)[:7000] if action != "planner" else custom_prompt
-
         response = ai_client.chat.completions.create(
             model="deepseek-chat",
             messages=[
-                {"role": "system", "content": "Ты экспертный ИИ-наставник и органайзер для студентов."},
+                {"role": "system", "content": "Ты экспертный ИИ-наставник и органайзер."},
                 {"role": "user", "content": f"{prompt_text}\n\nКонтекст:\n{content_text}"}
             ],
             temperature=0.3
         )
         res_text = response.choices[0].message.content
-
         new_tokens = tokens if is_sub else max(0, tokens - 1)
         if supabase:
             supabase.table("users").update({"tokens": new_tokens}).eq("id", user_id).execute()
@@ -275,7 +258,7 @@ async def add_score(user_id: int = Form(...), points: int = Form(50)):
                 new_score = current_score + points
                 supabase.table("users").update({"score": new_score}).eq("id", user_id).execute()
                 return {"success": True, "new_score": new_score}
-        return {"success": True, "new_score": 50}
+        return {"success": True, "new_score": points}
     except Exception as e:
         return JSONResponse({"error": str(e)}, status_code=500)
 
