@@ -19,7 +19,6 @@
         @keyframes float { 0%, 100% { transform: translateY(0px); } 50% { transform: translateY(-6px); } }
         .animate-float { animation: float 4s ease-in-out infinite; }
         
-        /* 3D Переворачивающиеся Карточки */
         .perspective-1000 { perspective: 1000px; }
         .flashcard-inner {
             position: relative; width: 100%; min-height: 280px;
@@ -41,7 +40,6 @@
             to { opacity: 1; transform: translateX(0) scale(1); }
         }
 
-        /* Анимация летящих баллов */
         @keyframes scorePop {
             0% { opacity: 0; transform: translateY(10px) scale(0.8); }
             50% { opacity: 1; transform: translateY(-15px) scale(1.2); }
@@ -55,7 +53,6 @@
 </head>
 <body class="bg-gradient-to-tr from-indigo-50 via-purple-50 to-pink-50 text-slate-800 min-h-screen flex flex-col selection:bg-indigo-600 selection:text-white">
 
-    <!-- Всплывающий индикатор полученных баллов -->
     <div id="score-popup" class="fixed top-6 right-6 z-50 pointer-events-none hidden">
         <div class="bg-gradient-to-r from-amber-400 to-yellow-500 text-slate-900 font-black px-5 py-3 rounded-2xl shadow-xl flex items-center space-x-2 border border-yellow-300 score-anim">
             <span class="text-xl">⭐</span>
@@ -79,7 +76,6 @@
                     </select>
                 </div>
 
-                <!-- 1. Материал -->
                 <div class="space-y-2.5">
                     <h2 class="text-xs font-extrabold text-slate-400 uppercase tracking-wider" id="lbl-step1">1. Материал</h2>
                     <input type="file" id="pdf-file" accept=".pdf" class="w-full text-xs text-slate-500 file:mr-2 file:py-2 file:px-3 file:rounded-xl file:border-0 file:text-xs file:font-bold file:bg-indigo-600 file:text-white hover:file:bg-indigo-500 cursor-pointer bg-slate-50 border border-slate-200 rounded-2xl transition">
@@ -89,7 +85,6 @@
                     </button>
                 </div>
 
-                <!-- 2. Режимы обучения -->
                 <div class="space-y-2">
                     <h2 class="text-xs font-extrabold text-slate-400 uppercase tracking-wider" id="lbl-step2">2. Режимы обучения</h2>
                     <button onclick="generate('quiz', 1)" class="w-full text-left p-3 rounded-xl bg-slate-50 border border-slate-200 hover:border-indigo-400 hover:bg-indigo-50 text-xs font-bold flex items-center justify-between transition">
@@ -106,7 +101,7 @@
                     </button>
                 </div>
 
-                <!-- 3. Календарь и Планер -->
+                <!-- 3. Календарь и ИИ-Органайзер -->
                 <div class="space-y-2 pt-1 border-t border-slate-100">
                     <h2 class="text-xs font-extrabold text-slate-400 uppercase tracking-wider">3. Органайзер</h2>
                     <button onclick="openPlannerView()" class="w-full text-left p-3.5 rounded-xl bg-gradient-to-r from-amber-500/10 to-orange-500/10 border border-amber-300 hover:border-amber-500 text-amber-900 text-xs font-black flex items-center justify-between transition shadow-sm">
@@ -242,7 +237,6 @@
         let quizCurrentIndex = 0;
         let userAnswers = {};
 
-        // Список задач планера
         let studentTasks = JSON.parse(localStorage.getItem('studyai_tasks')) || [
             { id: 1, title: 'Сдать Лабораторную №2 по Высшей математике', date: '2026-10-22', done: false, xp: 50 },
             { id: 2, title: 'Подготовиться к тесту по C++', date: '2026-10-25', done: false, xp: 50 }
@@ -339,14 +333,14 @@
             }
         }
 
-        // --- КАЛЕНДАРЬ И ПЛАНЕР С ГОЛОСОМ И ИИ-КОНСОЛЬЮ ---
+        // --- КАЛЕНДАРЬ И ПЛАНЕР ---
         function openPlannerView() {
             const container = document.getElementById('result-container');
             renderPlannerHTML(container);
         }
 
         function renderPlannerHTML(container) {
-            let tasksListHtml = studentTasks.map((t, i) => `
+            let tasksListHtml = studentTasks.map((t) => `
                 <div class="flex items-center justify-between p-4 rounded-2xl border ${t.done ? 'bg-slate-50 border-slate-200 opacity-60' : 'bg-white border-indigo-100 shadow-sm'} transition">
                     <div class="flex items-center space-x-3">
                         <button onclick="toggleTask(${t.id})" class="w-6 h-6 rounded-lg border-2 flex items-center justify-center transition ${t.done ? 'bg-emerald-500 border-emerald-500 text-white' : 'border-slate-300 hover:border-indigo-500'}">
@@ -366,7 +360,6 @@
 
             container.innerHTML = `
                 <div class="w-full space-y-6 text-left quiz-slide-enter">
-                    <!-- Заголовок Календаря -->
                     <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-gradient-to-r from-amber-500 to-orange-600 text-white p-6 rounded-3xl shadow-lg">
                         <div>
                             <span class="text-[10px] font-black uppercase tracking-widest text-amber-200">ИИ-Органайзер</span>
@@ -379,7 +372,6 @@
                         </div>
                     </div>
 
-                    <!-- Форма добавления задачи и голосовой ввод -->
                     <div class="bg-white border border-indigo-100 p-5 rounded-3xl space-y-4 shadow-sm">
                         <h4 class="text-xs font-black uppercase text-slate-400 tracking-wider">➕ Новое дело / Дедлайн</h4>
                         <div class="flex flex-col md:flex-row gap-3">
@@ -396,7 +388,6 @@
                         </div>
                     </div>
 
-                    <!-- Список дел -->
                     <div class="space-y-3">
                         <div class="flex justify-between items-center">
                             <h4 class="text-xs font-black uppercase text-slate-400 tracking-wider">📋 Вашу текущий список</h4>
@@ -407,7 +398,6 @@
                         </div>
                     </div>
 
-                    <!-- ИИ-Консоль захода на отчет / перепланирование -->
                     <div class="bg-gradient-to-br from-indigo-900 to-purple-950 text-white p-6 rounded-3xl space-y-4 shadow-xl">
                         <div class="flex items-center justify-between">
                             <span class="text-xs font-black text-indigo-300 uppercase tracking-widest flex items-center gap-2">
@@ -482,7 +472,6 @@
             setTimeout(() => { popup.classList.add('hidden'); }, 1200);
         }
 
-        // Голосовой ввод распознавания речи
         function startVoiceRecognition() {
             const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
             if (!SpeechRecognition) return alert('Голосовой ввод не поддерживается вашим браузером');
@@ -496,7 +485,6 @@
             };
         }
 
-        // Запрос к ИИ-планеру
         async function askAIPlanner() {
             if (!currentUser) return checkAuth();
             const query = document.getElementById('ai-planner-query').value.trim();
@@ -527,7 +515,6 @@
             }
         }
 
-        // --- ГЕНЕРАЦИЯ ОСТАЛЬНЫХ РЕЖИМОВ ---
         async function generate(action, page = 1) {
             if (!currentUser) return checkAuth();
             currentPage = page;
@@ -670,7 +657,6 @@
             const total = quizQuestions.length;
             const percent = Math.round((score / total) * 100);
 
-            // Начисляем баллы за прохождение теста
             if (currentUser) {
                 const pointsGained = score * 10;
                 showScorePopup(`+${pointsGained} XP`);
