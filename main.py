@@ -75,7 +75,6 @@ async def admin_toggle_subscription(
         if not supabase:
             return JSONResponse({"error": "База данных не подключена"}, status_code=500)
         
-        # Исправлено: приведение к булевому типу и корректный апдейт в Supabase
         is_sub_bool = True if str(status).lower() in ["true", "1", "yes"] else False
         supabase.table("users").update({"is_subscribed": is_sub_bool}).eq("id", user_id).execute()
         return {"success": True, "user_id": user_id, "is_subscribed": is_sub_bool}
@@ -179,16 +178,24 @@ async def generate_content(
 ):
     try:
         if supabase:
+            # ПРЯМАЯ ПРОВЕРКА СТАТУСА В БАЗЕ ДАННЫХ ПРИ КАЖДОМ ЗАПРОСЕ
             u_res = supabase.table("users").select("*").eq("id", user_id).execute()
-            if not u_res.data: return JSONResponse({"error": "Пользователь не найден."}, status_code=401)
+            if not u_res.data: 
+                return JSONResponse({"error": "Пользователь не найден."}, status_code=401)
             user = u_res.data[0]
             tokens, is_sub = user.get("tokens", 0), user.get("is_subscribed", False)
+            
             if not is_sub and tokens <= 0:
-                return JSONResponse({"error": "PAYMENT_REQUIRED", "message": "Токены закончились! Оформите подписку за 500 ₸."}, status_code=402)
+                return JSONResponse({
+                    "error": "PAYMENT_REQUIRED", 
+                    "message": "Подписка не активна и токены закончились! Оформите подписку за 500 ₸.",
+                    "is_subscribed": False,
+                    "tokens_left": 0
+                }, status_code=402)
         else:
             tokens, is_sub = 3, True
     except Exception:
-        return JSONResponse({"error": "Ошибка проверки токенов"}, status_code=500)
+        return JSONResponse({"error": "Ошибка проверки профиля"}, status_code=500)
 
     user_text = active_documents.get(doc_id, "")
     lang_instr = {
@@ -206,10 +213,10 @@ async def generate_content(
 Контекст и задачи студента:
 "{custom_prompt}"
 
-Составь оптимальный календарный план, а также верни в самом конце структурированный блок в формате JSON для автоматического добавления задач в календарь:
+Составь текстовый отчет по графику. А В САМОМ КОНЦЕ ОТВЕТА ОБЯЗАТЕЛЬНО добавь JSON-блок с полным перераспределенным списком задач для календаря:
 ```json
 [
-  {{"title": "Название задачи", "date": "YYYY-MM-DD", "desc": "Краткая инфа о задаче"}}
+  {{"title": "Название задачи", "date": "YYYY-MM-DD", "desc": "Подробная информация и инструкция по выполнению задачи"}}
 ]
 ```"""
     elif action == "quiz":
@@ -248,6 +255,7 @@ async def generate_content(
         )
         res_text = response.choices[0].message.content
         new_tokens = tokens if is_sub else max(0, tokens - 1)
+        
         if supabase:
             supabase.table("users").update({"tokens": new_tokens}).eq("id", user_id).execute()
             supabase.table("saved_materials").insert({"user_id": user_id, "title": title, "content": res_text, "type": action}).execute()
@@ -285,7 +293,13 @@ async def get_user_saves(user_id: int):
         if supabase:
             saves = supabase.table("saved_materials").select("*").eq("user_id", user_id).order("id", desc=True).execute()
             user = supabase.table("users").select("*").eq("id", user_id).execute().data[0]
-            return {"username": user.get("username"), "score": user.get("score", 0), "tokens": user.get("tokens"), "is_subscribed": user.get("is_subscribed"), "saves": saves.data or []}
+            return {
+                "username": user.get("username"), 
+                "score": user.get("score", 0), 
+                "tokens": user.get("tokens"), 
+                "is_subscribed": user.get("is_subscribed", False), 
+                "saves": saves.data or []
+            }
         return {"username": "Студент", "score": 100, "tokens": 3, "is_subscribed": True, "saves": []}
     except Exception as e:
         return JSONResponse({"error": str(e)}, status_code=500)
