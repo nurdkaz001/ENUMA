@@ -40,6 +40,19 @@
             to { opacity: 1; transform: translateX(0) scale(1); }
         }
 
+        /* Анимации пролистывания месяца */
+        .slide-left { animation: slideLeft 0.35s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
+        @keyframes slideLeft {
+            from { opacity: 0; transform: translateX(30px) scale(0.97); }
+            to { opacity: 1; transform: translateX(0) scale(1); }
+        }
+
+        .slide-right { animation: slideRight 0.35s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
+        @keyframes slideRight {
+            from { opacity: 0; transform: translateX(-30px) scale(0.97); }
+            to { opacity: 1; transform: translateX(0) scale(1); }
+        }
+
         @keyframes scorePop {
             0% { opacity: 0; transform: translateY(10px) scale(0.8); }
             50% { opacity: 1; transform: translateY(-15px) scale(1.2); }
@@ -47,7 +60,7 @@
         }
         .score-anim { animation: scorePop 1.2s ease-out forwards; }
         .calendar-day { transition: all 0.2s ease; }
-        .calendar-day:hover { transform: translateY(-2px); }
+        .calendar-day:hover { transform: translateY(-3px) scale(1.02); }
 
         .otp-input { width: 45px; height: 55px; text-align: center; font-size: 1.5rem; font-weight: 800; border-radius: 1rem; border: 2px solid #e2e8f0; background: #f8fafc; transition: all 0.2s; }
         .otp-input:focus { border-color: #6366f1; background: #fff; outline: none; box-shadow: 0 0 10px rgba(99, 102, 241, 0.2); }
@@ -113,6 +126,9 @@
                     <button onclick="generate('simple', 1)" class="w-full text-left p-3 rounded-xl bg-slate-50 border border-slate-200 hover:border-emerald-400 hover:bg-emerald-50 text-xs font-bold flex items-center justify-between transition">
                         <span>💡 Простое объяснение</span> <span class="text-slate-400">→</span>
                     </button>
+                    <button onclick="openChatView()" class="w-full text-left p-3 rounded-xl bg-indigo-50 border border-indigo-200 hover:bg-indigo-100 text-indigo-950 text-xs font-extrabold flex items-center justify-between transition">
+                        <span>💬 ИИ-Чат по проекту</span> <span class="text-indigo-600">NEW</span>
+                    </button>
                 </div>
 
                 <div class="space-y-2 pt-1 border-t border-slate-100">
@@ -158,7 +174,7 @@
                 <div id="result-container" class="flex-grow flex flex-col justify-center items-center text-center py-12">
                     <div class="w-20 h-20 bg-indigo-50 text-indigo-600 rounded-3xl flex items-center justify-center text-3xl mb-4 shadow-inner">💡</div>
                     <h3 class="text-base font-bold text-slate-800 mb-1">Платформа готова!</h3>
-                    <p class="text-xs text-slate-400 max-w-xs">Загрузите PDF файл или введите тему слева, либо откройте «Календарь & ИИ-Планер».</p>
+                    <p class="text-xs text-slate-400 max-w-xs">Загрузите PDF файл, откройте «ИИ-Чат по проекту» или «Календарь & ИИ-Планер».</p>
                 </div>
             </div>
         </main>
@@ -251,17 +267,33 @@
         let quizCurrentIndex = 0;
         let userAnswers = {};
 
+        let calYear = new Date().getFullYear();
+        let calMonth = new Date().getMonth();
+        let slideDirection = 'slide-left';
+
         let studentTasks = JSON.parse(localStorage.getItem('studyai_tasks')) || [
             { id: 1, title: 'Лабораторная №2 по Высшей математике', date: '2026-10-22', desc: 'Сделать матрицы и детерминанты', done: false, xp: 50 },
             { id: 2, title: 'Подготовка к тесту по C++', date: '2026-10-25', desc: 'Прорешать задачи с указателями', done: false, xp: 50 }
         ];
 
-        function checkAuth() {
+        async function checkAuth() {
             if (!currentUser) {
                 document.getElementById('telegram-auth-modal').classList.remove('hidden');
             } else {
                 document.getElementById('telegram-auth-modal').classList.add('hidden');
                 document.getElementById('nav-username').textContent = currentUser.display_name || currentUser.username;
+                
+                try {
+                    const res = await fetch(`/api/user/${currentUser.user_id}/saves`);
+                    if (res.ok) {
+                        const data = await res.json();
+                        currentUser.is_subscribed = data.is_subscribed;
+                        currentUser.tokens = data.tokens;
+                        currentUser.score = data.score;
+                        localStorage.setItem('studyai_user', JSON.stringify(currentUser));
+                    }
+                } catch (e) {}
+
                 document.getElementById('user-tokens').textContent = currentUser.is_subscribed ? '∞' : currentUser.tokens;
                 document.getElementById('user-score').textContent = currentUser.score || 0;
             }
@@ -302,20 +334,99 @@
             }
         }
 
-        // --- КАЛЕНДАРЬ И ИИ-ПЛАНЕР ---
+        // --- ЧАТ-БОТ ПО КОНСПЕКТАМ ---
+        function openChatView() {
+            const container = document.getElementById('result-container');
+            container.innerHTML = `
+                <div class="w-full flex flex-col h-[65vh] text-left quiz-slide-enter">
+                    <div class="border-b pb-3 mb-3 flex items-center justify-between">
+                        <div>
+                            <h3 class="text-sm font-extrabold text-slate-900">💬 ИИ-Консультант по проекту</h3>
+                            <p class="text-[11px] text-slate-400">Задавайте любые вопросы по сгенерированным конспектам или загруженным PDF</p>
+                        </div>
+                    </div>
+                    <div id="chat-messages" class="flex-grow overflow-y-auto space-y-3 p-3 bg-slate-50/70 border border-slate-200/80 rounded-2xl mb-3 text-xs">
+                        <div class="p-3 rounded-2xl bg-indigo-600 text-white max-w-[85%] self-start shadow-sm">
+                            👋 Привет! Я твой ИИ-наставник. Задай мне любой вопрос по текущему проекту или лекции!
+                        </div>
+                    </div>
+                    <div class="flex gap-2">
+                        <input type="text" id="chat-input" onkeydown="if(event.key==='Enter') sendChatMessage()" placeholder="Введите вопрос по проекту..." class="flex-grow px-4 py-3 rounded-2xl bg-slate-50 border border-slate-200 text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                        <button onclick="sendChatMessage()" class="bg-indigo-600 hover:bg-indigo-700 text-white font-extrabold px-5 py-3 rounded-2xl text-xs glow-btn">Отправить</button>
+                    </div>
+                </div>
+            `;
+        }
+
+        async function sendChatMessage() {
+            if (!currentUser) return checkAuth();
+            const input = document.getElementById('chat-input');
+            const msg = input.value.trim();
+            if (!msg) return;
+
+            const chatBox = document.getElementById('chat-messages');
+            chatBox.innerHTML += `<div class="p-3 rounded-2xl bg-white border border-slate-200 text-slate-800 max-w-[85%] ml-auto shadow-sm font-semibold">${msg}</div>`;
+            input.value = '';
+            chatBox.scrollTop = chatBox.scrollHeight;
+
+            const loadingId = 'loading-' + Date.now();
+            chatBox.innerHTML += `<div id="${loadingId}" class="p-3 rounded-2xl bg-indigo-600 text-white max-w-[85%] self-start shadow-sm animate-pulse">⏳ ИИ печатает...</div>`;
+            chatBox.scrollTop = chatBox.scrollHeight;
+
+            const formData = new FormData();
+            formData.append('user_id', currentUser.user_id);
+            formData.append('message', msg);
+            formData.append('doc_id', currentDocId || 'default');
+            formData.append('lang', selectedLang);
+
+            try {
+                const res = await fetch('/api/chat', { method: 'POST', body: formData });
+                const data = await res.json();
+                document.getElementById(loadingId).remove();
+
+                if (res.ok) {
+                    currentUser.tokens = data.tokens_left;
+                    currentUser.is_subscribed = data.is_subscribed;
+                    localStorage.setItem('studyai_user', JSON.stringify(currentUser));
+                    checkAuth();
+
+                    chatBox.innerHTML += `<div class="p-3.5 rounded-2xl bg-indigo-600 text-white max-w-[85%] self-start shadow-sm leading-relaxed">${data.reply}</div>`;
+                    renderMath(chatBox);
+                } else if (data.error === "PAYMENT_REQUIRED") {
+                    openPayModal();
+                } else alert(data.error);
+            } catch (e) {
+                document.getElementById(loadingId).remove();
+                chatBox.innerHTML += `<div class="p-3 rounded-2xl bg-rose-50 border border-rose-200 text-rose-700 max-w-[85%] self-start">❌ Ошибка соединения</div>`;
+            }
+            chatBox.scrollTop = chatBox.scrollHeight;
+        }
+
+        // --- ИНТЕРАКТИВНЫЙ КАЛЕНДАРЬ И ПЕРЕКЛЮЧЕНИЕ МЕСЯЦЕВ С АНИМАЦИЕЙ ---
         function openPlannerView() {
             const container = document.getElementById('result-container');
             renderAdvancedCalendar(container);
         }
 
+        function changeCalendarMonth(delta) {
+            slideDirection = delta > 0 ? 'slide-left' : 'slide-right';
+            calMonth += delta;
+            if (calMonth > 11) {
+                calMonth = 0;
+                calYear++;
+            } else if (calMonth < 0) {
+                calMonth = 11;
+                calYear--;
+            }
+            openPlannerView();
+        }
+
         function renderAdvancedCalendar(container) {
             const now = new Date();
-            const year = now.getFullYear();
-            const month = now.getMonth();
             const monthNames = ["Январь", "Февраль", "Март", "Апрель", "Май", "Июнь", "Июль", "Август", "Сентябрь", "Октябрь", "Ноябрь", "Декабрь"];
             
-            const firstDayIndex = new Date(year, month, 1).getDay();
-            const totalDays = new Date(year, month + 1, 0).getDate();
+            const firstDayIndex = new Date(calYear, calMonth, 1).getDay();
+            const totalDays = new Date(calYear, calMonth + 1, 0).getDate();
 
             let daysHtml = '';
             for (let i = 1; i < (firstDayIndex === 0 ? 7 : firstDayIndex); i++) {
@@ -323,14 +434,14 @@
             }
 
             for (let day = 1; day <= totalDays; day++) {
-                let dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+                let dateStr = `${calYear}-${String(calMonth + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
                 let dayTasks = studentTasks.filter(t => t.date === dateStr);
-                let isToday = day === now.getDate();
+                let isToday = (day === now.getDate() && calMonth === now.getMonth() && calYear === now.getFullYear());
 
                 daysHtml += `
-                    <div onclick="showDayTasks('${dateStr}', ${day})" class="calendar-day p-3 rounded-2xl border text-center cursor-pointer transition flex flex-col items-center justify-center relative ${isToday ? 'bg-indigo-600 text-white font-black shadow-lg' : 'bg-slate-50 border-slate-200 hover:border-indigo-400 hover:bg-indigo-50/50'}">
+                    <div onclick="showDayTasks('${dateStr}', ${day})" class="calendar-day p-3 rounded-2xl border text-center cursor-pointer transition flex flex-col items-center justify-center relative ${isToday ? 'bg-indigo-600 text-white font-black shadow-lg shadow-indigo-500/30' : 'bg-slate-50 border-slate-200 hover:border-indigo-400 hover:bg-indigo-50/50'}">
                         <span class="text-xs font-extrabold">${day}</span>
-                        ${dayTasks.length > 0 ? `<span class="absolute top-1 right-1 w-4 h-4 bg-amber-500 text-white text-[9px] font-bold rounded-full flex items-center justify-center">${dayTasks.length}</span>` : ''}
+                        ${dayTasks.length > 0 ? `<span class="absolute top-1 right-1 w-4 h-4 bg-amber-500 text-white text-[9px] font-bold rounded-full flex items-center justify-center shadow-sm">${dayTasks.length}</span>` : ''}
                     </div>
                 `;
             }
@@ -360,7 +471,7 @@
                         <div>
                             <span class="text-[10px] font-black uppercase tracking-widest text-amber-200">ИИ-Календарь & Расписание</span>
                             <h3 class="text-xl font-black">📅 Полный Календарь Дедлайнов</h3>
-                            <p class="text-xs text-amber-100 mt-1">Кликните по любому дню, чтобы открыть мини-окно с подробными задачами от ИИ!</p>
+                            <p class="text-xs text-amber-100 mt-1">Переключайте месяцы стрелками. Нажмите на день, чтобы просмотреть задачи!</p>
                         </div>
                         <div class="bg-white/20 backdrop-blur-md px-4 py-3 rounded-2xl text-center border border-white/30">
                             <span class="text-xs text-amber-100 font-bold block">Ваш счет XP</span>
@@ -368,15 +479,22 @@
                         </div>
                     </div>
 
+                    <!-- ВИЗУАЛЬНЫЙ КАЛЕНДАРЬ С КНОПКАМИ ПЕРЕКЛЮЧЕНИЯ МЕСЯЦЕВ -->
                     <div class="bg-white border border-indigo-100 p-6 rounded-3xl shadow-sm space-y-4">
-                        <div class="flex justify-between items-center">
-                            <h4 class="text-sm font-black text-slate-800">${monthNames[month]} ${year}</h4>
-                            <span class="text-xs text-indigo-600 font-bold">Нажмите на день для просмотра</span>
+                        <div class="flex justify-between items-center border-b pb-3 border-slate-100">
+                            <div class="flex items-center space-x-3">
+                                <button onclick="changeCalendarMonth(-1)" class="w-8 h-8 rounded-xl bg-slate-100 hover:bg-indigo-600 hover:text-white font-black text-xs transition flex items-center justify-center">←</button>
+                                <h4 class="text-base font-black text-slate-800">${monthNames[calMonth]} ${calYear}</h4>
+                                <button onclick="changeCalendarMonth(1)" class="w-8 h-8 rounded-xl bg-slate-100 hover:bg-indigo-600 hover:text-white font-black text-xs transition flex items-center justify-center">→</button>
+                            </div>
+                            <span class="text-xs text-indigo-600 font-extrabold bg-indigo-50 px-3 py-1 rounded-full border border-indigo-100">Нажмите на день для деталей</span>
                         </div>
+                        
                         <div class="grid grid-cols-7 gap-2 text-center text-[10px] font-extrabold text-slate-400 uppercase">
                             <div>Пн</div><div>Вт</div><div>Ср</div><div>Чт</div><div>Пт</div><div>Сб</div><div>Вс</div>
                         </div>
-                        <div class="grid grid-cols-7 gap-2">${daysHtml}</div>
+                        
+                        <div class="grid grid-cols-7 gap-2 ${slideDirection}">${daysHtml}</div>
                     </div>
 
                     <div class="bg-white border border-indigo-100 p-5 rounded-3xl space-y-4 shadow-sm">
@@ -515,12 +633,11 @@
 
                     respDiv.innerHTML = data.result;
                     
-                    // ПЕРЕНОС ЗАДАЧ В КАЛЕНДАРЬ НА ОСНОВЕ ОБОСНОВАНИЯ ИИ
                     try {
                         let jsonMatch = data.result.match(/```json([\s\S]*?)```/);
                         if (jsonMatch) {
                             let aiTasks = JSON.parse(jsonMatch[1].trim());
-                            studentTasks = []; // Очищаем старый список и перезаписываем новыми задачами от ИИ
+                            studentTasks = [];
                             aiTasks.forEach((at, index) => {
                                 studentTasks.push({
                                     id: Date.now() + index,
@@ -534,7 +651,7 @@
                             localStorage.setItem('studyai_tasks', JSON.stringify(studentTasks));
                             setTimeout(() => openPlannerView(), 1200);
                         }
-                    } catch (e) { console.log('Ошибка парсинга JSON от ИИ', e); }
+                    } catch (e) {}
 
                     renderMath(respDiv);
                 } else if (data.error === "PAYMENT_REQUIRED") {
@@ -761,7 +878,6 @@
         async function openCabinet() {
             document.getElementById('cabinet-modal').classList.remove('hidden');
             
-            // Синхронизация статуса с сервером
             try {
                 const res = await fetch(`/api/user/${currentUser.user_id}/saves`);
                 const data = await res.json();
