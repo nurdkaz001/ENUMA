@@ -44,6 +44,30 @@ def send_telegram_message(chat_id: str, text: str):
     except Exception:
         return False
 
+# --- ФОНОВЫЙ ПЛАНИРОВЩИК ДЛЯ АВТО-УВЕДОМЛЕНИЙ В ДЕНЬ ДЕДЛАЙНА ---
+async def background_reminder_checker():
+    while True:
+        try:
+            if supabase:
+                today_str = datetime.now().strftime("%Y-%m-%d")
+                # Ищем невыполненные задачи на сегодня
+                tasks_res = supabase.table("user_tasks").select("*").eq("date", today_str).eq("notified", False).execute()
+                if tasks_res.data:
+                    for task in tasks_res.data:
+                        tg_id = task.get("tg_id")
+                        title = task.get("title", "Учебная задача")
+                        if tg_id:
+                            msg = f"🔔 *НАПОМИНАНИЕ НА СЕГОДНЯ!*\n\n📌 Задача: *{title}*\n📅 Дата: `{today_str}`\n\nПриступайте к выполнению прямо сейчас в StudyAI Hub!"
+                            if send_telegram_message(str(tg_id), msg):
+                                supabase.table("user_tasks").update({"notified": True}).eq("id", task["id"]).execute()
+        except Exception as e:
+            print("Background reminder error:", e)
+        await asyncio.sleep(3600) # Проверка каждый час
+
+@app.on_event("startup")
+async def startup_event():
+    asyncio.create_task(background_reminder_checker())
+
 @app.get("/", response_class=FileResponse)
 async def read_root():
     return "templates/index.html"
@@ -88,13 +112,29 @@ async def admin_toggle_subscription(
 async def send_task_reminder(
     chat_id: str = Form(...),
     task_title: str = Form(...),
-    task_date: str = Form(...)
+    task_date: str = Form(...),
+    user_id: int = Form(0)
 ):
-    text = f"⏰ *Напоминание от StudyAI Hub*\n\nУ вас запланирована задача:\n📌 *{task_title}*\n📅 Дата: `{task_date}`\n\nНе забудьте выполнить её вовремя!"
+    # 1. Мгновенное подтверждение в Telegram
+    text = f"✅ *Напоминание успешно запланировано!*\n\n📌 Задача: *{task_title}*\n📅 Дата дедлайна: `{task_date}`\n\nМы пришлем вам повторное уведомление прямо в день выполнения!"
     success = send_telegram_message(chat_id, text)
+    
+    # 2. Сохранение задачи в базу для фоновой проверки
+    try:
+        if supabase and user_id:
+            supabase.table("user_tasks").insert({
+                "user_id": user_id,
+                "tg_id": str(chat_id),
+                "title": task_title,
+                "date": task_date,
+                "notified": False
+            }).execute()
+    except Exception:
+        pass
+
     if success:
-        return {"success": True, "message": "Напоминание успешно отправлено в Telegram!"}
-    return JSONResponse({"error": "Не удалось отправить сообщение. Проверьте токен бота."}, status_code=400)
+        return {"success": True, "message": "Напоминание отправлено в Telegram!"}
+    return JSONResponse({"error": "Не удалось отправить сообщение."}, status_code=400)
 
 # --- ЧАТ-БОТ API ---
 @app.post("/api/chat")
