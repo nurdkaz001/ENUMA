@@ -83,7 +83,7 @@
                 <h3 id="day-modal-title" class="text-base font-extrabold text-slate-900">Задачи на день</h3>
             </div>
             <div id="day-modal-tasks" class="space-y-3 max-h-64 overflow-y-auto pr-1"></div>
-            <button onclick="closeDayModal()" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white py-3 rounded-2xl text-xs font-extrabold shadow-md transition">Закрыть</button>
+            <button onclick="closeDayModal()" id="btn-modal-close" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white py-3 rounded-2xl text-xs font-extrabold shadow-md transition">Закрыть</button>
         </div>
     </div>
 
@@ -103,37 +103,37 @@
                 </div>
 
                 <div class="space-y-2.5">
-                    <h2 class="text-xs font-extrabold text-slate-400 uppercase tracking-wider">1. Материал</h2>
+                    <h2 id="lbl-sec-1" class="text-xs font-extrabold text-slate-400 uppercase tracking-wider">1. Материал</h2>
                     <input type="file" id="pdf-file" accept=".pdf" class="w-full text-xs text-slate-500 file:mr-2 file:py-2 file:px-3 file:rounded-xl file:border-0 file:text-xs file:font-bold file:bg-indigo-600 file:text-white hover:file:bg-indigo-500 cursor-pointer bg-slate-50 border border-slate-200 rounded-2xl transition">
                     <input type="text" id="topic-input" placeholder="Или тема (напр: Алгебра)" class="w-full px-4 py-2.5 rounded-2xl bg-slate-50 border border-slate-200 text-slate-800 text-xs font-semibold">
-                    <button onclick="uploadMaterial()" class="w-full bg-gradient-to-r from-indigo-600 to-purple-600 text-white font-extrabold py-3 rounded-2xl shadow-lg glow-btn text-xs">
+                    <button onclick="uploadMaterial()" id="btn-upload" class="w-full bg-gradient-to-r from-indigo-600 to-purple-600 text-white font-extrabold py-3 rounded-2xl shadow-lg glow-btn text-xs">
                         🚀 Активировать ИИ
                     </button>
                 </div>
 
                 <div class="space-y-2">
-                    <h2 class="text-xs font-extrabold text-slate-400 uppercase tracking-wider">2. Режимы обучения</h2>
+                    <h2 id="lbl-sec-2" class="text-xs font-extrabold text-slate-400 uppercase tracking-wider">2. Режимы обучения</h2>
                     <button onclick="generate('quiz', 1)" class="w-full text-left p-3 rounded-xl bg-slate-50 border border-slate-200 hover:border-indigo-400 hover:bg-indigo-50 text-xs font-bold flex items-center justify-between transition">
-                        <span>🎯 Интерактивный тест (20)</span> <span class="text-slate-400">→</span>
+                        <span id="btn-mode-quiz">🎯 Интерактивный тест (20)</span> <span class="text-slate-400">→</span>
                     </button>
                     <button onclick="generate('flashcards', 1)" class="w-full text-left p-3 rounded-xl bg-slate-50 border border-slate-200 hover:border-pink-400 hover:bg-pink-50 text-xs font-bold flex items-center justify-between transition">
-                        <span>🃏 Умные карточки</span> <span class="text-slate-400">→</span>
+                        <span id="btn-mode-cards">🃏 Умные карточки</span> <span class="text-slate-400">→</span>
                     </button>
                     <button onclick="generate('summary', 1)" class="w-full text-left p-3 rounded-xl bg-slate-50 border border-slate-200 hover:border-purple-400 hover:bg-purple-50 text-xs font-bold flex items-center justify-between transition">
-                        <span>📝 Краткий конспект</span> <span class="text-slate-400">→</span>
+                        <span id="btn-mode-summary">📝 Краткий конспект</span> <span class="text-slate-400">→</span>
                     </button>
                     <button onclick="generate('simple', 1)" class="w-full text-left p-3 rounded-xl bg-slate-50 border border-slate-200 hover:border-emerald-400 hover:bg-emerald-50 text-xs font-bold flex items-center justify-between transition">
-                        <span>💡 Простое объяснение</span> <span class="text-slate-400">→</span>
+                        <span id="btn-mode-explain">💡 Простое объяснение</span> <span class="text-slate-400">→</span>
                     </button>
                     <button onclick="openChatView()" class="w-full text-left p-3 rounded-xl bg-indigo-50 border border-indigo-200 hover:bg-indigo-100 text-indigo-950 text-xs font-extrabold flex items-center justify-between transition">
-                        <span>💬 ИИ-Чат по проекту</span> <span class="text-indigo-600">NEW</span>
+                        <span id="btn-mode-chat">💬 ИИ-Чат по проекту</span> <span class="text-indigo-600">NEW</span>
                     </button>
                 </div>
 
                 <div class="space-y-2 pt-1 border-t border-slate-100">
-                    <h2 class="text-xs font-extrabold text-slate-400 uppercase tracking-wider">3. Органайзер</h2>
+                    <h2 id="lbl-sec-3" class="text-xs font-extrabold text-slate-400 uppercase tracking-wider">3. Органайзер</h2>
                     <button onclick="openPlannerView()" class="w-full text-left p-3.5 rounded-xl bg-gradient-to-r from-amber-500/10 to-orange-500/10 border border-amber-300 hover:border-amber-500 text-amber-900 text-xs font-black flex items-center justify-between transition shadow-sm">
-                        <span>📅 Календарь & ИИ-Планер</span>
+                        <span id="btn-mode-planner">📅 Календарь & ИИ-Планер</span>
                         <span class="bg-amber-400 text-slate-900 text-[10px] px-2 py-0.5 rounded-full font-black">NEW</span>
                     </button>
                 </div>
@@ -146,15 +146,18 @@
                         <div>
                             <div id="nav-username" class="text-xs font-bold text-slate-800">Студент</div>
                             <div class="flex items-center space-x-2 text-[10px] font-extrabold">
-                                <span class="text-indigo-600"><span id="user-tokens">3</span> Токенов ⚡</span>
+                                <span class="text-indigo-600"><span id="user-tokens">3</span> <span id="lbl-tokens">Токенов</span> ⚡</span>
                                 <span class="text-amber-600">| ⭐ <span id="user-score">0</span> XP</span>
                             </div>
                         </div>
                     </div>
-                    <button onclick="openCabinet()" class="bg-white hover:bg-purple-600 hover:text-white text-purple-700 px-3 py-1.5 rounded-xl text-[11px] font-extrabold shadow-sm transition">
+                    <button onclick="openCabinet()" id="btn-cabinet" class="bg-white hover:bg-purple-600 hover:text-white text-purple-700 px-3 py-1.5 rounded-xl text-[11px] font-extrabold shadow-sm transition">
                         Кабинет 👤
                     </button>
                 </div>
+                <a href="/admin" target="_blank" id="btn-admin" class="block text-center w-full bg-slate-100 hover:bg-slate-200 text-slate-600 font-extrabold py-2 rounded-xl text-[11px] transition">
+                    ⚙️ Админ-панель (/admin)
+                </a>
             </div>
         </aside>
 
@@ -169,8 +172,8 @@
 
                 <div id="result-container" class="flex-grow flex flex-col justify-center items-center text-center py-12">
                     <div class="w-20 h-20 bg-indigo-50 text-indigo-600 rounded-3xl flex items-center justify-center text-3xl mb-4 shadow-inner">💡</div>
-                    <h3 class="text-base font-bold text-slate-800 mb-1">Платформа готова!</h3>
-                    <p class="text-xs text-slate-400 max-w-xs">Загрузите PDF файл, откройте «ИИ-Чат по проекту» или «Календарь & ИИ-Планер».</p>
+                    <h3 id="welcome-title" class="text-base font-bold text-slate-800 mb-1">Платформа готова!</h3>
+                    <p id="welcome-desc" class="text-xs text-slate-400 max-w-xs">Загрузите PDF файл, откройте «ИИ-Чат по проекту» или «Календарь & ИИ-Планер».</p>
                 </div>
             </div>
         </main>
@@ -272,6 +275,101 @@
             { id: 2, title: 'Подготовка к тесту по C++', date: '2026-10-25', desc: 'Прорешать задачи с указателями', done: false, xp: 50 }
         ];
 
+        // СЛОВАРЬ МУЛЬТИЯЗЫЧНОСТИ ИНТЕРФЕЙСА
+        const translations = {
+            ru: {
+                sec1: "1. Материал",
+                sec2: "2. Режимы обучения",
+                sec3: "3. Органайзер",
+                topicPlaceholder: "Или тема (напр: Алгебра)",
+                uploadBtn: "🚀 Активировать ИИ",
+                modeQuiz: "🎯 Интерактивный тест (20)",
+                modeCards: "🃏 Умные карточки",
+                modeSummary: "📝 Краткий конспект",
+                modeExplain: "💡 Простое объяснение",
+                modeChat: "💬 ИИ-Чат по проекту",
+                modePlanner: "📅 Календарь & ИИ-Планер",
+                cabinet: "КаCabinet 👤",
+                admin: "⚙️ Админ-панель (/admin)",
+                workspace: "✨ Рабочая зона ИИ",
+                statusReady: "Готов к работе",
+                welcomeTitle: "Платформа готова!",
+                welcomeDesc: "Загрузите PDF файл, откройте «ИИ-Чат по проекту» или «Календарь & ИИ-Планер».",
+                tokens: "Токенов",
+                modalClose: "Закрыть"
+            },
+            kz: {
+                sec1: "1. Материал",
+                sec2: "2. Оқу режимдері",
+                sec3: "3. Ұйымдастырушы",
+                topicPlaceholder: "Немесе тақырып (мысалы: Алгебра)",
+                uploadBtn: "🚀 ЖИ белсендіру",
+                modeQuiz: "🎯 Интерактивті тест (20)",
+                modeCards: "🃏 Ақылды карточкалар",
+                modeSummary: "📝 Қысқаша конспект",
+                modeExplain: "💡 Қарапайым түсіндіру",
+                modeChat: "💬 Жоба бойынша ЖИ-Чат",
+                modePlanner: "📅 Күнтізбе & ЖИ-Жоспарлағыш",
+                cabinet: "Кабинет 👤",
+                admin: "⚙️ Админ-панель (/admin)",
+                workspace: "✨ ЖИ Жұмыс аймағы",
+                statusReady: "Дайын",
+                welcomeTitle: "Платформа дайын!",
+                welcomeDesc: "PDF материалын жүктеңіз, ЖИ-Чатты немесе Күнтізбені ашыңыз.",
+                tokens: "Токендер",
+                modalClose: "Жабу"
+            },
+            en: {
+                sec1: "1. Material",
+                sec2: "2. Study Modes",
+                sec3: "3. Organizer",
+                topicPlaceholder: "Or topic (e.g. Algebra)",
+                uploadBtn: "🚀 Activate AI",
+                modeQuiz: "🎯 Interactive Test (20)",
+                modeCards: "🃏 Smart Flashcards",
+                modeSummary: "📝 Summary",
+                modeExplain: "💡 Simple Explanation",
+                modeChat: "💬 AI Project Chat",
+                modePlanner: "📅 Calendar & AI Planner",
+                cabinet: "Cabinet 👤",
+                admin: "⚙️ Admin Panel (/admin)",
+                workspace: "✨ AI Workspace",
+                statusReady: "Ready to work",
+                welcomeTitle: "Platform Ready!",
+                welcomeDesc: "Upload a PDF, open AI Chat or Calendar & AI Planner.",
+                tokens: "Tokens",
+                modalClose: "Close"
+            }
+        };
+
+        function changeLanguage() {
+            selectedLang = document.getElementById('lang-select').value;
+            const t = translations[selectedLang] || translations.ru;
+
+            document.getElementById('lbl-sec-1').textContent = t.sec1;
+            document.getElementById('lbl-sec-2').textContent = t.sec2;
+            document.getElementById('lbl-sec-3').textContent = t.sec3;
+            document.getElementById('topic-input').placeholder = t.topicPlaceholder;
+            document.getElementById('btn-upload').textContent = t.uploadBtn;
+            document.getElementById('btn-mode-quiz').textContent = t.modeQuiz;
+            document.getElementById('btn-mode-cards').textContent = t.modeCards;
+            document.getElementById('btn-mode-summary').textContent = t.modeSummary;
+            document.getElementById('btn-mode-explain').textContent = t.modeExplain;
+            document.getElementById('btn-mode-chat').textContent = t.modeChat;
+            document.getElementById('btn-mode-planner').textContent = t.modePlanner;
+            document.getElementById('btn-cabinet').textContent = t.cabinet;
+            document.getElementById('btn-admin').textContent = t.admin;
+            document.getElementById('lbl-workspace').textContent = t.workspace;
+            document.getElementById('status-badge').textContent = t.statusReady;
+            document.getElementById('lbl-tokens').textContent = t.tokens;
+            document.getElementById('btn-modal-close').textContent = t.modalClose;
+
+            if (document.getElementById('welcome-title')) {
+                document.getElementById('welcome-title').textContent = t.welcomeTitle;
+                document.getElementById('welcome-desc').textContent = t.welcomeDesc;
+            }
+        }
+
         async function checkAuth() {
             if (!currentUser) {
                 document.getElementById('telegram-auth-modal').classList.remove('hidden');
@@ -339,12 +437,13 @@
             formData.append('chat_id', currentUser.telegram_id);
             formData.append('task_title', title);
             formData.append('task_date', date);
+            formData.append('user_id', currentUser.user_id);
 
             try {
                 const res = await fetch('/api/telegram/reminder', { method: 'POST', body: formData });
                 const data = await res.json();
                 if (res.ok) {
-                    alert('🔔 Напоминание успешно отправлено в ваш Telegram!');
+                    alert('🔔 Напоминание отправлено в Telegram! Мы также напомним вам в день дедлайна.');
                 } else {
                     alert(data.error || 'Не удалось отправить напоминание');
                 }
@@ -922,7 +1021,6 @@
         }
         function closeCabinet() { document.getElementById('cabinet-modal').classList.add('hidden'); }
         function logout() { localStorage.removeItem('studyai_user'); location.reload(); }
-        function changeLanguage() { selectedLang = document.getElementById('lang-select').value; }
     </script>
 </body>
 </html>
