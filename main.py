@@ -81,6 +81,57 @@ async def admin_toggle_subscription(
     except Exception as e:
         return JSONResponse({"error": str(e)}, status_code=500)
 
+# --- ЧАТ-БОТ API ---
+@app.post("/api/chat")
+async def chat_with_ai(
+    user_id: int = Form(...),
+    message: str = Form(...),
+    doc_id: str = Form("default"),
+    lang: str = Form("ru")
+):
+    try:
+        if supabase:
+            u_res = supabase.table("users").select("*").eq("id", user_id).execute()
+            if not u_res.data:
+                return JSONResponse({"error": "Пользователь не найден."}, status_code=401)
+            user = u_res.data[0]
+            tokens, is_sub = user.get("tokens", 0), user.get("is_subscribed", False)
+            if not is_sub and tokens <= 0:
+                return JSONResponse({"error": "PAYMENT_REQUIRED", "message": "Токены закончились!"}, status_code=402)
+        else:
+            tokens, is_sub = 3, True
+
+        user_text = active_documents.get(doc_id, "")
+        lang_instr = {
+            "kz": "СТРОГО ҚАЗАҚ ТІЛІНДЕ жауап бер.",
+            "en": "STRICTLY IN ENGLISH.",
+            "ru": "Отвечай строго на русском языке."
+        }.get(lang, "Отвечай строго на русском.")
+
+        prompt = f"""{lang_instr}
+Ты интеллектуальный ассистент-наставник StudyAI Hub. Отвечай кратко, грамотно и структурировано.
+Контекст текущего проекта/материала:
+{user_text[:4000] if user_text else 'Общий контекст учебы'}
+
+Вопрос пользователя: {message}"""
+
+        response = ai_client.chat.completions.create(
+            model="deepseek-chat",
+            messages=[
+                {"role": "system", "content": "Ты экспертный ИИ-наставник."},
+                {"role": "user", "content": prompt}
+            ],
+            temperature=0.4
+        )
+        reply = response.choices[0].message.content
+        new_tokens = tokens if is_sub else max(0, tokens - 1)
+        if supabase:
+            supabase.table("users").update({"tokens": new_tokens}).eq("id", user_id).execute()
+
+        return {"reply": reply, "tokens_left": new_tokens, "is_subscribed": is_sub}
+    except Exception as e:
+        return JSONResponse({"error": str(e)}, status_code=500)
+
 # --- АВТОРИЗАЦИЯ ТЕЛЕГРАМ ---
 @app.post("/api/telegram/webhook")
 async def telegram_webhook(request: Request):
@@ -178,7 +229,6 @@ async def generate_content(
 ):
     try:
         if supabase:
-            # ПРЯМАЯ ПРОВЕРКА СТАТУСА В БАЗЕ ДАННЫХ ПРИ КАЖДОМ ЗАПРОСЕ
             u_res = supabase.table("users").select("*").eq("id", user_id).execute()
             if not u_res.data: 
                 return JSONResponse({"error": "Пользователь не найден."}, status_code=401)
@@ -188,7 +238,7 @@ async def generate_content(
             if not is_sub and tokens <= 0:
                 return JSONResponse({
                     "error": "PAYMENT_REQUIRED", 
-                    "message": "Подписка не активна и токены закончились! Оформите подписку за 500 ₸.",
+                    "message": "Подписка не активна и токены закончились!",
                     "is_subscribed": False,
                     "tokens_left": 0
                 }, status_code=402)
@@ -213,7 +263,7 @@ async def generate_content(
 Контекст и задачи студента:
 "{custom_prompt}"
 
-Составь текстовый отчет по графику. А В САМОМ КОНЦЕ ОТВЕТА ОБЯЗАТЕЛЬНО добавь JSON-блок с полным перераспределенным списком задач для календаря:
+Составь текстовый отчет по графику. А В САМОМ КОНЦЕ ОТВЕТА ОБЯЗАТЕЛЬНО добавь JSON-блок с перераспределенным списком задач для календаря:
 ```json
 [
   {{"title": "Название задачи", "date": "YYYY-MM-DD", "desc": "Подробная информация и инструкция по выполнению задачи"}}
