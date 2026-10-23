@@ -6,6 +6,8 @@ import shutil
 import urllib.request
 import urllib.parse
 import json
+import asyncio
+from datetime import datetime
 from fastapi import FastAPI, File, Form, UploadFile, Request
 from fastapi.responses import FileResponse, JSONResponse
 from openai import OpenAI
@@ -80,6 +82,19 @@ async def admin_toggle_subscription(
         return {"success": True, "user_id": user_id, "is_subscribed": is_sub_bool}
     except Exception as e:
         return JSONResponse({"error": str(e)}, status_code=500)
+
+# --- API НАПОМИНАНИЙ И УВЕДОМЛЕНИЙ ---
+@app.post("/api/telegram/reminder")
+async def send_task_reminder(
+    chat_id: str = Form(...),
+    task_title: str = Form(...),
+    task_date: str = Form(...)
+):
+    text = f"⏰ *Напоминание от StudyAI Hub*\n\nУ вас запланирована задача:\n📌 *{task_title}*\n📅 Дата: `{task_date}`\n\nНе забудьте выполнить её вовремя!"
+    success = send_telegram_message(chat_id, text)
+    if success:
+        return {"success": True, "message": "Напоминание успешно отправлено в Telegram!"}
+    return JSONResponse({"error": "Не удалось отправить сообщение. Проверьте токен бота."}, status_code=400)
 
 # --- ЧАТ-БОТ API ---
 @app.post("/api/chat")
@@ -190,6 +205,7 @@ async def verify_code(code: str = Form(...)):
             "success": True,
             "user_id": user["id"],
             "username": unique_username,
+            "telegram_id": str(tg_id),
             "display_name": f"Студент #{str(tg_id)[-4:]}",
             "score": user.get("score", 0),
             "tokens": user.get("tokens", 3),
