@@ -160,6 +160,12 @@
         .cab-x { color: #55554f; padding: 0.35rem 0.6rem; border-radius: 999px; transition: all .2s; }
         .cab-x:hover { background: rgba(255,77,77,.15); color: #ff6b6b; }
         .cab-empty { text-align: center; padding: 2.5rem 1rem; color: #6b6b66; font-size: 0.85rem; border: 1px dashed var(--line); border-radius: 1.25rem; }
+        .chip {
+            padding: 0.4rem 0.85rem; border-radius: 999px; border: 1px solid var(--line);
+            font-size: 0.72rem; font-weight: 700; color: #b5b5ae; transition: all .2s;
+        }
+        .chip:hover { border-color: rgba(255,255,255,.25); color: #fff; }
+        .chip.active { background: var(--accent); border-color: var(--accent); color: #000; }
 
         /* Скроллбар */
         ::-webkit-scrollbar { width: 8px; height: 8px; }
@@ -219,10 +225,10 @@
         </div>
     </div>
 
-    <div id="cabinet-modal" class="fixed inset-0 bg-black/80 backdrop-blur-md z-50 hidden flex items-center justify-center p-4" onclick="if(event.target===this) closeCabinet()">
-        <div class="bento-card rounded-[28px] max-w-3xl w-full shadow-2xl relative max-h-[92vh] flex flex-col overflow-hidden">
+    <div id="cabinet-modal" class="fixed inset-0 bg-black/80 backdrop-blur-md z-50 hidden flex items-center justify-center p-3 sm:p-4" onclick="if(event.target===this) closeCabinet()">
+        <div class="bento-card rounded-[28px] max-w-6xl w-full shadow-2xl relative h-[94vh] flex flex-col overflow-hidden">
             <button onclick="closeCabinet()" class="absolute top-4 right-5 z-10 w-8 h-8 rounded-full border border-white/10 text-neutral-300 hover:text-white hover:bg-white/10 font-bold">✕</button>
-            <div id="cab-body" class="overflow-y-auto p-6 lg:p-8 space-y-5"></div>
+            <div id="cab-body" class="overflow-y-auto p-5 lg:p-8 flex-grow"></div>
         </div>
     </div>
 
@@ -401,9 +407,23 @@
         let calMonth = new Date().getMonth();
         let slideDirection = 'slide-left';
 
-        let studentTasks = JSON.parse(localStorage.getItem('studyai_tasks')) || [
-            { id: 1, title: 'Жоғары математика зертханалығы', date: '2026-10-25', desc: 'Матрицалар мен векторлар', done: false, xp: 50 }
-        ];
+        let studentTasks = [];
+
+        // Все запросы к нашему серверу получают JWT; при 401 показываем экран входа
+        const _origFetch = window.fetch.bind(window);
+        window.fetch = async (url, opts = {}) => {
+            const own = typeof url === 'string' && url.startsWith('/');
+            if (own && currentUser && currentUser.token) {
+                opts = { ...opts, headers: { ...(opts.headers || {}), Authorization: 'Bearer ' + currentUser.token } };
+            }
+            const res = await _origFetch(url, opts);
+            if (own && res.status === 401 && currentUser && !String(url).includes('/api/auth/')) {
+                localStorage.removeItem('studyai_user');
+                currentUser = null;
+                checkAuth();
+            }
+            return res;
+        };
 
         function escapeHtml(s) {
             return String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
@@ -590,6 +610,7 @@
             }
         }
         checkAuth();
+        if (currentUser) { refreshProfile(); loadTasks(); }
 
         function moveToNext(el, idx) {
             if (el.value && idx < 6) document.querySelectorAll('.otp-input')[idx].focus();
@@ -609,6 +630,7 @@
                     currentUser = data;
                     localStorage.setItem('studyai_user', JSON.stringify(currentUser));
                     checkAuth();
+                    loadTasks();
                 } else { alert(data.error); }
             } catch(e) { alert('Қате орын алды'); }
         }
@@ -632,13 +654,17 @@
         async function uploadMaterial() {
             const t = translations[selectedLang];
             const fileInput = document.getElementById('pdf-file');
-            const topicInput = document.getElementById('topic-input').value;
+            const topicInput = document.getElementById('topic-input').value.trim();
+            if (!currentUser) return checkAuth();
             if (fileInput.files.length > 0) {
                 const fd = new FormData();
                 fd.append("file", fileInput.files[0]);
-                const res = await fetch('/upload', { method: 'POST', body: fd });
-                const data = await res.json();
-                if (res.ok) { currentDocId = data.doc_id; alert(t.fileUploaded); }
+                try {
+                    const res = await fetch('/upload', { method: 'POST', body: fd });
+                    const data = await res.json().catch(() => ({}));
+                    if (res.ok) { currentDocId = data.doc_id; alert(t.fileUploaded); }
+                    else alert(data.error || 'Upload error');
+                } catch (e) { alert('Network error'); }
             } else if (topicInput) {
                 currentDocId = "topic_" + topicInput;
                 alert(t.topicSaved);
@@ -699,7 +725,6 @@
                     localStorage.setItem('studyai_user', JSON.stringify(currentUser));
                     checkAuth();
                     chatBox.insertAdjacentHTML('beforeend', `<div class="p-3.5 rounded-2xl bg-[#c8ff2e] text-black font-medium max-w-[85%] self-start leading-relaxed">${data.reply}</div>`);
-                    addHist('chat', msg, data.reply);
                     renderMath(chatBox);
                 } else { alert(data.error); }
             } catch(e) {
@@ -764,27 +789,33 @@
             return `<div class="p-4 rounded-2xl bg-rose-950/60 border border-rose-900 text-rose-300 text-xs">${escapeHtml(msg || 'Error')}</div>`;
         }
 
-        // --- ИСТОРИЯ (хранится в браузере, отдельно для каждого пользователя) ---
-        function histKey() { return 'studyai_hist_' + (currentUser ? currentUser.user_id : 'guest'); }
-        function loadHist() {
-            try { return JSON.parse(localStorage.getItem(histKey())) || []; } catch (e) { return []; }
-        }
-        function saveHist(list) {
-            try { localStorage.setItem(histKey(), JSON.stringify(list)); }
-            catch (e) { try { localStorage.setItem(histKey(), JSON.stringify(list.slice(0, 20))); } catch (e2) {} }
-        }
-        function addHist(type, title, content) {
-            const list = loadHist();
-            list.unshift({ id: Date.now() + Math.floor(Math.random() * 1000), type, title: String(title || '').slice(0, 120), content: String(content == null ? '' : content), ts: Date.now() });
-            saveHist(list.slice(0, 100));
+        function persistUser() { try { localStorage.setItem('studyai_user', JSON.stringify(currentUser)); } catch (e) {} }
+        function setTokens(n) { if (n != null && currentUser) { currentUser.tokens = n; persistUser(); checkAuth(); } }
+
+        async function api(url, method, body) {
+            const opts = { method: method || 'GET' };
+            if (body !== undefined) { opts.headers = { 'Content-Type': 'application/json' }; opts.body = JSON.stringify(body); }
+            try {
+                const res = await fetch(url, opts);
+                let data = {};
+                try { data = await res.json(); } catch (e) {}
+                return { ok: res.ok, data };
+            } catch (e) { return { ok: false, data: { error: 'Network error' } }; }
         }
 
-        function addXP(n) {
+        async function refreshProfile() {
+            const r = await api('/api/me');
+            if (r.ok && currentUser) {
+                currentUser.tokens = r.data.tokens; currentUser.score = r.data.score;
+                currentUser.is_subscribed = r.data.is_subscribed;
+                persistUser(); checkAuth();
+            }
+        }
+
+        async function addXP(n, reason) {
             if (!currentUser) return;
-            currentUser.score = (currentUser.score || 0) + n;
-            try { localStorage.setItem('studyai_user', JSON.stringify(currentUser)); } catch (e) {}
-            checkAuth();
-            showScorePopup('+' + n + ' XP');
+            const r = await api('/api/xp', 'POST', { amount: n, reason: reason || 'quiz' });
+            if (r.ok) { currentUser.score = r.data.score; persistUser(); checkAuth(); showScorePopup('+' + n + ' XP'); }
         }
 
         // Универсальная проверка ответа (учитель и билеты): один раз, XP без накрутки
@@ -837,6 +868,7 @@
             const t = translations[selectedLang];
             const topic = document.getElementById('teacher-topic').value.trim();
             const comment = document.getElementById('teacher-comment').value.trim();
+            if (!currentUser) return checkAuth();
             if (!topic) return alert(t.teacherTopicPlaceholder);
 
             const area = document.getElementById('teacher-game-area');
@@ -859,6 +891,7 @@
                 return;
             }
 
+            setTokens(data.tokens_left);
             const raw = pickResult(data);
             if (!ok || raw == null) {
                 area.innerHTML = errorBox(data.error || data.detail || 'Server error');
@@ -866,11 +899,12 @@
             }
 
             const parsed = parseAIJson(raw);
-            let explanation = '', questions = [];
+            let explanation = '', questions = [], videoQuery = '';
             if (parsed && typeof parsed === 'object') {
                 if (Array.isArray(parsed)) questions = parsed;
                 else {
                     explanation = parsed.explanation || parsed.explain || parsed.text || parsed.lesson || '';
+                    videoQuery = parsed.video_query || '';
                     questions = parsed.game_questions || parsed.questions || parsed.quiz || parsed.game || [];
                 }
             } else {
@@ -899,14 +933,13 @@
                     <div class="banner space-y-3">
                         <h4 class="mono" style="color:var(--accent)">${t.teacherExplanation}</h4>
                         <p class="text-sm text-neutral-300 leading-relaxed">${formatText(explanation || topic)}</p>
+                        ${videoQuery ? `<a href="https://www.youtube.com/results?search_query=${encodeURIComponent(videoQuery)}" target="_blank" rel="noopener" class="btn-ghost inline-block px-4 py-2 text-xs">▶ YouTube</a>` : ''}
                     </div>
                     ${items.length ? `<div class="space-y-3"><h4 class="mono">${t.teacherGame}</h4>${questionsHtml}</div>` : ''}
                 </div>
             `;
             renderMath(area);
 
-            addHist('teacher', topic, (explanation || '') + (items.length ? '\n\n' + items.map((g, i) =>
-                `${i + 1}. ${g.q}\n` + g.options.map(o => `${o.letter}) ${o.text}`).join('\n') + `\n✔ ${g.answer}`).join('\n\n') : ''));
         }
 
         // --- 2. БИЛЕТЫ ---
@@ -935,6 +968,7 @@
             const t = translations[selectedLang];
             const theme = document.getElementById('ticket-theme').value.trim();
             const comment = document.getElementById('ticket-comment').value.trim();
+            if (!currentUser) return checkAuth();
             const count = document.getElementById('ticket-count').value;
             if (!theme) return alert(t.ticketThemePlaceholder);
 
@@ -959,6 +993,7 @@
                 return;
             }
 
+            setTokens(data.tokens_left);
             const raw = pickResult(data);
             if (!ok || raw == null) {
                 area.innerHTML = errorBox(data.error || data.detail || 'Server error');
@@ -970,7 +1005,6 @@
 
             if (!Array.isArray(parsed)) {
                 area.innerHTML = `<div class="p-4 tile leading-relaxed text-xs text-neutral-200">${formatText(raw)}</div>`;
-                addHist('tickets', theme, String(raw));
                 return;
             }
 
@@ -994,16 +1028,10 @@
                 </div>`).join('')}</div>`;
             renderMath(area);
 
-            addHist('tickets', theme, items.map(it =>
-                `№${it.num}. ${it.question}\n` + (it.task ? it.task + '\n' : '') + it.options.map(o => `${o.letter}) ${o.text}`).join('\n') + (it.options.length ? `\n✔ ${it.correct}` : '')).join('\n\n'));
         }
 
         // --- 3. КАЛЕНДАРЬ И ПЛАНЕР ---
         let pendingAiTasks = [];
-
-        function saveTasks() {
-            try { localStorage.setItem('studyai_tasks', JSON.stringify(studentTasks)); } catch (e) {}
-        }
 
         function openPlannerView() {
             window.currentActiveView = 'planner';
@@ -1115,44 +1143,6 @@
             en: { manual: 'Add a task', taskName: 'Task title...', add: 'Add', ai: 'AI Planner', aiPlaceholder: 'E.g. plan my exam prep for 5 days', list: 'Tasks', clear: 'Clear all', del: 'Delete', noTasks: 'No tasks yet', propose: 'AI suggests:', addSel: 'Add selected', fail: 'AI returned no tasks. Try rephrasing your request.', empty: 'Enter a request first', confirmClear: 'Delete all tasks?', added: 'Added' }
         };
 
-        function addManualTask() {
-            const title = document.getElementById('manual-task-title').value.trim();
-            const date = document.getElementById('manual-task-date').value || todayStr();
-            if (!title) return;
-            studentTasks.push({ id: Date.now(), title, date, desc: '', done: false, xp: 50 });
-            saveTasks();
-            openPlannerView();
-        }
-
-        function deleteTask(id) {
-            studentTasks = studentTasks.filter(x => x.id !== id);
-            saveTasks();
-            openPlannerView();
-        }
-
-        function clearTasks() {
-            const L = plannerText[selectedLang] || plannerText.ru;
-            if (!confirm(L.confirmClear)) return;
-            studentTasks = [];
-            saveTasks();
-            openPlannerView();
-        }
-
-        async function sendTaskReminder(id) {
-            const item = studentTasks.find(x => x.id === id);
-            if (!item) return;
-            if (!currentUser || !currentUser.telegram_id) return alert('Telegram ID not found!');
-            const fd = new FormData();
-            fd.append('chat_id', currentUser.telegram_id);
-            fd.append('task_title', item.title);
-            fd.append('task_date', item.date);
-            fd.append('user_id', currentUser.user_id);
-            try {
-                const res = await fetch('/api/telegram/reminder', { method: 'POST', body: fd });
-                if (res.ok) alert('🔔 Reminder sent to Telegram!');
-            } catch (e) { alert('Error'); }
-        }
-
         async function askAIPlanner() {
             const t = translations[selectedLang];
             const L = plannerText[selectedLang] || plannerText.ru;
@@ -1165,8 +1155,8 @@
             const langName = { kz: 'казахском', ru: 'русском', en: 'English' }[selectedLang];
             const prompt = `Ты — планировщик задач студента. Сегодня ${todayStr()}. ` +
                 `Запрос пользователя: «${query}». ` +
-                `Верни ТОЛЬКО валидный JSON-массив из 1–5 конкретных задач, строго по этому запросу, без пояснений, без markdown и без общих советов по тайм-менеджменту. ` +
-                `Формат: [{"title":"короткое название (до 60 символов)","date":"YYYY-MM-DD","desc":"одно короткое предложение"}]. ` +
+                `Верни ТОЛЬКО валидный JSON-объект с 1–5 конкретными задачами строго по этому запросу, без пояснений, без markdown и без общих советов по тайм-менеджменту. ` +
+                `Формат: {"tasks":[{"title":"короткое название (до 60 символов)","date":"YYYY-MM-DD","desc":"одно короткое предложение"}]}. ` +
                 `Даты не раньше ${todayStr()}. Текст пиши на ${langName} языке.`;
 
             const fd = new FormData();
@@ -1219,18 +1209,71 @@
                 </div>`;
         }
 
-        function applyAiTasks() {
-            const boxes = document.querySelectorAll('#ai-planner-response input[type=checkbox]:checked');
-            let n = 0;
-            boxes.forEach(b => {
+        async function loadTasks() {
+            if (!currentUser) return;
+            const r = await api('/api/tasks');
+            if (r.ok) {
+                studentTasks = r.data.tasks || [];
+                if (window.currentActiveView === 'planner') openPlannerView();
+            }
+        }
+
+        async function addManualTask() {
+            const title = document.getElementById('manual-task-title').value.trim();
+            const date = document.getElementById('manual-task-date').value || todayStr();
+            if (!title) return;
+            const r = await api('/api/tasks', 'POST', { tasks: [{ title, date }] });
+            if (r.ok) { studentTasks = studentTasks.concat(r.data.tasks); openPlannerView(); }
+            else alert(r.data.error || 'Error');
+        }
+
+        async function deleteTask(id) {
+            const r = await api('/api/tasks/' + id, 'DELETE');
+            if (r.ok) { studentTasks = studentTasks.filter(x => x.id !== id); openPlannerView(); }
+        }
+
+        async function clearTasks() {
+            const L = plannerText[selectedLang] || plannerText.ru;
+            if (!confirm(L.confirmClear)) return;
+            const r = await api('/api/tasks', 'DELETE');
+            if (r.ok) { studentTasks = []; openPlannerView(); }
+        }
+
+        async function toggleTask(id) {
+            const item = studentTasks.find(x => x.id === id);
+            if (!item) return;
+            const r = await api('/api/tasks/' + id, 'PATCH', { done: !item.done });
+            if (!r.ok) return alert(r.data.error || 'Error');
+            Object.assign(item, r.data.task);
+            if (r.data.xp_awarded) { currentUser.score = r.data.score; persistUser(); checkAuth(); showScorePopup('+' + r.data.xp_awarded + ' XP'); }
+            openPlannerView();
+        }
+
+        async function applyAiTasks() {
+            const picked = [];
+            document.querySelectorAll('#ai-planner-response input[type=checkbox]:checked').forEach(b => {
                 const x = pendingAiTasks[Number(b.dataset.i)];
-                if (!x) return;
-                studentTasks.push({ id: Date.now() + n, title: x.title, date: x.date, desc: x.desc, done: false, xp: 50 });
-                n++;
+                if (x) picked.push({ title: x.title, date: x.date, desc: x.desc });
             });
             pendingAiTasks = [];
-            saveTasks();
+            if (!picked.length) return openPlannerView();
+            const r = await api('/api/tasks', 'POST', { tasks: picked });
+            if (r.ok) studentTasks = studentTasks.concat(r.data.tasks);
+            else alert(r.data.error || 'Error');
             openPlannerView();
+        }
+
+        async function sendTaskReminder(id) {
+            const item = studentTasks.find(x => x.id === id);
+            if (!item) return;
+            const fd = new FormData();
+            fd.append('task_title', item.title);
+            fd.append('task_date', item.date);
+            try {
+                const res = await fetch('/api/telegram/reminder', { method: 'POST', body: fd });
+                const d = await res.json().catch(() => ({}));
+                alert(res.ok ? '🔔 Reminder sent to Telegram!' : (d.error || 'Error'));
+            } catch (e) { alert('Error'); }
         }
 
         function showDayTasks(dateStr) {
@@ -1243,16 +1286,6 @@
             modal.classList.remove('hidden');
         }
         function closeDayModal() { document.getElementById('day-modal').classList.add('hidden'); }
-        function toggleTask(id) {
-            const item = studentTasks.find(x => x.id === id);
-            if (item) {
-                item.done = !item.done;
-                if (item.done && !item.xpGiven) { item.xpGiven = true; addXP(item.xp || 50); }
-                saveTasks();
-                openPlannerView();
-            }
-        }
-
         
 // --- 4. СТАНДАРТНЫЕ ГЕНЕРАТОРЫ ---
         async function generate(action, page = 1) {
@@ -1278,8 +1311,6 @@
                     currentUser.tokens = data.tokens_left;
                     localStorage.setItem('studyai_user', JSON.stringify(currentUser));
                     checkAuth();
-                    const pf = document.getElementById('pdf-file').files[0];
-                    addHist(action, document.getElementById('topic-input').value.trim() || (pf && pf.name) || ((cabText[selectedLang] || cabText.ru).types[action] || action), data.result);
                     renderGenericResult(data.result);
                 } else { alert(data.error); }
             } catch(e) { alert("Error occurred"); }
@@ -1295,189 +1326,291 @@
             renderMath(container);
         }
 
-        // --- 5. КАБИНЕТ И ИСТОРИЯ ---
+        // --- 5. КАБИНЕТ (данные из Supabase через API) ---
         const cabText = {
-            kz: { title: 'Жеке кабинет', level: 'Деңгей', toNext: 'келесі деңгейге', tokens: 'Токен', xp: 'XP', tasks: 'Тапсырма', mats: 'Материал',
-                  tabs: ['Материалдар', 'Чат', 'Тапсырмалар', 'Жетістіктер'], empty: 'Әзірше бос. Оқуды бастаңыз!', logout: 'Шығу', clear: 'Тазалау', back: '← Артқа',
-                  del: 'Жою', confirmClear: 'Барлық тарихты өшіру керек пе?', sub: 'Жазылым', active: 'Белсенді', free: 'Тегін', noChat: 'Чат тарихы жоқ', noTasks: 'Тапсырмалар жоқ', server: 'сервер',
-                  types: { quiz: 'Тест', flashcards: 'Карточкалар', summary: 'Конспект', simple: 'Түсіндіру', teacher: 'ИИ Мұғалім', tickets: 'Билеттер', chat: 'Чат' },
-                  ach: [['Алғашқы қадам', 'Алғашқы материалды жасаңыз'], ['Зерттеуші', '5 материал жасаңыз'], ['Сұрақшы', 'ЖИ-мен чатта сөйлесіңіз'],
-                        ['Жүз ұпай', '100 XP жинаңыз'], ['Жұлдыз', '500 XP жинаңыз'], ['Тәртіпті', '3 тапсырма орындаңыз']] },
-            ru: { title: 'Личный кабинет', level: 'Уровень', toNext: 'до следующего уровня', tokens: 'Токены', xp: 'XP', tasks: 'Задачи', mats: 'Материалы',
-                  tabs: ['Материалы', 'Чат', 'Задачи', 'Достижения'], empty: 'Пока пусто. Начните обучение!', logout: 'Выйти', clear: 'Очистить', back: '← Назад',
-                  del: 'Удалить', confirmClear: 'Удалить всю историю?', sub: 'Подписка', active: 'Активна', free: 'Бесплатно', noChat: 'История чата пуста', noTasks: 'Нет задач', server: 'сервер',
-                  types: { quiz: 'Тест', flashcards: 'Карточки', summary: 'Конспект', simple: 'Объяснение', teacher: 'ИИ Учитель', tickets: 'Билеты', chat: 'Чат' },
-                  ach: [['Первый шаг', 'Создайте первый материал'], ['Исследователь', 'Создайте 5 материалов'], ['Любознательный', 'Поговорите с ИИ в чате'],
-                        ['Сотка', 'Наберите 100 XP'], ['Звезда', 'Наберите 500 XP'], ['Организованный', 'Выполните 3 задачи']] },
-            en: { title: 'Personal cabinet', level: 'Level', toNext: 'to next level', tokens: 'Tokens', xp: 'XP', tasks: 'Tasks', mats: 'Materials',
-                  tabs: ['Materials', 'Chat', 'Tasks', 'Achievements'], empty: 'Nothing here yet. Start learning!', logout: 'Logout', clear: 'Clear', back: '← Back',
-                  del: 'Delete', confirmClear: 'Delete all history?', sub: 'Subscription', active: 'Active', free: 'Free', noChat: 'No chat history', noTasks: 'No tasks', server: 'server',
-                  types: { quiz: 'Quiz', flashcards: 'Flashcards', summary: 'Summary', simple: 'Explanation', teacher: 'AI Teacher', tickets: 'Tickets', chat: 'Chat' },
-                  ach: [['First step', 'Create your first material'], ['Explorer', 'Create 5 materials'], ['Curious', 'Chat with the AI'],
-                        ['Hundred', 'Earn 100 XP'], ['Star', 'Earn 500 XP'], ['Organized', 'Complete 3 tasks']] }
+            kz: { title: 'Жеке кабинет', level: 'Деңгей', xpLeft: 'XP келесі деңгейге дейін', tokens: 'Токен', tokensHint: 'Күн сайын жаңарады', streak: 'күн қатарынан', days: 'күн',
+                  sub: 'Жазылым', active: 'Белсенді', free: 'Тегін', logout: 'Шығу', since: 'Тіркелген',
+                  tabs: { overview: 'Шолу', materials: 'Материалдар', chat: 'Чат', tasks: 'Тапсырмалар', achievements: 'Жетістіктер' },
+                  xp: 'XP', mats: 'Материал', chats: 'Чат', tasksLbl: 'Тапсырма', activity: 'Соңғы 14 күндегі белсенділік (XP)', recent: 'Соңғы материалдар', upcoming: 'Жақын тапсырмалар',
+                  empty: 'Әзірше бос. Оқуды бастаңыз!', noTasks: 'Тапсырмалар жоқ', noChat: 'Чат тарихы жоқ', search: 'Іздеу...', all: 'Барлығы', back: '← Артқа', copy: 'Көшіру', copied: 'Көшірілді ✓', del: 'Жою',
+                  clear: 'Тазалау', confirmClear: 'Барлығын өшіру керек пе?', openPlanner: 'Планерді ашу', overdue: 'мерзімі өтті', loading: 'Жүктелуде...', loadErr: 'Деректерді жүктеу мүмкін болмады', retry: 'Қайталау',
+                  types: { quiz: 'Тест', flashcards: 'Карточкалар', summary: 'Конспект', simple: 'Түсіндіру', plan: 'Жоспар', teacher: 'ИИ Мұғалім', tickets: 'Билеттер' },
+                  ach: [['Алғашқы қадам', 'Алғашқы материалды жасаңыз'], ['Зерттеуші', '10 материал жасаңыз'], ['Сұрақшы', 'ЖИ-мен чатта сөйлесіңіз'], ['Жүз ұпай', '100 XP жинаңыз'],
+                        ['Жұлдыз', '500 XP жинаңыз'], ['Тәртіпті', '5 тапсырма орындаңыз'], ['Қатарынан', '3 күн қатарынан оқыңыз'], ['Әмбебап', '4 түрлі режимді қолданыңыз']] },
+            ru: { title: 'Личный кабинет', level: 'Уровень', xpLeft: 'XP до следующего уровня', tokens: 'Токены', tokensHint: 'Обновляются каждый день', streak: 'дней подряд', days: 'дн.',
+                  sub: 'Подписка', active: 'Активна', free: 'Бесплатно', logout: 'Выйти', since: 'С нами с',
+                  tabs: { overview: 'Обзор', materials: 'Материалы', chat: 'Чат', tasks: 'Задачи', achievements: 'Достижения' },
+                  xp: 'XP', mats: 'Материалов', chats: 'Сообщений', tasksLbl: 'Задач', activity: 'Активность за 14 дней (XP)', recent: 'Последние материалы', upcoming: 'Ближайшие задачи',
+                  empty: 'Пока пусто. Начните обучение!', noTasks: 'Нет задач', noChat: 'История чата пуста', search: 'Поиск...', all: 'Все', back: '← Назад', copy: 'Копировать', copied: 'Скопировано ✓', del: 'Удалить',
+                  clear: 'Очистить', confirmClear: 'Удалить всё?', openPlanner: 'Открыть планер', overdue: 'просрочено', loading: 'Загрузка...', loadErr: 'Не удалось загрузить данные', retry: 'Повторить',
+                  types: { quiz: 'Тест', flashcards: 'Карточки', summary: 'Конспект', simple: 'Объяснение', plan: 'План', teacher: 'ИИ Учитель', tickets: 'Билеты' },
+                  ach: [['Первый шаг', 'Создайте первый материал'], ['Исследователь', 'Создайте 10 материалов'], ['Любознательный', 'Поговорите с ИИ в чате'], ['Сотка', 'Наберите 100 XP'],
+                        ['Звезда', 'Наберите 500 XP'], ['Организованный', 'Выполните 5 задач'], ['На волне', 'Занимайтесь 3 дня подряд'], ['Универсал', 'Попробуйте 4 разных режима']] },
+            en: { title: 'Personal cabinet', level: 'Level', xpLeft: 'XP to next level', tokens: 'Tokens', tokensHint: 'Refill every day', streak: 'day streak', days: 'd',
+                  sub: 'Subscription', active: 'Active', free: 'Free', logout: 'Logout', since: 'Member since',
+                  tabs: { overview: 'Overview', materials: 'Materials', chat: 'Chat', tasks: 'Tasks', achievements: 'Achievements' },
+                  xp: 'XP', mats: 'Materials', chats: 'Messages', tasksLbl: 'Tasks', activity: 'Activity, last 14 days (XP)', recent: 'Recent materials', upcoming: 'Upcoming tasks',
+                  empty: 'Nothing here yet. Start learning!', noTasks: 'No tasks', noChat: 'No chat history', search: 'Search...', all: 'All', back: '← Back', copy: 'Copy', copied: 'Copied ✓', del: 'Delete',
+                  clear: 'Clear', confirmClear: 'Delete everything?', openPlanner: 'Open planner', overdue: 'overdue', loading: 'Loading...', loadErr: 'Could not load data', retry: 'Retry',
+                  types: { quiz: 'Quiz', flashcards: 'Flashcards', summary: 'Summary', simple: 'Explanation', plan: 'Plan', teacher: 'AI Teacher', tickets: 'Tickets' },
+                  ach: [['First step', 'Create your first material'], ['Explorer', 'Create 10 materials'], ['Curious', 'Chat with the AI'], ['Hundred', 'Earn 100 XP'],
+                        ['Star', 'Earn 500 XP'], ['Organized', 'Complete 5 tasks'], ['On a roll', 'Study 3 days in a row'], ['All-rounder', 'Try 4 different modes']] }
         };
-        const typeIcon = { quiz: '🎯', flashcards: '🃏', summary: '📝', simple: '💡', teacher: '🤖', tickets: '🎟️', chat: '💬' };
-        let cabTab = 0, cabView = null, serverData = null;
+        const typeIcon = { quiz: '🎯', flashcards: '🃏', summary: '📝', simple: '💡', plan: '🗺️', teacher: '🤖', tickets: '🎟️' };
+        const cab = { tab: 'overview', overview: null, items: null, chat: null, view: null, filter: '', search: '', loading: false, error: false };
+        let cabSearchTimer = null;
 
+        function cabLocale() { return { kz: 'ru-RU', ru: 'ru-RU', en: 'en-GB' }[selectedLang] || 'ru-RU'; }
         function fmtDate(ts) {
             const d = new Date(ts);
-            return `${String(d.getDate()).padStart(2, '0')}.${String(d.getMonth() + 1).padStart(2, '0')}.${d.getFullYear()} ${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
+            return isNaN(d) ? '' : d.toLocaleString(cabLocale(), { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' });
         }
 
-        function getCabStats() {
-            const hist = loadHist();
-            const mats = hist.filter(h => h.type !== 'chat');
-            const chats = hist.filter(h => h.type === 'chat');
-            const serverSaves = (serverData && Array.isArray(serverData.saves)) ? serverData.saves : [];
-            return {
-                hist, mats, chats, serverSaves,
-                tasksDone: studentTasks.filter(x => x.done).length,
-                matCount: mats.length + serverSaves.length
-            };
+        async function cabFetch(url) {
+            const r = await fetch(url);
+            if (!r.ok) throw new Error('http ' + r.status);
+            return r.json();
+        }
+
+        async function loadCabTab(tab) {
+            cab.loading = true; cab.error = false; renderCabinet();
+            try {
+                if (tab === 'overview') {
+                    cab.overview = await cabFetch('/api/me/overview?tz=' + (-new Date().getTimezoneOffset()));
+                    const p = cab.overview.profile;
+                    currentUser.tokens = p.tokens; currentUser.score = p.score; currentUser.is_subscribed = p.is_subscribed;
+                    persistUser(); checkAuth();
+                    cab.items = (await cabFetch('/api/history?limit=5')).items;
+                    await loadTasks();
+                } else if (tab === 'materials') {
+                    const qs = new URLSearchParams({ limit: 100 });
+                    if (cab.filter) qs.set('type', cab.filter);
+                    if (cab.search) qs.set('q', cab.search);
+                    cab.items = (await cabFetch('/api/history?' + qs)).items;
+                    if (!cab.overview) cab.overview = await cabFetch('/api/me/overview?tz=' + (-new Date().getTimezoneOffset()));
+                } else if (tab === 'chat') {
+                    cab.chat = (await cabFetch('/api/chat/history?limit=60')).items;
+                } else if (tab === 'tasks') {
+                    await loadTasks();
+                } else if (tab === 'achievements') {
+                    cab.overview = await cabFetch('/api/me/overview?tz=' + (-new Date().getTimezoneOffset()));
+                    await loadTasks();
+                }
+            } catch (e) { cab.error = true; }
+            cab.loading = false; renderCabinet();
+        }
+
+        function setCabTab(tab) { cab.tab = tab; cab.view = null; loadCabTab(tab); }
+        function setCabFilter(t) { cab.filter = t; loadCabTab('materials'); }
+        function onCabSearch(v) { cab.search = v.trim(); clearTimeout(cabSearchTimer); cabSearchTimer = setTimeout(() => loadCabTab('materials'), 350); }
+
+        async function openCabItem(id) {
+            cab.loading = true; renderCabinet();
+            try { cab.view = await cabFetch('/api/history/' + id); } catch (e) { cab.error = true; }
+            cab.loading = false; renderCabinet();
+        }
+        function closeCabItem() { cab.view = null; cab.error = false; renderCabinet(); }
+        async function deleteCabItem(id) {
+            const L = cabText[selectedLang]; if (!confirm(L.del + '?')) return;
+            await fetch('/api/history/' + id, { method: 'DELETE' });
+            cab.view = null; loadCabTab(cab.tab);
+        }
+        async function clearCabHistory() {
+            const L = cabText[selectedLang]; if (!confirm(L.confirmClear)) return;
+            await fetch(cab.tab === 'chat' ? '/api/chat/history' : '/api/history', { method: 'DELETE' });
+            loadCabTab(cab.tab);
+        }
+        function copyCabItem(btn) {
+            const L = cabText[selectedLang];
+            try { navigator.clipboard.writeText(cab.view.content); btn.textContent = L.copied; } catch (e) {}
+        }
+        function cabGoPlanner() { closeCabinet(); openPlannerView(); scrollToSection('workspace-section'); }
+
+        // содержимое сохранённого материала в читаемом виде (учитель и билеты хранятся как JSON)
+        function readableContent(it) {
+            if (it.type === 'teacher') {
+                const p = parseAIJson(it.content);
+                if (p && p.explanation) {
+                    return p.explanation + '\n\n' + (p.game_questions || []).map((g, i) =>
+                        `${i + 1}. ${g.q || g.question || ''}\n${(g.options || []).join('\n')}\n✔ ${g.answer ?? ''}`).join('\n\n');
+                }
+            } else if (it.type === 'tickets') {
+                const p = parseAIJson(it.content);
+                if (Array.isArray(p)) {
+                    return p.map((x, i) => `№${x.ticket_num ?? i + 1}. ${x.question || ''}\n${x.game_task ? x.game_task + '\n' : ''}${(x.options || []).join('\n')}\n✔ ${x.correct ?? ''}`).join('\n\n');
+                }
+            }
+            return it.content;
+        }
+
+        function levelInfo(xp) { const lvl = Math.floor(xp / 200) + 1; return { lvl, into: xp % 200 }; }
+
+        function activityChart(act) {
+            const max = Math.max(1, ...act.map(a => a.xp));
+            return `<div class="flex items-end gap-1.5 h-32">${act.map(a => {
+                const h = a.xp ? Math.max(8, Math.round(a.xp / max * 100)) : 3;
+                const d = new Date(a.date + 'T00:00:00');
+                return `<div class="flex-1 flex flex-col items-center justify-end gap-1.5 h-full" title="${escapeHtml(a.date)}: ${a.xp} XP">
+                    <div class="w-full rounded-t-md ${a.xp ? 'bg-[#c8ff2e]' : 'bg-white/10'}" style="height:${h}%"></div>
+                    <span class="text-[9px] text-neutral-500">${d.getDate()}</span></div>`;
+            }).join('')}</div>`;
+        }
+
+        function itemRow(h, L) {
+            return `<div class="cab-row" onclick="openCabItem(${h.id})">
+                <div class="cab-ico">${typeIcon[h.type] || '📄'}</div>
+                <div class="min-w-0 flex-grow">
+                    <p class="text-sm font-bold text-white truncate">${escapeHtml(h.title || L.types[h.type] || h.type)}</p>
+                    <p class="mono">${escapeHtml(L.types[h.type] || h.type)} · ${fmtDate(h.created_at)}</p>
+                </div>
+                <span class="text-neutral-600">→</span></div>`;
+        }
+
+        function taskRow(x, L) {
+            const late = !x.done && x.date < todayStr();
+            return `<div class="cab-row" style="cursor:default; ${x.done ? 'opacity:.55' : ''}">
+                <div class="cab-ico" style="${x.done ? 'background:var(--accent);color:#000' : ''}">${x.done ? '✓' : '○'}</div>
+                <div class="min-w-0 flex-grow">
+                    <p class="text-sm font-bold truncate ${x.done ? 'line-through text-neutral-500' : 'text-white'}">${escapeHtml(x.title)}</p>
+                    <p class="mono" style="${late ? 'color:#ff6b6b' : ''}">${escapeHtml(x.date)}${late ? ' · ' + L.overdue : ''}</p>
+                </div></div>`;
         }
 
         function renderCabinet() {
-            const L = cabText[selectedLang] || cabText.ru;
             const body = document.getElementById('cab-body');
-            if (!currentUser) return;
-            const st = getCabStats();
+            if (!body || !currentUser) return;
+            const L = cabText[selectedLang] || cabText.ru;
+            const ov = cab.overview;
+            const prof = ov ? ov.profile : currentUser;
             const xp = Number(currentUser.score) || 0;
-            const lvl = Math.floor(xp / 200) + 1;
-            const into = xp % 200;
-            const name = currentUser.display_name || currentUser.username || 'Student';
+            const { lvl, into } = levelInfo(xp);
+            const name = prof.display_name || prof.username || currentUser.display_name || currentUser.username || 'Student';
             const initial = escapeHtml(String(name).trim().charAt(0).toUpperCase() || 'S');
-            const subActive = serverData ? !!serverData.is_subscribed : !!currentUser.is_subscribed;
-            const tokens = (serverData && serverData.tokens != null) ? serverData.tokens : (currentUser.tokens ?? 0);
+            const circ = 2 * Math.PI * 44;
+            const sub = !!(prof.is_subscribed);
+            const streak = ov ? ov.streak : 0;
 
-            let inner = '';
-
-            if (cabView) {
-                const it = cabView;
-                inner = `
-                    <button onclick="closeCabItem()" class="mono hover:text-white transition mb-4">${L.back}</button>
-                    <div class="flex items-center gap-3 mb-4">
-                        <div class="w-11 h-11 rounded-2xl bg-[#c8ff2e] text-black flex items-center justify-center text-xl shrink-0">${typeIcon[it.type] || '📄'}</div>
-                        <div class="min-w-0">
-                            <h4 class="display text-xl font-bold text-white truncate">${escapeHtml(it.title || '—')}</h4>
-                            <p class="mono">${escapeHtml((L.types[it.type] || it.type))} · ${fmtDate(it.ts)}</p>
+            const side = `
+                <aside class="space-y-4 lg:sticky lg:top-0">
+                    <div class="tile p-5 text-center space-y-4">
+                        <div class="relative w-28 h-28 mx-auto">
+                            <svg viewBox="0 0 100 100" class="w-full h-full -rotate-90">
+                                <circle cx="50" cy="50" r="44" fill="none" stroke="rgba(255,255,255,.08)" stroke-width="6"/>
+                                <circle cx="50" cy="50" r="44" fill="none" stroke="#c8ff2e" stroke-width="6" stroke-linecap="round"
+                                    stroke-dasharray="${circ}" stroke-dashoffset="${circ * (1 - into / 200)}" style="transition: stroke-dashoffset .6s ease"/>
+                            </svg>
+                            <div class="absolute inset-0 flex items-center justify-center"><div class="w-[72px] h-[72px] rounded-full bg-[#c8ff2e] text-black flex items-center justify-center display text-3xl font-bold">${initial}</div></div>
+                        </div>
+                        <div>
+                            <h3 class="display text-xl font-bold text-white truncate">${escapeHtml(name)}</h3>
+                            ${prof.username ? `<p class="mono">@${escapeHtml(prof.username)}</p>` : ''}
+                        </div>
+                        <div>
+                            <p class="display text-2xl font-bold text-[#c8ff2e]">${L.level} ${lvl}</p>
+                            <p class="mono">${200 - into} ${L.xpLeft}</p>
                         </div>
                     </div>
-                    <div class="tile p-5 text-sm text-neutral-300 leading-relaxed max-h-[45vh] overflow-y-auto">${formatText(it.content)}</div>`;
-            } else if (cabTab === 0) {
-                const rows = st.mats.map(h => `
-                    <div class="cab-row group" onclick="openCabItem(${h.id})">
-                        <div class="cab-ico">${typeIcon[h.type] || '📄'}</div>
+                    <div class="grid grid-cols-2 lg:grid-cols-1 gap-3">
+                        <div class="tile p-4 flex items-center justify-between"><div><p class="display text-2xl font-bold text-white">⚡ ${escapeHtml(currentUser.tokens ?? 0)}</p><p class="mono">${L.tokens}</p></div><p class="text-[10px] text-neutral-500 text-right max-w-[90px]">${L.tokensHint}</p></div>
+                        <div class="tile p-4 flex items-center justify-between"><div><p class="display text-2xl font-bold text-white">🔥 ${streak}</p><p class="mono">${L.streak}</p></div></div>
+                    </div>
+                    <div class="tile p-4 flex items-center justify-between"><span class="mono">${L.sub}</span><span class="text-xs font-bold ${sub ? 'text-[#c8ff2e]' : 'text-neutral-400'}">${sub ? L.active : L.free}</span></div>
+                    <button onclick="logout()" class="btn-ghost w-full py-2.5 text-xs">${L.logout}</button>
+                </aside>`;
+
+            const tabs = Object.keys(L.tabs).map(k =>
+                `<button onclick="setCabTab('${k}')" class="cab-tab ${(cab.tab === k && !cab.view) ? 'active' : ''}">${L.tabs[k]}</button>`).join('');
+
+            let main = '';
+            if (cab.loading && !cab.view && !(cab.tab === 'overview' && ov)) {
+                main = `<div class="cab-empty animate-pulse">${L.loading}</div>`;
+            } else if (cab.error) {
+                main = `<div class="cab-empty">${L.loadErr}<br><button onclick="loadCabTab('${cab.tab}')" class="btn-accent px-5 py-2 text-xs mt-3">${L.retry}</button></div>`;
+            } else if (cab.view) {
+                const it = cab.view;
+                main = `
+                    <button onclick="closeCabItem()" class="mono hover:text-white transition">${L.back}</button>
+                    <div class="flex items-center gap-3">
+                        <div class="cab-ico">${typeIcon[it.type] || '📄'}</div>
                         <div class="min-w-0 flex-grow">
-                            <p class="text-sm font-bold text-white truncate">${escapeHtml(h.title || '—')}</p>
-                            <p class="mono">${escapeHtml(L.types[h.type] || h.type)} · ${fmtDate(h.ts)}</p>
+                            <h4 class="display text-xl font-bold text-white truncate">${escapeHtml(it.title || L.types[it.type] || '')}</h4>
+                            <p class="mono">${escapeHtml(L.types[it.type] || it.type)} · ${fmtDate(it.created_at)}</p>
                         </div>
-                        <button onclick="event.stopPropagation(); deleteHist(${h.id})" class="cab-x" title="${L.del}">✕</button>
-                    </div>`).join('');
-                const srv = st.serverSaves.map(s => `
-                    <div class="cab-row" style="cursor:default">
-                        <div class="cab-ico">☁️</div>
-                        <div class="min-w-0 flex-grow">
-                            <p class="text-sm font-bold text-white truncate">${escapeHtml(s.title || '—')}</p>
-                            <p class="mono">${escapeHtml(s.type || '')} · ${L.server}</p>
-                        </div>
-                    </div>`).join('');
-                inner = (rows || srv) ? `<div class="space-y-2">${rows}${srv}</div>
-                    ${st.hist.length ? `<div class="text-right pt-3"><button onclick="clearHist()" class="mono hover:text-white transition">${L.clear}</button></div>` : ''}`
-                    : `<div class="cab-empty">${L.empty}</div>`;
-            } else if (cabTab === 1) {
-                const chatsAll = [...st.chats].reverse();
-                inner = chatsAll.length ? `<div class="space-y-3">${chatsAll.map(c => `
+                        <button onclick="copyCabItem(this)" class="btn-ghost px-3 py-1.5 text-[11px]">${L.copy}</button>
+                        <button onclick="deleteCabItem(${it.id})" class="btn-ghost px-3 py-1.5 text-[11px]">✕</button>
+                    </div>
+                    <div class="tile p-5 text-sm text-neutral-300 leading-relaxed max-h-[55vh] overflow-y-auto">${formatText(readableContent(it))}</div>`;
+            } else if (cab.tab === 'overview' && ov) {
+                const c = ov.counts;
+                const upcoming = studentTasks.filter(x => !x.done).sort((a, b) => String(a.date).localeCompare(String(b.date))).slice(0, 4);
+                main = `
+                    <div class="grid grid-cols-2 xl:grid-cols-4 gap-3">
+                        <div class="tile p-4"><div class="display text-3xl font-bold text-[#c8ff2e]">${xp}</div><div class="mono mt-1">${L.xp}</div></div>
+                        <div class="tile p-4"><div class="display text-3xl font-bold text-white">${c.materials}</div><div class="mono mt-1">${L.mats}</div></div>
+                        <div class="tile p-4"><div class="display text-3xl font-bold text-white">${c.chats}</div><div class="mono mt-1">${L.chats}</div></div>
+                        <div class="tile p-4"><div class="display text-3xl font-bold text-white">${c.tasks_done}/${c.tasks_total}</div><div class="mono mt-1">${L.tasksLbl}</div></div>
+                    </div>
+                    <div class="tile p-5 space-y-3"><h4 class="mono">${L.activity}</h4>${activityChart(ov.activity)}</div>
+                    <div class="grid xl:grid-cols-2 gap-5">
+                        <div class="space-y-2"><h4 class="mono px-1">${L.recent}</h4>${(cab.items && cab.items.length) ? cab.items.map(h => itemRow(h, L)).join('') : `<div class="cab-empty">${L.empty}</div>`}</div>
+                        <div class="space-y-2"><h4 class="mono px-1">${L.upcoming}</h4>${upcoming.length ? upcoming.map(x => taskRow(x, L)).join('') : `<div class="cab-empty">${L.noTasks}</div>`}</div>
+                    </div>`;
+            } else if (cab.tab === 'materials') {
+                const types = Object.keys(L.types);
+                main = `
+                    <input type="text" value="${escapeHtml(cab.search)}" oninput="onCabSearch(this.value)" placeholder="${L.search}" class="field">
+                    <div class="flex flex-wrap gap-2">
+                        <button onclick="setCabFilter('')" class="chip ${!cab.filter ? 'active' : ''}">${L.all}</button>
+                        ${types.map(t => `<button onclick="setCabFilter('${t}')" class="chip ${cab.filter === t ? 'active' : ''}">${typeIcon[t]} ${L.types[t]}</button>`).join('')}
+                    </div>
+                    <div class="space-y-2">${(cab.items && cab.items.length) ? cab.items.map(h => itemRow(h, L)).join('') : `<div class="cab-empty">${L.empty}</div>`}</div>
+                    ${(cab.items && cab.items.length && !cab.filter && !cab.search) ? `<div class="text-right"><button onclick="clearCabHistory()" class="mono hover:text-white transition">${L.clear}</button></div>` : ''}`;
+            } else if (cab.tab === 'chat') {
+                const list = cab.chat ? [...cab.chat].reverse() : [];
+                main = list.length ? `<div class="space-y-4 max-h-[60vh] overflow-y-auto pr-1">${list.map(m => `
                     <div class="space-y-2">
-                        <div class="flex justify-end"><div class="max-w-[85%] p-3 rounded-2xl bg-[#1c1c1c] border border-white/10 text-xs font-semibold text-white">${escapeHtml(c.title)}</div></div>
-                        <div class="flex justify-start"><div class="max-w-[85%] p-3 rounded-2xl bg-[#c8ff2e] text-black text-xs font-medium leading-relaxed">${formatText(c.content)}</div></div>
-                        <p class="mono text-center">${fmtDate(c.ts)}</p>
-                    </div>`).join('')}</div>` : `<div class="cab-empty">${L.noChat}</div>`;
-            } else if (cabTab === 2) {
+                        <div class="flex justify-end"><div class="max-w-[85%] p-3 rounded-2xl bg-[#1c1c1c] border border-white/10 text-xs font-semibold text-white">${escapeHtml(m.message)}</div></div>
+                        <div class="flex justify-start"><div class="max-w-[85%] p-3 rounded-2xl bg-[#c8ff2e] text-black text-xs font-medium leading-relaxed">${formatText(m.reply)}</div></div>
+                        <p class="mono text-center">${fmtDate(m.created_at)}</p>
+                    </div>`).join('')}</div>
+                    <div class="text-right"><button onclick="clearCabHistory()" class="mono hover:text-white transition">${L.clear}</button></div>` : `<div class="cab-empty">${L.noChat}</div>`;
+            } else if (cab.tab === 'tasks') {
                 const list = [...studentTasks].sort((a, b) => String(a.date).localeCompare(String(b.date)));
-                inner = list.length ? `<div class="space-y-2">${list.map(x => `
-                    <div class="cab-row" style="cursor:default; ${x.done ? 'opacity:.55' : ''}">
-                        <div class="cab-ico" style="${x.done ? 'background:var(--accent);color:#000' : ''}">${x.done ? '✓' : '○'}</div>
-                        <div class="min-w-0 flex-grow">
-                            <p class="text-sm font-bold truncate ${x.done ? 'line-through text-neutral-500' : 'text-white'}">${escapeHtml(x.title)}</p>
-                            <p class="mono">${escapeHtml(x.date)}</p>
-                        </div>
-                    </div>`).join('')}</div>` : `<div class="cab-empty">${L.noTasks}</div>`;
-            } else {
-                const conds = [st.mats.length >= 1, st.mats.length >= 5, st.chats.length >= 1, xp >= 100, xp >= 500, st.tasksDone >= 3];
-                const icons = ['🚀', '🧭', '💬', '💯', '⭐', '✅'];
-                inner = `<div class="grid grid-cols-2 sm:grid-cols-3 gap-3">${L.ach.map((a, i) => `
+                main = `${list.length ? `<div class="space-y-2">${list.map(x => taskRow(x, L)).join('')}</div>` : `<div class="cab-empty">${L.noTasks}</div>`}
+                    <button onclick="cabGoPlanner()" class="btn-accent px-6 py-3 text-xs">📅 ${L.openPlanner}</button>`;
+            } else if (cab.tab === 'achievements' && ov) {
+                const c = ov.counts;
+                const conds = [c.materials >= 1, c.materials >= 10, c.chats >= 1, xp >= 100, xp >= 500, c.tasks_done >= 5, ov.streak >= 3, Object.keys(c.by_type).length >= 4];
+                const icons = ['🚀', '🧭', '💬', '💯', '⭐', '✅', '🔥', '🧩'];
+                const got = conds.filter(Boolean).length;
+                main = `<p class="mono">${got} / ${conds.length}</p>
+                    <div class="grid grid-cols-2 sm:grid-cols-3 gap-3">${L.ach.map((a, i) => `
                     <div class="tile p-4 text-center ${conds[i] ? '' : 'opacity-40'}" style="${conds[i] ? 'border-color: rgba(200,255,46,.35)' : ''}">
                         <div class="text-3xl mb-2 ${conds[i] ? '' : 'grayscale'}">${icons[i]}</div>
                         <p class="text-xs font-bold text-white">${a[0]}</p>
                         <p class="text-[10px] text-neutral-400 mt-1">${a[1]}</p>
                     </div>`).join('')}</div>`;
+            } else {
+                main = `<div class="cab-empty animate-pulse">${L.loading}</div>`;
             }
 
             body.innerHTML = `
-                <div class="flex items-center gap-4 pr-8">
-                    <div class="w-16 h-16 rounded-full bg-[#c8ff2e] text-black flex items-center justify-center display text-3xl font-bold shrink-0">${initial}</div>
-                    <div class="min-w-0 flex-grow">
-                        <h3 class="display text-2xl font-bold text-white truncate">${escapeHtml(name)}</h3>
-                        <p class="mono">${L.title} · ${L.sub}: ${subActive ? L.active : L.free}</p>
-                    </div>
-                    <button onclick="logout()" class="btn-ghost px-4 py-2 text-[11px] shrink-0">${L.logout}</button>
-                </div>
-
-                <div class="tile p-4 space-y-2">
-                    <div class="flex items-center justify-between">
-                        <span class="display text-lg font-bold text-white">${L.level} ${lvl}</span>
-                        <span class="mono">${200 - into} XP ${L.toNext}</span>
-                    </div>
-                    <div class="h-2 rounded-full bg-white/10 overflow-hidden"><div class="h-full rounded-full bg-[#c8ff2e]" style="width:${into / 2}%"></div></div>
-                </div>
-
-                <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
-                    <div class="tile p-4 text-center"><div class="display text-3xl font-bold text-[#c8ff2e]">${escapeHtml(tokens)}</div><div class="mono mt-1">${L.tokens}</div></div>
-                    <div class="tile p-4 text-center"><div class="display text-3xl font-bold text-white">${xp}</div><div class="mono mt-1">${L.xp}</div></div>
-                    <div class="tile p-4 text-center"><div class="display text-3xl font-bold text-white">${st.matCount}</div><div class="mono mt-1">${L.mats}</div></div>
-                    <div class="tile p-4 text-center"><div class="display text-3xl font-bold text-white">${st.tasksDone}/${studentTasks.length}</div><div class="mono mt-1">${L.tasks}</div></div>
-                </div>
-
-                <div class="flex gap-1 p-1 rounded-full border border-white/10 bg-[#0d0d0d] overflow-x-auto">
-                    ${L.tabs.map((n, i) => `<button onclick="setCabTab(${i})" class="cab-tab ${(!cabView && cabTab === i) ? 'active' : ''}">${n}</button>`).join('')}
-                </div>
-
-                <div>${inner}</div>
-            `;
+                <div class="grid lg:grid-cols-[250px_1fr] gap-6">
+                    ${side}
+                    <section class="space-y-5 min-w-0">
+                        <div class="flex items-center justify-between pr-10"><h2 class="display text-2xl font-bold text-white">${L.title}</h2></div>
+                        <div class="flex gap-1 p-1 rounded-full border border-white/10 bg-[#0d0d0d] overflow-x-auto">${tabs}</div>
+                        <div class="space-y-4">${main}</div>
+                    </section>
+                </div>`;
             renderMath(body);
         }
 
-        function setCabTab(i) { cabTab = i; cabView = null; renderCabinet(); }
-        function openCabItem(id) { cabView = loadHist().find(h => h.id === id) || null; renderCabinet(); }
-        function closeCabItem() { cabView = null; renderCabinet(); }
-        function deleteHist(id) { saveHist(loadHist().filter(h => h.id !== id)); renderCabinet(); }
-        function clearHist() {
-            const L = cabText[selectedLang] || cabText.ru;
-            if (!confirm(L.confirmClear)) return;
-            saveHist([]);
-            renderCabinet();
-        }
-
-        async function openCabinet() {
+        function openCabinet() {
             if (!currentUser) return checkAuth();
             document.getElementById('cabinet-modal').classList.remove('hidden');
-            cabTab = 0; cabView = null;
-            renderCabinet();
-            try {
-                const res = await fetch(`/api/user/${currentUser.user_id}/saves`);
-                if (res.ok) {
-                    serverData = await res.json();
-                    if (serverData.tokens != null) currentUser.tokens = serverData.tokens;
-                    if (Number(serverData.score) > (Number(currentUser.score) || 0)) currentUser.score = serverData.score;
-                    try { localStorage.setItem('studyai_user', JSON.stringify(currentUser)); } catch (e) {}
-                    checkAuth();
-                    // серверные сообщения чата, которых ещё нет локально
-                    if (Array.isArray(serverData.chats) && !loadHist().some(h => h.type === 'chat')) {
-                        serverData.chats.forEach(c => { if (c && c.message) addHist('chat', c.message, c.reply || c.response || ''); });
-                    }
-                    renderCabinet();
-                }
-            } catch (e) {}
+            cab.tab = 'overview'; cab.view = null; cab.filter = ''; cab.search = '';
+            loadCabTab('overview');
         }
         function closeCabinet() { document.getElementById('cabinet-modal').classList.add('hidden'); }
         function logout() { localStorage.removeItem('studyai_user'); location.reload(); }
