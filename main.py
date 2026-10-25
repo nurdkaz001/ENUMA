@@ -1,13 +1,12 @@
 from __future__ import annotations
 import os
-import time
 import random
 import shutil
 import urllib.request
 import urllib.parse
 import json
 import asyncio
-from datetime import datetime
+from datetime import datetime, timedelta
 from fastapi import FastAPI, File, Form, UploadFile, Request
 from fastapi.responses import FileResponse, JSONResponse
 from openai import OpenAI
@@ -44,25 +43,24 @@ def send_telegram_message(chat_id: str, text: str):
     except Exception:
         return False
 
-# --- ФОНОВЫЙ ПЛАНИРОВЩИК ДЛЯ АВТО-УВЕДОМЛЕНИЙ В ДЕНЬ ДЕДЛАЙНА ---
+# --- ФОНОВЫЙ ПЛАНИРОВЩИК (2026 ГОД) ---
 async def background_reminder_checker():
     while True:
         try:
             if supabase:
                 today_str = datetime.now().strftime("%Y-%m-%d")
-                # Ищем невыполненные задачи на сегодня
                 tasks_res = supabase.table("user_tasks").select("*").eq("date", today_str).eq("notified", False).execute()
                 if tasks_res.data:
                     for task in tasks_res.data:
                         tg_id = task.get("tg_id")
                         title = task.get("title", "Учебная задача")
                         if tg_id:
-                            msg = f"🔔 *НАПОМИНАНИЕ НА СЕГОДНЯ!*\n\n📌 Задача: *{title}*\n📅 Дата: `{today_str}`\n\nПриступайте к выполнению прямо сейчас в StudyAI Hub!"
+                            msg = f"🔔 *НАПОМИНАНИЕ НА СЕГОДНЯ!*\n\n📌 Задача: *{title}*\n📅 Дата: `{today_str}`\n\nПриступайте к выполнению через StudyAI Hub!"
                             if send_telegram_message(str(tg_id), msg):
                                 supabase.table("user_tasks").update({"notified": True}).eq("id", task["id"]).execute()
         except Exception as e:
             print("Background reminder error:", e)
-        await asyncio.sleep(3600) # Проверка каждый час
+        await asyncio.sleep(3600)
 
 @app.on_event("startup")
 async def startup_event():
@@ -76,38 +74,6 @@ async def read_root():
 async def read_admin():
     return "templates/admin.html"
 
-# --- АДМИН-ПАНЕЛЬ API ---
-@app.get("/api/admin/users")
-async def admin_get_users(admin_key: str):
-    if admin_key != ADMIN_SECRET:
-        return JSONResponse({"error": "Доступ запрещен! Неверный ключ администратора."}, status_code=403)
-    try:
-        if not supabase:
-            return JSONResponse({"error": "База данных не подключена"}, status_code=500)
-        res = supabase.table("users").select("*").order("id", desc=True).execute()
-        return {"users": res.data or []}
-    except Exception as e:
-        return JSONResponse({"error": str(e)}, status_code=500)
-
-@app.post("/api/admin/toggle-subscription")
-async def admin_toggle_subscription(
-    user_id: int = Form(...),
-    status: bool = Form(...),
-    admin_key: str = Form(...)
-):
-    if admin_key != ADMIN_SECRET:
-        return JSONResponse({"error": "Доступ запрещен! Неверный ключ администратора."}, status_code=403)
-    try:
-        if not supabase:
-            return JSONResponse({"error": "База данных не подключена"}, status_code=500)
-        
-        is_sub_bool = True if str(status).lower() in ["true", "1", "yes"] else False
-        supabase.table("users").update({"is_subscribed": is_sub_bool}).eq("id", user_id).execute()
-        return {"success": True, "user_id": user_id, "is_subscribed": is_sub_bool}
-    except Exception as e:
-        return JSONResponse({"error": str(e)}, status_code=500)
-
-# --- API НАПОМИНАНИЙ И УВЕДОМЛЕНИЙ ---
 @app.post("/api/telegram/reminder")
 async def send_task_reminder(
     chat_id: str = Form(...),
@@ -115,11 +81,8 @@ async def send_task_reminder(
     task_date: str = Form(...),
     user_id: int = Form(0)
 ):
-    # 1. Мгновенное подтверждение в Telegram
-    text = f"✅ *Напоминание успешно запланировано!*\n\n📌 Задача: *{task_title}*\n📅 Дата дедлайна: `{task_date}`\n\nМы пришлем вам повторное уведомление прямо в день выполнения!"
+    text = f"✅ *Напоминание успешно создано!*\n\n📌 Задача: *{task_title}*\n📅 Дата дедлайна: `{task_date}`\n\nМы напомним вам в этот день в Telegram!"
     success = send_telegram_message(chat_id, text)
-    
-    # 2. Сохранение задачи в базу для фоновой проверки
     try:
         if supabase and user_id:
             supabase.table("user_tasks").insert({
@@ -133,16 +96,103 @@ async def send_task_reminder(
         pass
 
     if success:
-        return {"success": True, "message": "Напоминание отправлено в Telegram!"}
-    return JSONResponse({"error": "Не удалось отправить сообщение."}, status_code=400)
+        return {"success": True, "message": "Напоминание отправлено!"}
+    return JSONResponse({"error": "Сообщение не отправлено."}, status_code=400)
 
-# --- ЧАТ-БОТ API ---
+# --- ИИ УЧИТЕЛЬ (ВИДЕО И ИГРА) ---
+@app.post("/api/ai-teacher")
+async def ai_teacher(
+    user_id: int = Form(...),
+    topic: str = Form(""),
+    comment: str = Form(""),
+    doc_id: str = Form("default"),
+    lang: str = Form("kz")
+):
+    try:
+        file_text = active_documents.get(doc_id, "")[:3000]
+        lang_instr = {"kz": "Қазақ тілінде.", "ru": "На русском языке.", "en": "In English."}.get(lang, "На русском языке.")
+        
+        prompt = f"""{lang_instr}
+Ты супер-интересный интерактивный ИИ-преподаватель. 
+Тема/Задача: "{topic}"
+Дополнительный комментарий: "{comment}"
+Контекст текста файла: "{file_text}"
+
+Твоя задача:
+1. Объясни материал простым, увлекательным языком.
+2. Дай рекомендацию по поиску полезного видео на YouTube или предложи наглядный пример.
+3. Подготовь мини-тест (игру) строго из 3 интерактивных вопросов для закрепления.
+Верни ответ СТРОГО в формате JSON (без лишнего текста вокруг):
+{
+  "explanation": "Объяснение и рекомендация видео...",
+  "game_questions": [
+    {
+      "q": "Вопрос 1?",
+      "options": ["А) Вариант", "В) Вариант", "С) Вариант"],
+      "answer": "А",
+      "hint": "Отличное пояснение"
+    }
+  ]
+}"""
+
+        response = ai_client.chat.completions.create(
+            model="deepseek-chat",
+            messages=[{"role": "system", "content": "Ты крутой преподаватель с игровыми элементами."}, {"role": "user", "content": prompt}],
+            temperature=0.4
+        )
+        return {"result": response.choices[0].message.content}
+    except Exception as e:
+        return JSONResponse({"error": str(e)}, status_code=500)
+
+# --- БИЛЕТЫ (ИГРОВОЙ ФОРМАТ) ---
+@app.post("/api/tickets")
+async def generate_tickets(
+    user_id: int = Form(...),
+    theme: str = Form(""),
+    comment: str = Form(""),
+    count: int = Form(5),
+    doc_id: str = Form("default"),
+    lang: str = Form("kz")
+):
+    try:
+        file_text = active_documents.get(doc_id, "")[:3000]
+        lang_instr = {"kz": "Қазақ тілінде.", "ru": "На русском языке.", "en": "In English."}.get(lang, "На русском языке.")
+        
+        prompt = f"""{lang_instr}
+Подготовь ровно {count} экзаменационных билетов по теме "{theme}".
+Дополнительный комментарий: "{comment}"
+Текст файла: "{file_text}"
+
+В каждом билете должны быть вопросы и мини-задание в игровом стиле.
+Верни ответ СТРОГО в виде JSON-массива:
+[
+  {
+    "ticket_num": 1,
+    "question": "Вопрос билета...",
+    "game_task": "Мини-задание или вопрос-тест в игровом стиле",
+    "options": ["A) ...", "B) ...", "C) ..."],
+    "correct": "A"
+  }
+]"""
+
+        response = ai_client.chat.completions.create(
+            model="deepseek-chat",
+            messages=[{"role": "system", "content": "Ты строгий и справедливый профессор."}, {"role": "user", "content": prompt}],
+            temperature=0.3
+        )
+        res_text = response.choices[0].message.content
+        if supabase:
+            supabase.table("saved_materials").insert({"user_id": user_id, "title": f"Билеты: {theme}", "content": res_text, "type": "tickets"}).execute()
+        return {"result": res_text}
+    except Exception as e:
+        return JSONResponse({"error": str(e)}, status_code=500)
+
 @app.post("/api/chat")
 async def chat_with_ai(
     user_id: int = Form(...),
     message: str = Form(...),
     doc_id: str = Form("default"),
-    lang: str = Form("ru")
+    lang: str = Form("kz")
 ):
     try:
         if supabase:
@@ -164,16 +214,16 @@ async def chat_with_ai(
         }.get(lang, "Отвечай строго на русском.")
 
         prompt = f"""{lang_instr}
-Ты интеллектуальный ассистент-наставник StudyAI Hub. Отвечай кратко, грамотно и структурировано.
-Контекст текущего проекта/материала:
-{user_text[:4000] if user_text else 'Общий контекст учебы'}
+Ты интеллектуальный ИИ-наставник StudyAI Hub. Отвечай кратко, качественно и структурировано.
+Контекст текущего материала:
+{user_text[:4000] if user_text else 'Общий учебный контекст'}
 
-Вопрос пользователя: {message}"""
+Вопрос: {message}"""
 
         response = ai_client.chat.completions.create(
             model="deepseek-chat",
             messages=[
-                {"role": "system", "content": "Ты экспертный ИИ-наставник."},
+                {"role": "system", "content": "Ты опытный эксперт-преподаватель."},
                 {"role": "user", "content": prompt}
             ],
             temperature=0.4
@@ -182,12 +232,12 @@ async def chat_with_ai(
         new_tokens = tokens if is_sub else max(0, tokens - 1)
         if supabase:
             supabase.table("users").update({"tokens": new_tokens}).eq("id", user_id).execute()
+            supabase.table("chat_history").insert({"user_id": user_id, "message": message, "reply": reply}).execute()
 
         return {"reply": reply, "tokens_left": new_tokens, "is_subscribed": is_sub}
     except Exception as e:
         return JSONResponse({"error": str(e)}, status_code=500)
 
-# --- АВТОРИЗАЦИЯ ТЕЛЕГРАМ ---
 @app.post("/api/telegram/webhook")
 async def telegram_webhook(request: Request):
     try:
@@ -204,7 +254,7 @@ async def telegram_webhook(request: Request):
                 supabase.table("auth_codes").delete().eq("tg_id", str_chat_id).execute()
                 supabase.table("auth_codes").insert({"tg_id": str_chat_id, "code": code}).execute()
             
-            msg = f"👋 *StudyAI Hub — Авторизация*\n\nВаш 6-значный код для входа:\n`{code}`\n\nВведите его на сайте."
+            msg = f"👋 *StudyAI Hub — Авторизация*\n\nВаш код входа:\n`{code}`\n\nВведите его на сайте."
             send_telegram_message(str_chat_id, msg)
             
         return {"status": "ok"}
@@ -220,7 +270,7 @@ async def verify_code(code: str = Form(...)):
 
         res = supabase.table("auth_codes").select("*").eq("code", code_clean).execute()
         if not res.data or len(res.data) == 0:
-            return JSONResponse({"error": "Неверный или устаревший код подтверждения!"}, status_code=400)
+            return JSONResponse({"error": "Неверный или устаревший код!"}, status_code=400)
         
         record = res.data[0]
         tg_id = record["tg_id"]
@@ -256,8 +306,6 @@ async def verify_code(code: str = Form(...)):
 
 @app.post("/upload")
 async def upload_pdf(file: UploadFile = File(...)):
-    if not file.filename.lower().endswith(".pdf"):
-        return JSONResponse({"error": "Загрузите PDF файл."}, status_code=400)
     temp_filename = f"temp_{file.filename}"
     try:
         with open(temp_filename, "wb") as buffer:
@@ -265,10 +313,9 @@ async def upload_pdf(file: UploadFile = File(...)):
         reader = PdfReader(temp_filename)
         text = "".join([page.extract_text() + "\n" for page in reader.pages if page.extract_text()])
         if os.path.exists(temp_filename): os.remove(temp_filename)
-        if len(text.strip()) < 30: return JSONResponse({"error": "В PDF нет текста."}, status_code=400)
         doc_id = str(os.urandom(4).hex())
         active_documents[doc_id] = text
-        return {"doc_id": doc_id, "message": "Файл успешно обработан!"}
+        return {"doc_id": doc_id, "message": "Файл успешно загружен!"}
     except Exception as e:
         if os.path.exists(temp_filename): os.remove(temp_filename)
         return JSONResponse({"error": str(e)}, status_code=500)
@@ -278,7 +325,7 @@ async def generate_content(
     doc_id: str = Form("default"), 
     action: str = Form(...), 
     user_id: int = Form(...), 
-    lang: str = Form("ru"), 
+    lang: str = Form("kz"), 
     title: str = Form("Урок"),
     page: int = Form(1),
     custom_prompt: str = Form("")
@@ -294,7 +341,7 @@ async def generate_content(
             if not is_sub and tokens <= 0:
                 return JSONResponse({
                     "error": "PAYMENT_REQUIRED", 
-                    "message": "Подписка не активна и токены закончились!",
+                    "message": "Токены закончились!",
                     "is_subscribed": False,
                     "tokens_left": 0
                 }, status_code=402)
@@ -305,56 +352,57 @@ async def generate_content(
 
     user_text = active_documents.get(doc_id, "")
     lang_instr = {
-        "kz": "Жауапты СТРОГО МІНСІЗ ҚАЗАҚ ТІЛІНДЕ жаз.",
-        "en": "Provide the response STRICTLY IN ENGLISH.",
-        "ru": "Предоставь ответ СТРОГО НА РУССКОМ ЯЗЫКЕ."
-    }.get(lang, "Отвечай строго на русском.")
+        "kz": "СТРОГО НА КАЗАХСКОМ ЯЗЫКЕ (Мінсіз қазақ тілінде).",
+        "en": "STRICTLY IN ENGLISH.",
+        "ru": "Строго на русском языке."
+    }.get(lang, "Строго на русском языке.")
 
     start_q = (page - 1) * 20 + 1
     end_q = page * 20
+    current_year = datetime.now().year # Защита 2026 года
 
     if action == "planner":
+        tomorrow_date = (datetime.now() + timedelta(days=1)).strftime("%Y-%m-%d")
         prompt_text = f"""{lang_instr}
-Ты персональный ИИ-ассистент по тайм-менеджменту и планированию для студентов.
-Контекст и задачи студента:
-"{custom_prompt}"
+Ты ИИ-ассистент по тайм-менеджменту для студентов. Текущий год строго {current_year}.
+Запрос пользователя: "{custom_prompt}"
+Если пользователь говорит «завтра», укажи дату дедлайна: {tomorrow_date}.
 
-Составь текстовый отчет по графику. А В САМОМ КОНЦЕ ОТВЕТА ОБЯЗАТЕЛЬНО добавь JSON-блок с перераспределенным списком задач для календаря:
-```json
+Верни подробный отчет и В КОНЦЕ БЛОК JSON:
 [
-  {{"title": "Название задачи", "date": "YYYY-MM-DD", "desc": "Подробная информация и инструкция по выполнению задачи"}}
-]
-```"""
+  {{"title": "Название задачи", "date": "{current_year}-MM-DD", "desc": "Инструкция и метод выполнения"}}
+]"""
     elif action == "quiz":
         prompt_text = f"""{lang_instr}
-Составь СТРОГО 20 УНИКАЛЬНЫХ тестовых вопросов (с номера {start_q} по номер {end_q}).
-Верни ответ СТРОГО в формате валидного JSON-массива без какого-либо дополнительного текста или тегов markdown!
-Формат каждого элемента JSON:
-{{
-  "id": 1,
-  "question": "Текст вопроса...",
-  "options": ["A) Вариант 1", "B) Вариант 2", "C) Вариант 3", "D) Вариант 4"],
-  "answer": "A",
-  "explanation": "Объяснение."
-}}"""
+Создай ровно 20 уникальных тестовых вопросов (номера с {start_q} по {end_q}).
+Верни только валидный JSON-массив:
+[
+  {
+    "id": 1,
+    "question": "Вопрос...",
+    "options": ["A) Вариант 1", "B) Вариант 2", "C) Вариант 3", "D) Вариант 4"],
+    "answer": "A",
+    "explanation": "Пояснение."
+  }
+]"""
     elif action == "flashcards":
         prompt_text = f"""{lang_instr}
-Создай 10 ИНТЕРАКТИВНЫХ УЧЕБНЫХ КАРТОЧЕК. Оформляй СТРОГО по шаблону:
+Создай 10 интерактивных учебных карточек строго по шаблону:
 ### Карточка X
 **Вопрос:** [...]
 **Ответ:** [...]
 ---"""
     elif action == "summary":
-        prompt_text = f"{lang_instr}\nСделай качественный конспект с формулами ($...$) и главными терминами."
+        prompt_text = f"{lang_instr}\nСделай глубокий академический конспект с формулами ($...$) и основными терминами."
     else:
-        prompt_text = f"{lang_instr}\nОбъясни материал простыми словами."
+        prompt_text = f"{lang_instr}\nОбъясни этот материал простыми примерами."
 
     try:
         content_text = (user_text or doc_id)[:7000] if action != "planner" else custom_prompt
         response = ai_client.chat.completions.create(
             model="deepseek-chat",
             messages=[
-                {"role": "system", "content": "Ты экспертный ИИ-наставник и органайзер."},
+                {"role": "system", "content": f"Ты передовой ИИ-эксперт {current_year} года."},
                 {"role": "user", "content": f"{prompt_text}\n\nКонтекст:\n{content_text}"}
             ],
             temperature=0.3
@@ -384,29 +432,22 @@ async def add_score(user_id: int = Form(...), points: int = Form(50)):
     except Exception as e:
         return JSONResponse({"error": str(e)}, status_code=500)
 
-@app.post("/api/user/subscribe")
-async def subscribe_user(user_id: int = Form(...)):
-    try:
-        if supabase:
-            supabase.table("users").update({"is_subscribed": True}).eq("id", user_id).execute()
-        return {"success": True}
-    except Exception as e:
-        return JSONResponse({"error": str(e)}, status_code=500)
-
 @app.get("/api/user/{user_id}/saves")
 async def get_user_saves(user_id: int):
     try:
         if supabase:
             saves = supabase.table("saved_materials").select("*").eq("user_id", user_id).order("id", desc=True).execute()
+            chats = supabase.table("chat_history").select("*").eq("user_id", user_id).order("id", desc=True).execute()
             user = supabase.table("users").select("*").eq("id", user_id).execute().data[0]
             return {
                 "username": user.get("username"), 
                 "score": user.get("score", 0), 
                 "tokens": user.get("tokens"), 
-                "is_subscribed": user.get("is_subscribed", False), 
-                "saves": saves.data or []
+                "is_subscribed": user.get("is_subscribed", False),
+                "saves": saves.data or [],
+                "chats": chats.data or []
             }
-        return {"username": "Студент", "score": 100, "tokens": 3, "is_subscribed": True, "saves": []}
+        return {"username": "Студент", "score": 100, "tokens": 3, "is_subscribed": True, "saves": [], "chats": []}
     except Exception as e:
         return JSONResponse({"error": str(e)}, status_code=500)
 
