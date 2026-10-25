@@ -3,55 +3,128 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>StudyAI Hub — Премиум ИИ Наставник</title>
+    <title>StudyAI Hub — ИИ Наставник</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@500;600;700;800&display=swap" rel="stylesheet">
-    
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Inter+Tight:wght@500;600;700;800&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
+
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.css">
     <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.js"></script>
     <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/contrib/auto-render.min.js"></script>
 
     <style>
-        body { font-family: 'Plus Jakarta Sans', sans-serif; }
-        .glow-btn { transition: all 0.25s cubic-bezier(0.34, 1.56, 0.64, 1); }
-        .glow-btn:hover { transform: translateY(-2px); box-shadow: 0 12px 25px -5px rgba(99, 102, 241, 0.4); }
+        :root {
+            --bg: #0a0a0a;
+            --panel: #111111;
+            --tile: #0d0d0d;
+            --line: rgba(255, 255, 255, 0.09);
+            --fg: #f4f4ef;
+            --mute: #8a8a85;
+            --accent: #c8ff2e;
+        }
+        html { scroll-behavior: smooth; }
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: var(--bg);
+            color: var(--fg);
+            overflow-x: hidden;
+            -webkit-font-smoothing: antialiased;
+        }
+        ::selection { background: var(--accent); color: #000; }
+
+        .display { font-family: 'Inter Tight', 'Inter', sans-serif; letter-spacing: -0.045em; }
+        .mono {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--mute);
+        }
+
+        /* Карточки */
+        .bento-card {
+            background: var(--panel);
+            border: 1px solid var(--line);
+            transition: border-color 0.3s ease, transform 0.3s ease;
+        }
+        .bento-card:hover { border-color: rgba(200, 255, 46, 0.25); }
+
+        .tile { background: var(--tile); border: 1px solid var(--line); border-radius: 1.25rem; }
+        .banner {
+            background: #161616; border: 1px solid var(--line); border-radius: 1.5rem; padding: 1.5rem;
+        }
+        .field {
+            width: 100%; padding: 0.8rem 1rem; border-radius: 1rem;
+            background: var(--tile); border: 1px solid var(--line);
+            color: #fff; font-size: 0.8rem; font-weight: 500; outline: none; transition: border-color .2s;
+        }
+        .field::placeholder { color: #5f5f5a; }
+        .field:focus { border-color: var(--accent); }
+
+        /* Кнопки */
+        .btn-accent {
+            background: var(--accent); color: #0a0a0a; font-weight: 800; border-radius: 999px;
+            transition: transform 0.25s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.25s ease;
+        }
+        .btn-accent:hover { transform: translateY(-2px); box-shadow: 0 12px 30px -8px rgba(200, 255, 46, 0.45); }
+        .btn-ghost {
+            border: 1px solid var(--line); border-radius: 999px; color: #fff; font-weight: 700;
+            transition: background .2s, border-color .2s;
+        }
+        .btn-ghost:hover { background: rgba(255,255,255,0.06); border-color: rgba(255,255,255,0.25); }
+
+        /* Варианты ответов */
+        .opt {
+            padding: 0.65rem 0.85rem; background: #161616; border: 1px solid var(--line);
+            border-radius: 0.9rem; font-size: 0.75rem; font-weight: 600; color: #e5e5e0;
+            text-align: left; transition: all .2s;
+        }
+        .opt:hover { background: var(--accent); color: #000; border-color: var(--accent); }
+        .opt.opt-correct { background: var(--accent); color: #000; border-color: var(--accent); font-weight: 800; }
+        .opt.opt-wrong { background: #ff4d4d; color: #fff; border-color: #ff4d4d; font-weight: 800; }
+
+        /* Строки режимов (как список проектов) */
+        .mode-row {
+            width: 100%; display: flex; align-items: center; gap: 0.75rem;
+            padding: 0.85rem 0.9rem; border-radius: 1rem; text-align: left;
+            font-size: 0.8rem; font-weight: 600; color: #d6d6d0;
+            border: 1px solid transparent; transition: all .25s ease;
+        }
+        .mode-row .num { font-family: 'JetBrains Mono', monospace; font-size: 10px; color: #55554f; }
+        .mode-row .arrow { margin-left: auto; color: #55554f; transition: transform .25s ease, color .25s ease; }
+        .mode-row:hover { background: #181818; border-color: var(--line); color: #fff; }
+        .mode-row:hover .arrow { transform: translateX(4px); color: var(--accent); }
+        .mode-row:hover .num { color: var(--accent); }
+        .mode-row.accent { color: var(--accent); }
+
+        /* Hero */
+        .hero-title {
+            font-size: clamp(3.2rem, 11vw, 9.5rem);
+            line-height: 0.92; font-weight: 700;
+        }
+        .chip-play {
+            display: inline-flex; align-items: center; gap: 0.18em;
+            background: var(--accent); color: #0a0a0a;
+            border-radius: 999px; padding: 0.04em 0.38em 0.1em 0.3em;
+            font-size: 0.62em; vertical-align: middle; font-weight: 800;
+        }
+        .chip-play .tri { font-size: 0.55em; }
+
+        /* Бегущая строка */
+        .marquee { display: flex; overflow: hidden; white-space: nowrap; border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); }
+        .marquee-track {
+            display: flex; flex-shrink: 0; gap: 3rem; padding: 1.1rem 3rem 1.1rem 0;
+            animation: marquee 32s linear infinite;
+        }
+        .marquee-track span { font-family: 'Inter Tight', sans-serif; font-size: 1.5rem; font-weight: 600; letter-spacing: -0.03em; color: #6b6b66; }
+        .marquee-track span i { color: var(--accent); font-style: normal; margin-right: 3rem; }
+        @keyframes marquee { to { transform: translateX(-100%); } }
+
         @keyframes float { 0%, 100% { transform: translateY(0px); } 50% { transform: translateY(-6px); } }
         .animate-float { animation: float 4s ease-in-out infinite; }
-        
-        .perspective-1000 { perspective: 1000px; }
-        .flashcard-inner {
-            position: relative; width: 100%; min-height: 280px;
-            transition: transform 0.6s cubic-bezier(0.4, 0, 0.2, 1);
-            transform-style: preserve-3d; cursor: pointer;
-        }
-        .flashcard-inner.flipped { transform: rotateY(180deg); }
-        .flashcard-front, .flashcard-back {
-            position: absolute; width: 100%; height: 100%;
-            -webkit-backface-visibility: hidden; backface-visibility: hidden;
-            border-radius: 1.5rem; display: flex; align-items: center; justify-content: center;
-            padding: 2rem; text-align: center;
-        }
-        .flashcard-back { transform: rotateY(180deg); }
 
         .quiz-slide-enter { animation: slideIn 0.35s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
         @keyframes slideIn {
-            from { opacity: 0; transform: translateX(20px) scale(0.98); }
-            to { opacity: 1; transform: translateX(0) scale(1); }
+            from { opacity: 0; transform: translateY(15px) scale(0.98); }
+            to { opacity: 1; transform: translateY(0) scale(1); }
         }
-
-        .slide-left { animation: slideLeft 0.35s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
-        @keyframes slideLeft {
-            from { opacity: 0; transform: translateX(30px) scale(0.97); }
-            to { opacity: 1; transform: translateX(0) scale(1); }
-        }
-
-        .slide-right { animation: slideRight 0.35s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
-        @keyframes slideRight {
-            from { opacity: 0; transform: translateX(-30px) scale(0.97); }
-            to { opacity: 1; transform: translateX(0) scale(1); }
-        }
-
         @keyframes scorePop {
             0% { opacity: 0; transform: translateY(10px) scale(0.8); }
             50% { opacity: 1; transform: translateY(-15px) scale(1.2); }
@@ -59,206 +132,263 @@
         }
         .score-anim { animation: scorePop 1.2s ease-out forwards; }
         .calendar-day { transition: all 0.2s ease; }
-        .calendar-day:hover { transform: translateY(-3px) scale(1.02); }
+        .calendar-day:hover { transform: translateY(-2px) scale(1.02); }
 
-        .otp-input { width: 45px; height: 55px; text-align: center; font-size: 1.5rem; font-weight: 800; border-radius: 1rem; border: 2px solid #e2e8f0; background: #f8fafc; transition: all 0.2s; }
-        .otp-input:focus { border-color: #6366f1; background: #fff; outline: none; box-shadow: 0 0 10px rgba(99, 102, 241, 0.2); }
+        .otp-input {
+            width: 45px; height: 55px; text-align: center; font-size: 1.5rem; font-weight: 800;
+            border-radius: 1rem; border: 1px solid var(--line); background: var(--tile); color: #fff; transition: all 0.2s;
+        }
+        .otp-input:focus { border-color: var(--accent); outline: none; box-shadow: 0 0 0 3px rgba(200, 255, 46, 0.15); }
+
+        /* Скроллбар */
+        ::-webkit-scrollbar { width: 8px; height: 8px; }
+        ::-webkit-scrollbar-thumb { background: #262626; border-radius: 8px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+
+        input[type="file"]::file-selector-button {
+            margin-right: .6rem; padding: .45rem .8rem; border: 0; border-radius: 999px;
+            background: var(--accent); color: #000; font-weight: 800; font-size: .7rem; cursor: pointer;
+        }
     </style>
 </head>
-<body class="bg-gradient-to-tr from-indigo-50 via-purple-50 to-pink-50 text-slate-800 min-h-screen flex flex-col selection:bg-indigo-600 selection:text-white">
+<body class="min-h-screen flex flex-col">
 
-    <div id="score-popup" class="fixed top-6 right-6 z-50 pointer-events-none hidden">
-        <div class="bg-gradient-to-r from-amber-400 to-yellow-500 text-slate-900 font-black px-5 py-3 rounded-2xl shadow-xl flex items-center space-x-2 border border-yellow-300 score-anim">
-            <span class="text-xl">⭐</span>
+    <div id="score-popup" class="fixed top-24 right-6 z-50 pointer-events-none hidden">
+        <div class="bg-[#c8ff2e] text-black font-black px-5 py-3 rounded-full shadow-xl flex items-center space-x-2 score-anim">
+            <span class="text-lg">⭐</span>
             <span id="score-popup-text">+50 XP</span>
         </div>
     </div>
 
-    <!-- МИНИ-ОКНО ДЛЯ ПРОСМОТРА ДНЯ И ИНФОРМАЦИИ ОТ ИИ -->
-    <div id="day-modal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
-        <div class="bg-white rounded-3xl p-6 max-w-md w-full shadow-2xl space-y-4 relative border border-indigo-100">
-            <button onclick="closeDayModal()" class="absolute top-4 right-4 text-slate-400 hover:text-slate-600 font-bold">✕</button>
-            <div class="flex items-center space-x-2 border-b pb-3">
+    <!-- ШАПКА: плавающая пилюля -->
+    <header class="fixed top-4 inset-x-0 z-40 px-4">
+        <div class="mx-auto max-w-6xl flex items-center justify-between rounded-full border border-white/10 bg-[#0a0a0a]/70 backdrop-blur-xl pl-5 pr-2 py-2">
+            <a href="#home" class="flex items-center space-x-2.5" onclick="scrollToSection('home'); return false;">
+                <span class="w-2.5 h-2.5 rounded-full bg-[#c8ff2e]"></span>
+                <span class="display text-base font-bold text-white">StudyAI</span>
+            </a>
+
+            <nav class="hidden md:flex items-center space-x-1 text-sm font-semibold text-neutral-300">
+                <a href="#work" onclick="scrollToSection('workspace-section'); return false;" class="px-4 py-2 rounded-full hover:bg-white/10 hover:text-white transition" id="nav-work">work</a>
+                <a href="#about" onclick="scrollToSection('about'); return false;" class="px-4 py-2 rounded-full hover:bg-white/10 hover:text-white transition" id="nav-about">about</a>
+                <a href="#contact" onclick="scrollToSection('contact'); return false;" class="px-4 py-2 rounded-full hover:bg-white/10 hover:text-white transition" id="nav-contact">contact</a>
+            </nav>
+
+            <div class="flex items-center space-x-2">
+                <select id="lang-select" onchange="changeLanguage()" class="bg-transparent text-xs font-bold px-2 py-2 rounded-full border border-white/10 text-neutral-300 focus:outline-none cursor-pointer">
+                    <option value="kz" class="bg-neutral-900">🇰🇿 KZ</option>
+                    <option value="ru" class="bg-neutral-900">🇷🇺 RU</option>
+                    <option value="en" class="bg-neutral-900">🇬🇧 EN</option>
+                </select>
+                <button onclick="openCabinet()" class="btn-accent px-5 py-2.5 text-xs" id="nav-profile-btn">Кабинет</button>
+            </div>
+        </div>
+    </header>
+
+    <!-- МОДАЛКИ -->
+    <div id="day-modal" class="fixed inset-0 bg-black/80 backdrop-blur-md z-50 hidden flex items-center justify-center p-4">
+        <div class="bento-card rounded-[28px] p-6 max-w-md w-full shadow-2xl space-y-4 relative">
+            <button onclick="closeDayModal()" class="absolute top-4 right-5 text-neutral-400 hover:text-white font-bold">✕</button>
+            <div class="flex items-center space-x-2 border-b border-white/10 pb-3">
                 <span class="text-xl">📅</span>
-                <h3 id="day-modal-title" class="text-base font-extrabold text-slate-900">Задачи на день</h3>
+                <h3 id="day-modal-title" class="display text-lg font-bold text-white">Күн тапсырмалары</h3>
             </div>
             <div id="day-modal-tasks" class="space-y-3 max-h-64 overflow-y-auto pr-1"></div>
-            <button onclick="closeDayModal()" id="btn-modal-close" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white py-3 rounded-2xl text-xs font-extrabold shadow-md transition">Закрыть</button>
+            <button onclick="closeDayModal()" id="btn-modal-close" class="btn-accent w-full py-3 text-xs">Жабу</button>
         </div>
     </div>
 
-    <div class="flex flex-col lg:flex-row min-h-screen">
-        <aside class="w-full lg:w-80 bg-white/90 backdrop-blur-xl border-r border-indigo-100 p-6 flex flex-col justify-between shadow-xl z-20">
-            <div class="space-y-5">
-                <div class="flex items-center justify-between">
-                    <div class="flex items-center space-x-3">
-                        <div class="w-11 h-11 bg-gradient-to-tr from-indigo-600 to-purple-600 rounded-2xl flex items-center justify-center text-white text-xl shadow-lg shadow-indigo-500/30 animate-float">⚡</div>
-                        <h1 class="text-lg font-extrabold bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent">StudyAI Hub</h1>
-                    </div>
-                    <select id="lang-select" onchange="changeLanguage()" class="bg-slate-100 text-xs font-extrabold px-2.5 py-1.5 rounded-xl border border-slate-200">
-                        <option value="ru">🇷🇺 RU</option>
-                        <option value="kz">🇰🇿 KZ</option>
-                        <option value="en">🇬🇧 EN</option>
-                    </select>
+    <div id="cabinet-modal" class="fixed inset-0 bg-black/80 backdrop-blur-md z-50 hidden flex items-center justify-center p-4">
+        <div class="bento-card rounded-[28px] p-8 max-w-2xl w-full shadow-2xl space-y-6 relative max-h-[90vh] flex flex-col">
+            <button onclick="closeCabinet()" class="absolute top-5 right-6 text-neutral-400 hover:text-white font-bold">✕</button>
+            <div class="flex items-center justify-between border-b border-white/10 pb-3 pr-8">
+                <h3 id="cab-title" class="display text-xl font-bold text-white">Жеке кабинет & Тарих</h3>
+                <button onclick="logout()" id="cab-logout" class="text-xs text-rose-400 font-bold hover:underline">Шығу</button>
+            </div>
+            <div class="grid grid-cols-3 gap-3">
+                <div class="tile p-4 text-center">
+                    <div class="display text-3xl font-bold text-[#c8ff2e]" id="stat-tokens">3</div>
+                    <div id="cab-tokens-lbl" class="mono mt-1">Токендер</div>
                 </div>
-
-                <div class="space-y-2.5">
-                    <h2 id="lbl-sec-1" class="text-xs font-extrabold text-slate-400 uppercase tracking-wider">1. Материал</h2>
-                    <input type="file" id="pdf-file" accept=".pdf" class="w-full text-xs text-slate-500 file:mr-2 file:py-2 file:px-3 file:rounded-xl file:border-0 file:text-xs file:font-bold file:bg-indigo-600 file:text-white hover:file:bg-indigo-500 cursor-pointer bg-slate-50 border border-slate-200 rounded-2xl transition">
-                    <input type="text" id="topic-input" placeholder="Или тема (напр: Алгебра)" class="w-full px-4 py-2.5 rounded-2xl bg-slate-50 border border-slate-200 text-slate-800 text-xs font-semibold">
-                    <button onclick="uploadMaterial()" id="btn-upload" class="w-full bg-gradient-to-r from-indigo-600 to-purple-600 text-white font-extrabold py-3 rounded-2xl shadow-lg glow-btn text-xs">
-                        🚀 Активировать ИИ
-                    </button>
+                <div class="tile p-4 text-center">
+                    <div class="display text-3xl font-bold text-white" id="stat-score">0</div>
+                    <div id="cab-score-lbl" class="mono mt-1">Ұпай (XP)</div>
                 </div>
-
-                <div class="space-y-2">
-                    <h2 id="lbl-sec-2" class="text-xs font-extrabold text-slate-400 uppercase tracking-wider">2. Режимы обучения</h2>
-                    <button onclick="generate('quiz', 1)" class="w-full text-left p-3 rounded-xl bg-slate-50 border border-slate-200 hover:border-indigo-400 hover:bg-indigo-50 text-xs font-bold flex items-center justify-between transition">
-                        <span id="btn-mode-quiz">🎯 Интерактивный тест (20)</span> <span class="text-slate-400">→</span>
-                    </button>
-                    <button onclick="generate('flashcards', 1)" class="w-full text-left p-3 rounded-xl bg-slate-50 border border-slate-200 hover:border-pink-400 hover:bg-pink-50 text-xs font-bold flex items-center justify-between transition">
-                        <span id="btn-mode-cards">🃏 Умные карточки</span> <span class="text-slate-400">→</span>
-                    </button>
-                    <button onclick="generate('summary', 1)" class="w-full text-left p-3 rounded-xl bg-slate-50 border border-slate-200 hover:border-purple-400 hover:bg-purple-50 text-xs font-bold flex items-center justify-between transition">
-                        <span id="btn-mode-summary">📝 Краткий конспект</span> <span class="text-slate-400">→</span>
-                    </button>
-                    <button onclick="generate('simple', 1)" class="w-full text-left p-3 rounded-xl bg-slate-50 border border-slate-200 hover:border-emerald-400 hover:bg-emerald-50 text-xs font-bold flex items-center justify-between transition">
-                        <span id="btn-mode-explain">💡 Простое объяснение</span> <span class="text-slate-400">→</span>
-                    </button>
-                    <button onclick="openChatView()" class="w-full text-left p-3 rounded-xl bg-indigo-50 border border-indigo-200 hover:bg-indigo-100 text-indigo-950 text-xs font-extrabold flex items-center justify-between transition">
-                        <span id="btn-mode-chat">💬 ИИ-Чат по проекту</span> <span class="text-indigo-600">NEW</span>
-                    </button>
-                </div>
-
-                <div class="space-y-2 pt-1 border-t border-slate-100">
-                    <h2 id="lbl-sec-3" class="text-xs font-extrabold text-slate-400 uppercase tracking-wider">3. Органайзер</h2>
-                    <button onclick="openPlannerView()" class="w-full text-left p-3.5 rounded-xl bg-gradient-to-r from-amber-500/10 to-orange-500/10 border border-amber-300 hover:border-amber-500 text-amber-900 text-xs font-black flex items-center justify-between transition shadow-sm">
-                        <span id="btn-mode-planner">📅 Календарь & ИИ-Планер</span>
-                        <span class="bg-amber-400 text-slate-900 text-[10px] px-2 py-0.5 rounded-full font-black">NEW</span>
-                    </button>
+                <div class="tile p-4 text-center">
+                    <div class="display text-3xl font-bold text-white" id="stat-sub">Жоқ</div>
+                    <div id="cab-sub-lbl" class="mono mt-1">Жазылым</div>
                 </div>
             </div>
+            <div class="space-y-2 flex-grow">
+                <h4 id="cab-saves-lbl" class="mono">📁 Сақталған материалдар мен тарих</h4>
+                <div id="saves-container" class="overflow-y-auto space-y-2 max-h-48 pr-1"></div>
+            </div>
+        </div>
+    </div>
 
-            <div class="pt-4 border-t border-slate-100 space-y-2">
-                <div class="flex items-center justify-between bg-indigo-50/80 border border-indigo-100 p-3 rounded-2xl shadow-sm">
-                    <div class="flex items-center space-x-2.5">
-                        <div class="w-8 h-8 rounded-xl bg-indigo-600 text-white font-extrabold flex items-center justify-center text-xs shadow-md">📱</div>
-                        <div>
-                            <div id="nav-username" class="text-xs font-bold text-slate-800">Студент</div>
-                            <div class="flex items-center space-x-2 text-[10px] font-extrabold">
-                                <span class="text-indigo-600"><span id="user-tokens">3</span> <span id="lbl-tokens">Токенов</span> ⚡</span>
-                                <span class="text-amber-600">| ⭐ <span id="user-score">0</span> XP</span>
+    <div id="telegram-auth-modal" class="fixed inset-0 bg-black/90 backdrop-blur-xl z-50 flex items-center justify-center p-4 hidden">
+        <div class="bento-card rounded-[28px] p-8 max-w-md w-full shadow-2xl space-y-6 text-center">
+            <div class="w-16 h-16 bg-[#c8ff2e] text-black rounded-full flex items-center justify-center text-3xl mx-auto animate-float">✈️</div>
+            <div>
+                <h3 id="auth-title" class="display text-3xl font-bold text-white">HUB-қа кіру</h3>
+                <div class="mt-4 text-left space-y-1.5 text-xs text-neutral-300 tile p-4">
+                    <p id="auth-step-1">1. <a href="https://t.me/enuuma_bot" target="_blank" class="text-[#c8ff2e] font-extrabold underline">@enuuma_bot</a> ашыңыз</p>
+                    <p id="auth-step-2">2. 6 таңбалы кодты енгізіңіз</p>
+                </div>
+            </div>
+            <div class="flex justify-center gap-2">
+                <input type="text" maxlength="1" class="otp-input" oninput="moveToNext(this, 1)">
+                <input type="text" maxlength="1" class="otp-input" oninput="moveToNext(this, 2)">
+                <input type="text" maxlength="1" class="otp-input" oninput="moveToNext(this, 3)">
+                <input type="text" maxlength="1" class="otp-input" oninput="moveToNext(this, 4)">
+                <input type="text" maxlength="1" class="otp-input" oninput="moveToNext(this, 5)">
+                <input type="text" maxlength="1" class="otp-input" oninput="moveToNext(this, 6)">
+            </div>
+            <button onclick="verifyCode()" id="auth-btn" class="btn-accent w-full py-3.5 text-sm">Кіру</button>
+        </div>
+    </div>
+
+    <!-- HERO -->
+    <section id="home" class="w-full pt-36 lg:pt-44 pb-14 px-6 lg:px-12 relative">
+        <div class="max-w-6xl mx-auto">
+            <p class="mono flex items-center gap-2 mb-6">
+                <span class="w-1.5 h-1.5 rounded-full bg-[#c8ff2e]"></span>
+                <span id="hero-kicker">ЖИ оқу платформасы · 2026</span>
+            </p>
+            <h1 class="hero-title display text-white flex flex-wrap items-center gap-x-5 gap-y-1">
+                <span id="hero-word-1">study</span>
+                <span class="chip-play animate-float"><span class="tri">▶</span>AI</span>
+                <span id="hero-word-2" class="text-neutral-500">platform</span>
+            </h1>
+            <div class="mt-10 flex flex-col md:flex-row md:items-end md:justify-between gap-8">
+                <p class="max-w-md text-base lg:text-lg font-medium text-neutral-400 leading-snug" id="hero-subtitle">
+                    Твой путь к знаниям с искусственным интеллектом 2026 года
+                </p>
+                <div class="flex flex-wrap gap-3">
+                    <button onclick="scrollToSection('workspace-section')" class="btn-accent px-8 py-4 text-sm" id="hero-btn-start">Начать обучение 🚀</button>
+                    <button onclick="scrollToSection('about')" class="btn-ghost px-8 py-4 text-sm" id="hero-btn-about">about</button>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- БЕГУЩАЯ СТРОКА -->
+    <div class="marquee mb-16" aria-hidden="true">
+        <div class="marquee-track">
+            <span><i>●</i>Quiz</span><span><i>●</i>Flashcards</span><span><i>●</i>Summary</span><span><i>●</i>AI Chat</span><span><i>●</i>Exam Tickets</span><span><i>●</i>Planner</span><span><i>●</i>KZ · RU · EN</span>
+        </div>
+        <div class="marquee-track">
+            <span><i>●</i>Quiz</span><span><i>●</i>Flashcards</span><span><i>●</i>Summary</span><span><i>●</i>AI Chat</span><span><i>●</i>Exam Tickets</span><span><i>●</i>Planner</span><span><i>●</i>KZ · RU · EN</span>
+        </div>
+    </div>
+
+    <!-- WORK -->
+    <div id="workspace-section" class="w-full max-w-6xl mx-auto px-4 lg:px-6 pb-24 scroll-mt-24">
+        <div class="flex items-end justify-between mb-6 px-2">
+            <h2 class="display text-4xl lg:text-6xl font-bold text-white" id="work-title">work</h2>
+            <span class="mono">01 — 08</span>
+        </div>
+
+        <div class="flex flex-col lg:flex-row gap-5">
+            <!-- БОКОВАЯ ПАНЕЛЬ -->
+            <aside class="w-full lg:w-80 bento-card rounded-[28px] p-5 flex flex-col justify-between z-20">
+                <div class="space-y-6">
+                    <div class="space-y-2.5">
+                        <h2 id="lbl-sec-1" class="mono">1. Материал</h2>
+                        <input type="file" id="pdf-file" accept=".pdf" class="w-full text-xs text-neutral-400 cursor-pointer tile p-2">
+                        <input type="text" id="topic-input" placeholder="Немесе тақырып..." class="field">
+                        <button onclick="uploadMaterial()" id="btn-upload" class="btn-accent w-full py-3 text-xs">🚀 ЖИ белсендіру</button>
+                    </div>
+
+                    <div class="space-y-1">
+                        <h2 id="lbl-sec-2" class="mono mb-2">2. Оқу режимдері</h2>
+                        <button onclick="generate('quiz', 1)" class="mode-row"><span class="num">01</span><span id="btn-mode-quiz">🎯 Интерактивный тест (20)</span><span class="arrow">→</span></button>
+                        <button onclick="generate('flashcards', 1)" class="mode-row"><span class="num">02</span><span id="btn-mode-cards">🃏 Ақылды карточкалар</span><span class="arrow">→</span></button>
+                        <button onclick="generate('summary', 1)" class="mode-row"><span class="num">03</span><span id="btn-mode-summary">📝 Қысқаша конспект</span><span class="arrow">→</span></button>
+                        <button onclick="generate('simple', 1)" class="mode-row"><span class="num">04</span><span id="btn-mode-explain">💡 Қарапайым түсіндіру</span><span class="arrow">→</span></button>
+                        <button onclick="openChatView()" class="mode-row accent"><span class="num">05</span><span id="btn-mode-chat">💬 Жоба бойынша ЖИ-Чат</span><span class="arrow">NEW</span></button>
+                    </div>
+
+                    <div class="space-y-1 pt-4 border-t border-white/10">
+                        <h2 id="lbl-sec-3" class="mono mb-2">3. Арнайы бөлімдер</h2>
+                        <button onclick="openAITeacherView()" class="mode-row"><span class="num">06</span><span id="btn-mode-teacher">🤖 1. ИИ Мұғалім (Видео & Ойын)</span><span class="arrow">→</span></button>
+                        <button onclick="openTicketsView()" class="mode-row"><span class="num">07</span><span id="btn-mode-tickets">🎟️ 2. Билеттер (Ойын викторина)</span><span class="arrow">→</span></button>
+                        <button onclick="openPlannerView()" class="mode-row"><span class="num">08</span><span id="btn-mode-planner">📅 Күнтізбе & ЖИ-Планер</span><span class="arrow">→</span></button>
+                    </div>
+                </div>
+
+                <div class="pt-4 border-t border-white/10 mt-6">
+                    <div class="flex items-center justify-between tile p-3">
+                        <div class="flex items-center space-x-2.5">
+                            <div class="w-9 h-9 rounded-full bg-[#c8ff2e] text-black flex items-center justify-center text-sm">📱</div>
+                            <div>
+                                <div id="nav-username" class="text-xs font-bold text-white">Студент</div>
+                                <div class="flex items-center space-x-2 text-[10px] font-extrabold">
+                                    <span class="text-[#c8ff2e]"><span id="user-tokens">3</span> <span id="lbl-tokens">Токен</span> ⚡</span>
+                                    <span class="text-neutral-400">| ⭐ <span id="user-score">0</span> XP</span>
+                                </div>
                             </div>
                         </div>
+                        <button onclick="openCabinet()" id="btn-cabinet" class="btn-ghost px-3 py-1.5 text-[11px]">Кабинет 👤</button>
                     </div>
-                    <button onclick="openCabinet()" id="btn-cabinet" class="bg-white hover:bg-purple-600 hover:text-white text-purple-700 px-3 py-1.5 rounded-xl text-[11px] font-extrabold shadow-sm transition">
-                        Кабинет 👤
-                    </button>
                 </div>
-                <a href="/admin" target="_blank" id="btn-admin" class="block text-center w-full bg-slate-100 hover:bg-slate-200 text-slate-600 font-extrabold py-2 rounded-xl text-[11px] transition">
-                    ⚙️ Админ-панель (/admin)
-                </a>
-            </div>
-        </aside>
+            </aside>
 
-        <main class="flex-grow p-6 lg:p-10 flex flex-col justify-between max-w-5xl mx-auto w-full">
-            <div class="bg-white/90 backdrop-blur-xl border border-indigo-100 p-8 rounded-3xl shadow-xl shadow-indigo-500/5 flex-grow flex flex-col relative">
-                <div class="border-b border-slate-100 pb-4 mb-6 flex items-center justify-between">
-                    <h2 class="text-base font-extrabold text-slate-900 flex items-center space-x-2">
-                        <span id="lbl-workspace">✨ Рабочая зона ИИ</span>
+            <!-- РАБОЧАЯ ЗОНА -->
+            <main class="flex-grow bento-card rounded-[28px] p-6 lg:p-10 flex flex-col justify-between relative overflow-hidden min-h-[520px]">
+                <div class="border-b border-white/10 pb-4 mb-6 flex items-center justify-between">
+                    <h2 class="display text-lg font-bold text-white flex items-center space-x-2">
+                        <span id="lbl-workspace">✨ ЖИ Жұмыс аймағы</span>
                     </h2>
-                    <span id="status-badge" class="text-xs bg-indigo-50 text-indigo-700 px-3.5 py-1.5 rounded-full font-extrabold border border-indigo-100">Готов к работе</span>
+                    <span id="status-badge" class="mono border border-white/10 px-3.5 py-1.5 rounded-full">Дайын</span>
                 </div>
 
                 <div id="result-container" class="flex-grow flex flex-col justify-center items-center text-center py-12">
-                    <div class="w-20 h-20 bg-indigo-50 text-indigo-600 rounded-3xl flex items-center justify-center text-3xl mb-4 shadow-inner">💡</div>
-                    <h3 id="welcome-title" class="text-base font-bold text-slate-800 mb-1">Платформа готова!</h3>
-                    <p id="welcome-desc" class="text-xs text-slate-400 max-w-xs">Загрузите PDF файл, откройте «ИИ-Чат по проекту» или «Календарь & ИИ-Планер».</p>
+                    <div class="w-20 h-20 bg-[#c8ff2e] text-black rounded-full flex items-center justify-center text-3xl mb-5 animate-float">💡</div>
+                    <h3 id="welcome-title" class="display text-2xl font-bold text-white mb-1">Платформа дайын!</h3>
+                    <p id="welcome-desc" class="text-sm text-neutral-400 max-w-xs">Мәлімет жүктеңіз, ИИ-Чатты, Күнтізбені немесе ойын бөлімдерін таңдаңыз.</p>
                 </div>
-            </div>
-        </main>
-    </div>
-
-    <!-- МОДАЛКА TELEGRAM АВТОРИЗАЦИИ -->
-    <div id="telegram-auth-modal" class="fixed inset-0 bg-slate-900/80 backdrop-blur-md z-50 flex items-center justify-center p-4">
-        <div class="bg-white rounded-3xl p-8 max-w-md w-full shadow-2xl border border-indigo-100 space-y-6 text-center">
-            <div class="w-16 h-16 bg-indigo-600 text-white rounded-2xl flex items-center justify-center text-3xl mx-auto shadow-lg animate-float">✈️</div>
-            <div>
-                <h3 class="text-2xl font-black text-slate-900">Войти в HUB</h3>
-                <div class="mt-4 text-left space-y-1.5 text-xs text-slate-600 bg-slate-50 p-4 rounded-2xl border border-slate-200">
-                    <p>1. Откройте <a href="https://t.me/enuuma_bot" target="_blank" class="text-indigo-600 font-extrabold underline">@enuuma_bot</a> — код придёт автоматически</p>
-                    <p>2. Введите 6-значный код ниже</p>
-                </div>
-            </div>
-            <div class="flex justify-center gap-2" id="otp-container">
-                <input type="text" maxlength="1" class="otp-input" oninput="moveToNext(this, 1)" onkeydown="handleKeyDown(event, 1)">
-                <input type="text" maxlength="1" class="otp-input" oninput="moveToNext(this, 2)" onkeydown="handleKeyDown(event, 2)">
-                <input type="text" maxlength="1" class="otp-input" oninput="moveToNext(this, 3)" onkeydown="handleKeyDown(event, 3)">
-                <input type="text" maxlength="1" class="otp-input" oninput="moveToNext(this, 4)" onkeydown="handleKeyDown(event, 4)">
-                <input type="text" maxlength="1" class="otp-input" oninput="moveToNext(this, 5)" onkeydown="handleKeyDown(event, 5)">
-                <input type="text" maxlength="1" class="otp-input" oninput="moveToNext(this, 6)" onkeydown="handleKeyDown(event, 6)">
-            </div>
-            <button onclick="verifyCode()" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-extrabold py-4 rounded-2xl shadow-lg glow-btn text-sm">
-                Войти
-            </button>
+            </main>
         </div>
     </div>
 
-    <!-- МОДАЛКА ОПЛАТЫ ПОДПИСКИ -->
-    <div id="pay-modal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-md z-50 hidden flex items-center justify-center p-4">
-        <div class="bg-white rounded-3xl p-8 max-w-md w-full shadow-2xl text-center space-y-6 relative border border-amber-100">
-            <button onclick="closePayModal()" class="absolute top-5 right-5 text-slate-400 hover:text-slate-600 font-bold">✕</button>
-            <div class="w-16 h-16 bg-gradient-to-tr from-amber-400 to-pink-500 text-white rounded-2xl flex items-center justify-center text-3xl mx-auto shadow-lg shadow-amber-500/30">👑</div>
-            <div>
-                <h3 class="text-xl font-extrabold text-slate-900">Безлимитный Доступ</h3>
-                <p class="text-xs text-slate-500 mt-1">Подписка не активна. Оформите доступ за 500 ₸ / месяц!</p>
+    <!-- ABOUT -->
+    <section id="about" class="w-full max-w-6xl mx-auto px-6 lg:px-12 py-20 scroll-mt-24 border-t border-white/10">
+        <div class="grid lg:grid-cols-[200px_1fr] gap-8">
+            <h2 class="display text-4xl lg:text-6xl font-bold text-white lg:text-[1.1rem]" id="about-title">about</h2>
+            <div class="space-y-10">
+                <p id="about-text" class="display text-2xl lg:text-4xl font-semibold text-white leading-[1.15]">
+                    StudyAI Hub — ЖИ-наставник.
+                </p>
+                <div class="flex flex-wrap gap-3">
+                    <span class="mono border border-white/10 rounded-full px-4 py-2">PDF → Quiz</span>
+                    <span class="mono border border-white/10 rounded-full px-4 py-2">Flashcards</span>
+                    <span class="mono border border-white/10 rounded-full px-4 py-2">XP & Tokens</span>
+                    <span class="mono border border-white/10 rounded-full px-4 py-2">KZ · RU · EN</span>
+                </div>
             </div>
-            <div class="p-5 bg-gradient-to-br from-amber-50 to-pink-50 border border-amber-200/60 rounded-2xl text-amber-900 font-black text-3xl shadow-inner">
-                500 ₸ <span class="text-xs text-slate-500 font-normal">/ месяц</span>
-            </div>
-            <div class="bg-slate-50 p-3.5 rounded-2xl border border-slate-200 text-left text-xs space-y-1 text-slate-600">
-                <p><b>💳 Реквизиты (Kaspi / Halyk):</b></p>
-                <p class="font-mono text-indigo-600 font-bold">+7 (775) 603-99-24</p>
-            </div>
-            <button onclick="activateSubscription()" class="w-full bg-gradient-to-r from-emerald-600 to-teal-600 text-white font-extrabold py-4 rounded-2xl shadow-lg glow-btn text-sm">
-                ✓ Я оплатил 500 ₸, активировать безлимит
-            </button>
         </div>
-    </div>
+    </section>
 
-    <!-- КАБИНЕТ -->
-    <div id="cabinet-modal" class="fixed inset-0 bg-slate-900/50 backdrop-blur-md z-50 hidden flex items-center justify-center p-4">
-        <div class="bg-white rounded-3xl p-8 max-w-2xl w-full shadow-2xl space-y-6 relative max-h-[90vh] flex flex-col border border-indigo-100">
-            <button onclick="closeCabinet()" class="absolute top-5 right-5 text-slate-400 hover:text-slate-600 font-bold">✕</button>
-            <div class="flex items-center justify-between border-b border-slate-100 pb-3">
-                <h3 class="text-lg font-extrabold text-slate-900">Личный кабинет</h3>
-                <button onclick="logout()" class="text-xs text-rose-600 font-bold hover:underline">Выйти</button>
+    <!-- CONTACT / FOOTER -->
+    <footer id="contact" class="w-full border-t border-white/10 mt-auto scroll-mt-24">
+        <div class="max-w-6xl mx-auto px-6 lg:px-12 py-20 flex flex-col gap-10">
+            <h2 id="footer-cta" class="hero-title display text-white" style="font-size: clamp(2.6rem, 8vw, 7rem);">Let's learn something amazing together!</h2>
+            <div class="flex flex-wrap items-center gap-4">
+                <a id="footer-btn" href="https://t.me/enuuma_bot" target="_blank" class="btn-accent px-8 py-4 text-sm inline-block">Open in Telegram</a>
+                <button onclick="openCabinet()" class="btn-ghost px-8 py-4 text-sm" id="footer-cabinet">Кабинет</button>
             </div>
-            <div class="grid grid-cols-3 gap-4">
-                <div class="bg-indigo-50 border border-indigo-100 p-4 rounded-2xl text-center">
-                    <div class="text-2xl font-black text-indigo-600" id="stat-tokens">3</div>
-                    <div class="text-xs font-bold text-slate-500 mt-1">Токенов</div>
-                </div>
-                <div class="bg-amber-50 border border-amber-100 p-4 rounded-2xl text-center">
-                    <div class="text-2xl font-black text-amber-600" id="stat-score">0</div>
-                    <div class="text-xs font-bold text-slate-500 mt-1">Баллы (XP)</div>
-                </div>
-                <div class="bg-purple-50 border border-purple-100 p-4 rounded-2xl text-center">
-                    <div class="text-2xl font-black text-purple-600" id="stat-sub">Нет</div>
-                    <div class="text-xs font-bold text-slate-500 mt-1">Подписка</div>
-                </div>
+            <div class="flex items-center justify-between pt-8 border-t border-white/10">
+                <span class="mono">© 2026 StudyAI Hub</span>
+                <a href="#home" onclick="scrollToSection('home'); return false;" class="mono hover:text-white transition">↑ top</a>
             </div>
-            <button onclick="openPayModal()" class="w-full bg-gradient-to-r from-amber-500 to-pink-500 text-white font-extrabold py-3.5 rounded-2xl text-xs shadow-lg">
-                👑 Купить безлимит за 500 ₸
-            </button>
-            <div id="saves-container" class="overflow-y-auto space-y-2 flex-grow max-h-60 pr-1"></div>
         </div>
-    </div>
+    </footer>
 
     <script>
         let currentUser = JSON.parse(localStorage.getItem('studyai_user')) || null;
         let currentDocId = null;
-        let selectedLang = 'ru';
+        let selectedLang = 'kz';
         let cardsData = [];
         let currentCardIndex = 0;
         let currentPage = 1;
@@ -271,152 +401,215 @@
         let slideDirection = 'slide-left';
 
         let studentTasks = JSON.parse(localStorage.getItem('studyai_tasks')) || [
-            { id: 1, title: 'Лабораторная №2 по Высшей математике', date: '2026-10-22', desc: 'Сделать матрицы и детерминанты', done: false, xp: 50 },
-            { id: 2, title: 'Подготовка к тесту по C++', date: '2026-10-25', desc: 'Прорешать задачи с указателями', done: false, xp: 50 }
+            { id: 1, title: 'Жоғары математика зертханалығы', date: '2026-10-25', desc: 'Матрицалар мен векторлар', done: false, xp: 50 }
         ];
 
-        // СЛОВАРЬ МУЛЬТИЯЗЫЧНОСТИ ИНТЕРФЕЙСА
+        function escapeHtml(s) {
+            return String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+        }
+
         const translations = {
-            ru: {
-                sec1: "1. Материал",
-                sec2: "2. Режимы обучения",
-                sec3: "3. Органайзер",
-                topicPlaceholder: "Или тема (напр: Алгебра)",
-                uploadBtn: "🚀 Активировать ИИ",
-                modeQuiz: "🎯 Интерактивный тест (20)",
-                modeCards: "🃏 Умные карточки",
-                modeSummary: "📝 Краткий конспект",
-                modeExplain: "💡 Простое объяснение",
-                modeChat: "💬 ИИ-Чат по проекту",
-                modePlanner: "📅 Календарь & ИИ-Планер",
-                cabinet: "КаCabinet 👤",
-                admin: "⚙️ Админ-панель (/admin)",
-                workspace: "✨ Рабочая зона ИИ",
-                statusReady: "Готов к работе",
-                welcomeTitle: "Платформа готова!",
-                welcomeDesc: "Загрузите PDF файл, откройте «ИИ-Чат по проекту» или «Календарь & ИИ-Планер».",
-                tokens: "Токенов",
-                modalClose: "Закрыть"
-            },
             kz: {
-                sec1: "1. Материал",
-                sec2: "2. Оқу режимдері",
-                sec3: "3. Ұйымдастырушы",
-                topicPlaceholder: "Немесе тақырып (мысалы: Алгебра)",
-                uploadBtn: "🚀 ЖИ белсендіру",
-                modeQuiz: "🎯 Интерактивті тест (20)",
-                modeCards: "🃏 Ақылды карточкалар",
-                modeSummary: "📝 Қысқаша конспект",
-                modeExplain: "💡 Қарапайым түсіндіру",
-                modeChat: "💬 Жоба бойынша ЖИ-Чат",
-                modePlanner: "📅 Күнтізбе & ЖИ-Жоспарлағыш",
-                cabinet: "Кабинет 👤",
-                admin: "⚙️ Админ-панель (/admin)",
-                workspace: "✨ ЖИ Жұмыс аймағы",
-                statusReady: "Дайын",
-                welcomeTitle: "Платформа дайын!",
-                welcomeDesc: "PDF материалын жүктеңіз, ЖИ-Чатты немесе Күнтізбені ашыңыз.",
-                tokens: "Токендер",
-                modalClose: "Жабу"
+                navWork: "work", navAbout: "about", navContact: "contact", navProfileBtn: "Кабинет",
+                heroKicker: "ЖИ оқу платформасы · 2026",
+                heroWord1: "study", heroWord2: "platform", heroSubtitle: "2026 жылғы жасанды интеллектпен білім алу жолыңыз", heroBtnStart: "Оқуды бастау 🚀",
+                aboutText: "StudyAI Hub — PDF мен тақырыпты тест, карточка, конспект және ойынға айналдыратын ЖИ-наставник. Түсіну, қайталау және жоспарлау — бәрі бір жерде.",
+                footerCta: "Бірге үйренейік!", footerBtn: "Telegram-да ашу",
+                sec1: "1. Материал", sec2: "2. Оқу режимдері", sec3: "3. Арнайы бөлімдер",
+                topicPlaceholder: "Немесе тақырып (мысалы: Алгебра)", uploadBtn: "🚀 ЖИ белсендіру",
+                modeQuiz: "🎯 Интерактивный тест (20)", modeCards: "🃏 Ақылды карточкалар",
+                modeSummary: "📝 Қысқаша конспект", modeExplain: "💡 Қарапайым түсіндіру",
+                modeChat: "💬 Жоба бойынша ЖИ-Чат", modeTeacher: "🤖 1. ИИ Мұғалім (Видео & Ойын)",
+                modeTickets: "🎟️ 2. Билеттер (Ойын викторина)", modePlanner: "📅 Күнтізбе & ЖИ-Планер",
+                cabinet: "Кабинет 👤", workspace: "✨ ЖИ Жұмыс аймағы", statusReady: "Дайын",
+                welcomeTitle: "Платформа дайын!", welcomeDesc: "Мәлімет жүктеңіз, ИИ-Чатты, Күнтізбені немесе ойын бөлімдерін таңдаңыз.",
+                tokens: "Токен", modalClose: "Жабу",
+                cabTitle: "Жеке кабинет & Тарих", cabLogout: "Шығу", cabTokens: "Токендер", cabScore: "Ұпай (XP)", cabSub: "Жазылым", cabSaves: "📁 Сақталған материалдар мен тарих",
+                authTitle: "HUB-қа кіру", authStep1: '1. <a href="https://t.me/enuuma_bot" target="_blank" class="text-[#c8ff2e] font-extrabold underline">@enuuma_bot</a> ашыңыз', authStep2: "2. 6 таңбалы кодты енгізіңіз", authBtn: "Кіру",
+                fileUploaded: "Файл сәтті жүктелді!", topicSaved: "Тақырып сақталды!",
+                chatWelcome: "👋 Сәлем! Мен сіздің ЖИ-наставнигіңізбін. Кез келген сұрағыңызды қойыңыз!",
+                chatPlaceholder: "Сұрағыңызды жазыңыз...", chatSend: "Жіберу", chatLoading: "⏳ ЖИ жауап жазуда...",
+                teacherTitle: "🤖 1. ИИ Мұғалім: Түсіндіру & Ойын арқылы бекіту", teacherDesc: "ИИ материалды түсіндіріп, видео ұсынады және ойын түрінде тексереді.",
+                teacherTopicPlaceholder: "Тақырыпты енгізіңіз...", teacherCommentPlaceholder: "Қосымша комментарий...", teacherBtn: "Сабақты бастау 🚀",
+                teacherLoading: "⏳ ИИ сабақты дайындап жатыр...", teacherExplanation: "💡 Мұғалім түсіндірмесі & Видео:", teacherGame: "🎯 Бекіту ойыны (Викторина):",
+                correctAlert: "🎉 Дұрыс! Сіз +50 XP ұпай алдыңыз!", wrongAlert: "❌ Қате! Дұрыс жауап: ",
+                ticketTitle: "🎟️ 2. Билеттер бойынша ойын-сынақ", ticketDesc: "Файл немесе комментарий арқылы билеттер генерацияланып, викторина түрінде тексеріледі.",
+                ticketThemePlaceholder: "Пән немесе тақырып...", ticketCommentPlaceholder: "Қосымша талаптар...", ticketBtn: "Билеттерді бастау 🎮",
+                ticketLoading: "⏳ Билеттер генерациялануда...", ticketCorrectAlert: "🏆 Керемет! Билет сұрағы дұрыс табылды!",
+                plannerTitle: "📅 Күнтізбе мен ЖИ-Планер", plannerDesc: "Айды ауыстырып, тапсырмалар мен дедлайнды бақылаңыз.",
+                plannerInputPlaceholder: "Тапсырманы енгізіңіз...", plannerBtn: "ЖИ қосу", plannerLoading: "⏳ ЖИ күнтізбені жаңартуда...",
+                aiGenerating: "ИИ генерациялауда..."
+            },
+            ru: {
+                navWork: "work", navAbout: "about", navContact: "contact", navProfileBtn: "Кабинет",
+                heroKicker: "ИИ-платформа для учёбы · 2026",
+                heroWord1: "study", heroWord2: "platform", heroSubtitle: "Ваш путь к знаниям с искусственным интеллектом 2026 года", heroBtnStart: "Начать обучение 🚀",
+                aboutText: "StudyAI Hub — ИИ-наставник, который превращает PDF и темы в тесты, карточки, конспекты и игры. Понимать, повторять и планировать — всё в одном месте.",
+                footerCta: "Давайте учиться вместе!", footerBtn: "Открыть в Telegram",
+                sec1: "1. Материал", sec2: "2. Режимы обучения", sec3: "3. Специальные разделы",
+                topicPlaceholder: "Или тема (напр: Алгебра)", uploadBtn: "🚀 Активировать ИИ",
+                modeQuiz: "🎯 Интерактивный тест (20)", modeCards: "🃏 Умные карточки",
+                modeSummary: "📝 Краткий конспект", modeExplain: "💡 Простое объяснение",
+                modeChat: "💬 ИИ-Чат по проекту", modeTeacher: "🤖 1. ИИ Учитель (Видео & Игра)",
+                modeTickets: "🎟️ 2. Билеты (Игровая викторина)", modePlanner: "📅 Календарь & ИИ-Планер",
+                cabinet: "Кабинет 👤", workspace: "✨ Рабочая зона ИИ", statusReady: "Готов к работе",
+                welcomeTitle: "Платформа готова!", welcomeDesc: "Загрузите файл, откройте ИИ-Чат, Календарь или игровые разделы.",
+                tokens: "Токенов", modalClose: "Закрыть",
+                cabTitle: "Личный кабинет & История", cabLogout: "Выйти", cabTokens: "Токены", cabScore: "Баллы (XP)", cabSub: "Подписка", cabSaves: "📁 Сохраненные материалы и история",
+                authTitle: "Вход в HUB", authStep1: '1. Откройте <a href="https://t.me/enuuma_bot" target="_blank" class="text-[#c8ff2e] font-extrabold underline">@enuuma_bot</a>', authStep2: "2. Введите 6-значный код", authBtn: "Войти",
+                fileUploaded: "Файл успешно загружен!", topicSaved: "Тема сохранена!",
+                chatWelcome: "👋 Привет! Я твой ИИ-наставник. Задай мне любой вопрос!",
+                chatPlaceholder: "Введите ваш вопрос...", chatSend: "Отправить", chatLoading: "⏳ ИИ пишет ответ...",
+                teacherTitle: "🤖 1. ИИ Учитель: Объяснение & Игровое закрепление", teacherDesc: "ИИ объяснит материал, предложит видео и проверит знания в виде игры.",
+                teacherTopicPlaceholder: "Введите тему...", teacherCommentPlaceholder: "Дополнительный комментарий...", teacherBtn: "Начать урок 🚀",
+                teacherLoading: "⏳ ИИ готовит урок...", teacherExplanation: "💡 Объяснение учителя & Видео:", teacherGame: "🎯 Игры для закрепления (Викторина):",
+                correctAlert: "🎉 Верно! Вы получили +50 XP!", wrongAlert: "❌ Неверно! Правильный ответ: ",
+                ticketTitle: "🎟️ 2. Игровые экзаменационные билеты", ticketDesc: "Генерация билетов по файлу или теме в формате игровой викторины.",
+                ticketThemePlaceholder: "Предмет или тема...", ticketCommentPlaceholder: "Дополнительные требования...", ticketBtn: "Начать билеты 🎮",
+                ticketLoading: "⏳ Билеты генерируются...", ticketCorrectAlert: "🏆 Отлично! Вопрос билета решен правильно!",
+                plannerTitle: "📅 Календарь и ИИ-Планер", plannerDesc: "Управляйте месяцами, задачами и дедлайнами.",
+                plannerInputPlaceholder: "Введите задачу...", plannerBtn: "Добавить ИИ", plannerLoading: "⏳ ИИ обновляет календарь...",
+                aiGenerating: "ИИ генерирует..."
             },
             en: {
-                sec1: "1. Material",
-                sec2: "2. Study Modes",
-                sec3: "3. Organizer",
-                topicPlaceholder: "Or topic (e.g. Algebra)",
-                uploadBtn: "🚀 Activate AI",
-                modeQuiz: "🎯 Interactive Test (20)",
-                modeCards: "🃏 Smart Flashcards",
-                modeSummary: "📝 Summary",
-                modeExplain: "💡 Simple Explanation",
-                modeChat: "💬 AI Project Chat",
-                modePlanner: "📅 Calendar & AI Planner",
-                cabinet: "Cabinet 👤",
-                admin: "⚙️ Admin Panel (/admin)",
-                workspace: "✨ AI Workspace",
-                statusReady: "Ready to work",
-                welcomeTitle: "Platform Ready!",
-                welcomeDesc: "Upload a PDF, open AI Chat or Calendar & AI Planner.",
-                tokens: "Tokens",
-                modalClose: "Close"
+                navWork: "work", navAbout: "about", navContact: "contact", navProfileBtn: "Cabinet",
+                heroKicker: "AI study platform · 2026",
+                heroWord1: "study", heroWord2: "platform", heroSubtitle: "Your path to knowledge with artificial intelligence in 2026", heroBtnStart: "Start Learning 🚀",
+                aboutText: "StudyAI Hub is an AI mentor that turns PDFs and topics into quizzes, flashcards, summaries and games. Understand, review and plan — all in one place.",
+                footerCta: "Let's learn something amazing together!", footerBtn: "Open in Telegram",
+                sec1: "1. Material", sec2: "2. Study Modes", sec3: "3. Special Sections",
+                topicPlaceholder: "Or topic (e.g. Algebra)", uploadBtn: "🚀 Activate AI",
+                modeQuiz: "🎯 Interactive Test (20)", modeCards: "🃏 Smart Flashcards",
+                modeSummary: "📝 Summary", modeExplain: "💡 Simple Explanation",
+                modeChat: "💬 AI Project Chat", modeTeacher: "🤖 1. AI Teacher (Video & Game)",
+                modeTickets: "🎟️ 2. Exam Tickets Quiz", modePlanner: "📅 Calendar & AI Planner",
+                cabinet: "Cabinet 👤", workspace: "✨ AI Workspace", statusReady: "Ready",
+                welcomeTitle: "Platform Ready!", welcomeDesc: "Upload a file, open AI Chat, Calendar or Game modes.",
+                tokens: "Tokens", modalClose: "Close",
+                cabTitle: "Personal Cabinet & History", cabLogout: "Logout", cabTokens: "Tokens", cabScore: "Score (XP)", cabSub: "Subscription", cabSaves: "📁 Saved materials & history",
+                authTitle: "Login to HUB", authStep1: '1. Open <a href="https://t.me/enuuma_bot" target="_blank" class="text-[#c8ff2e] font-extrabold underline">@enuuma_bot</a>', authStep2: "2. Enter the 6-digit code", authBtn: "Login",
+                fileUploaded: "File uploaded successfully!", topicSaved: "Topic saved!",
+                chatWelcome: "👋 Hello! I am your AI mentor. Ask me any question!",
+                chatPlaceholder: "Type your question...", chatSend: "Send", chatLoading: "⏳ AI is typing...",
+                teacherTitle: "🤖 1. AI Teacher: Explanation & Game Practice", teacherDesc: "AI explains material, suggests video, and tests knowledge through games.",
+                teacherTopicPlaceholder: "Enter topic...", teacherCommentPlaceholder: "Additional comment...", teacherBtn: "Start Lesson 🚀",
+                teacherLoading: "⏳ AI is preparing the lesson...", teacherExplanation: "💡 Teacher's explanation & Video:", teacherGame: "🎯 Practice Game (Quiz):",
+                correctAlert: "🎉 Correct! You earned +50 XP!", wrongAlert: "❌ Incorrect! Correct answer: ",
+                ticketTitle: "🎟️ 2. Game Exam Tickets", ticketDesc: "Generate exam tickets via file or theme in quiz format.",
+                ticketThemePlaceholder: "Subject or topic...", ticketCommentPlaceholder: "Additional requirements...", ticketBtn: "Start Tickets 🎮",
+                ticketLoading: "⏳ Generating tickets...", ticketCorrectAlert: "🏆 Great! Ticket question solved correctly!",
+                plannerTitle: "📅 Calendar & AI Planner", plannerDesc: "Manage months, tasks and deadlines.",
+                plannerInputPlaceholder: "Enter task...", plannerBtn: "Add AI", plannerLoading: "⏳ AI is updating calendar...",
+                aiGenerating: "AI is generating..."
             }
         };
 
-        function changeLanguage() {
-            selectedLang = document.getElementById('lang-select').value;
-            const t = translations[selectedLang] || translations.ru;
-
-            document.getElementById('lbl-sec-1').textContent = t.sec1;
-            document.getElementById('lbl-sec-2').textContent = t.sec2;
-            document.getElementById('lbl-sec-3').textContent = t.sec3;
-            document.getElementById('topic-input').placeholder = t.topicPlaceholder;
-            document.getElementById('btn-upload').textContent = t.uploadBtn;
-            document.getElementById('btn-mode-quiz').textContent = t.modeQuiz;
-            document.getElementById('btn-mode-cards').textContent = t.modeCards;
-            document.getElementById('btn-mode-summary').textContent = t.modeSummary;
-            document.getElementById('btn-mode-explain').textContent = t.modeExplain;
-            document.getElementById('btn-mode-chat').textContent = t.modeChat;
-            document.getElementById('btn-mode-planner').textContent = t.modePlanner;
-            document.getElementById('btn-cabinet').textContent = t.cabinet;
-            document.getElementById('btn-admin').textContent = t.admin;
-            document.getElementById('lbl-workspace').textContent = t.workspace;
-            document.getElementById('status-badge').textContent = t.statusReady;
-            document.getElementById('lbl-tokens').textContent = t.tokens;
-            document.getElementById('btn-modal-close').textContent = t.modalClose;
-
-            if (document.getElementById('welcome-title')) {
-                document.getElementById('welcome-title').textContent = t.welcomeTitle;
-                document.getElementById('welcome-desc').textContent = t.welcomeDesc;
-            }
+        function scrollToSection(id) {
+            const el = document.getElementById(id);
+            if (el) el.scrollIntoView({ behavior: 'smooth' });
         }
 
-        async function checkAuth() {
+        function setText(id, value) {
+            const el = document.getElementById(id);
+            if (el) el.textContent = value;
+        }
+
+        function changeLanguage() {
+            selectedLang = document.getElementById('lang-select').value;
+            const t = translations[selectedLang] || translations.kz;
+
+            setText('nav-work', t.navWork);
+            setText('nav-about', t.navAbout);
+            setText('nav-contact', t.navContact);
+            setText('nav-profile-btn', t.navProfileBtn);
+
+            setText('hero-kicker', t.heroKicker);
+            setText('hero-word-1', t.heroWord1);
+            setText('hero-word-2', t.heroWord2);
+            setText('hero-subtitle', t.heroSubtitle);
+            setText('hero-btn-start', t.heroBtnStart);
+            setText('hero-btn-about', t.navAbout);
+            setText('work-title', t.navWork);
+            setText('about-title', t.navAbout);
+            setText('about-text', t.aboutText);
+            setText('footer-cta', t.footerCta);
+            setText('footer-btn', t.footerBtn);
+            setText('footer-cabinet', t.navProfileBtn);
+
+            setText('lbl-sec-1', t.sec1);
+            setText('lbl-sec-2', t.sec2);
+            setText('lbl-sec-3', t.sec3);
+            document.getElementById('topic-input').placeholder = t.topicPlaceholder;
+            setText('btn-upload', t.uploadBtn);
+            setText('btn-mode-quiz', t.modeQuiz);
+            setText('btn-mode-cards', t.modeCards);
+            setText('btn-mode-summary', t.modeSummary);
+            setText('btn-mode-explain', t.modeExplain);
+            setText('btn-mode-chat', t.modeChat);
+            setText('btn-mode-teacher', t.modeTeacher);
+            setText('btn-mode-tickets', t.modeTickets);
+            setText('btn-mode-planner', t.modePlanner);
+            setText('btn-cabinet', t.cabinet);
+            setText('lbl-workspace', t.workspace);
+            setText('status-badge', t.statusReady);
+            setText('lbl-tokens', t.tokens);
+            setText('btn-modal-close', t.modalClose);
+
+            setText('cab-title', t.cabTitle);
+            setText('cab-logout', t.cabLogout);
+            setText('cab-tokens-lbl', t.cabTokens);
+            setText('cab-score-lbl', t.cabScore);
+            setText('cab-sub-lbl', t.cabSub);
+            setText('cab-saves-lbl', t.cabSaves);
+
+            setText('auth-title', t.authTitle);
+            document.getElementById('auth-step-1').innerHTML = t.authStep1;
+            setText('auth-step-2', t.authStep2);
+            setText('auth-btn', t.authBtn);
+
+            if (document.getElementById('welcome-title')) {
+                setText('welcome-title', t.welcomeTitle);
+                setText('welcome-desc', t.welcomeDesc);
+            }
+
+            if (window.currentActiveView === 'chat') openChatView();
+            else if (window.currentActiveView === 'teacher') openAITeacherView();
+            else if (window.currentActiveView === 'tickets') openTicketsView();
+            else if (window.currentActiveView === 'planner') openPlannerView();
+        }
+
+        function checkAuth() {
             if (!currentUser) {
                 document.getElementById('telegram-auth-modal').classList.remove('hidden');
             } else {
                 document.getElementById('telegram-auth-modal').classList.add('hidden');
                 document.getElementById('nav-username').textContent = currentUser.display_name || currentUser.username;
-                
-                try {
-                    const res = await fetch(`/api/user/${currentUser.user_id}/saves`);
-                    if (res.ok) {
-                        const data = await res.json();
-                        currentUser.is_subscribed = data.is_subscribed;
-                        currentUser.tokens = data.tokens;
-                        currentUser.score = data.score;
-                        localStorage.setItem('studyai_user', JSON.stringify(currentUser));
-                    }
-                } catch (e) {}
-
-                document.getElementById('user-tokens').textContent = currentUser.is_subscribed ? '∞' : currentUser.tokens;
+                document.getElementById('user-tokens').textContent = currentUser.tokens || 3;
                 document.getElementById('user-score').textContent = currentUser.score || 0;
             }
         }
         checkAuth();
 
-        function moveToNext(element, index) {
-            if (element.value && index < 6) document.querySelectorAll('.otp-input')[index].focus();
-        }
-        function handleKeyDown(event, index) {
-            if (event.key === 'Backspace' && !event.target.value && index > 1) document.querySelectorAll('.otp-input')[index - 2].focus();
+        function moveToNext(el, idx) {
+            if (el.value && idx < 6) document.querySelectorAll('.otp-input')[idx].focus();
         }
 
         async function verifyCode() {
             const inputs = document.querySelectorAll('.otp-input');
             let code = '';
-            inputs.forEach(input => code += input.value);
-            if (code.length < 6) return alert('Введите полный код');
-            const formData = new FormData();
-            formData.append('code', code);
+            inputs.forEach(i => code += i.value);
+            if (code.length < 6) return alert('Кодты толық енгізіңіз!');
+            const fd = new FormData();
+            fd.append('code', code);
             try {
-                const res = await fetch('/api/auth/verify-code', { method: 'POST', body: formData });
+                const res = await fetch('/api/auth/verify-code', { method: 'POST', body: fd });
                 const data = await res.json();
                 if (res.ok) {
                     currentUser = data;
                     localStorage.setItem('studyai_user', JSON.stringify(currentUser));
                     checkAuth();
-                } else alert(data.error);
-            } catch (e) { alert('Ошибка авторизации'); }
+                } else { alert(data.error); }
+            } catch(e) { alert('Қате орын алды'); }
         }
 
         function renderMath(element) {
@@ -428,301 +621,6 @@
             }
         }
 
-        // --- ФУНКЦИЯ ОТПРАВКИ НАПОМИНАНИЯ В ТЕЛЕГРАМ ---
-        async function sendTaskReminder(title, date) {
-            if (!currentUser || !currentUser.telegram_id) {
-                return alert('Ошибка: Не найден ваш Telegram ID. Перезайдите через бота.');
-            }
-            const formData = new FormData();
-            formData.append('chat_id', currentUser.telegram_id);
-            formData.append('task_title', title);
-            formData.append('task_date', date);
-            formData.append('user_id', currentUser.user_id);
-
-            try {
-                const res = await fetch('/api/telegram/reminder', { method: 'POST', body: formData });
-                const data = await res.json();
-                if (res.ok) {
-                    alert('🔔 Напоминание отправлено в Telegram! Мы также напомним вам в день дедлайна.');
-                } else {
-                    alert(data.error || 'Не удалось отправить напоминание');
-                }
-            } catch (e) {
-                alert('Ошибка сети при отправке напоминания');
-            }
-        }
-
-        // --- ЧАТ-БОТ ПО КОНСПЕКТАМ ---
-        function openChatView() {
-            const container = document.getElementById('result-container');
-            container.innerHTML = `
-                <div class="w-full flex flex-col h-[65vh] text-left quiz-slide-enter">
-                    <div class="border-b pb-3 mb-3 flex items-center justify-between">
-                        <div>
-                            <h3 class="text-sm font-extrabold text-slate-900">💬 ИИ-Консультант по проекту</h3>
-                            <p class="text-[11px] text-slate-400">Задавайте любые вопросы по сгенерированным конспектам или загруженным PDF</p>
-                        </div>
-                    </div>
-                    <div id="chat-messages" class="flex-grow overflow-y-auto space-y-3 p-3 bg-slate-50/70 border border-slate-200/80 rounded-2xl mb-3 text-xs">
-                        <div class="p-3 rounded-2xl bg-indigo-600 text-white max-w-[85%] self-start shadow-sm">
-                            👋 Привет! Я твой ИИ-наставник. Задай мне любой вопрос по текущему проекту или лекции!
-                        </div>
-                    </div>
-                    <div class="flex gap-2">
-                        <input type="text" id="chat-input" onkeydown="if(event.key==='Enter') sendChatMessage()" placeholder="Введите вопрос по проекту..." class="flex-grow px-4 py-3 rounded-2xl bg-slate-50 border border-slate-200 text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-indigo-500">
-                        <button onclick="sendChatMessage()" class="bg-indigo-600 hover:bg-indigo-700 text-white font-extrabold px-5 py-3 rounded-2xl text-xs glow-btn">Отправить</button>
-                    </div>
-                </div>
-            `;
-        }
-
-        async function sendChatMessage() {
-            if (!currentUser) return checkAuth();
-            const input = document.getElementById('chat-input');
-            const msg = input.value.trim();
-            if (!msg) return;
-
-            const chatBox = document.getElementById('chat-messages');
-            chatBox.innerHTML += `<div class="p-3 rounded-2xl bg-white border border-slate-200 text-slate-800 max-w-[85%] ml-auto shadow-sm font-semibold">${msg}</div>`;
-            input.value = '';
-            chatBox.scrollTop = chatBox.scrollHeight;
-
-            const loadingId = 'loading-' + Date.now();
-            chatBox.innerHTML += `<div id="${loadingId}" class="p-3 rounded-2xl bg-indigo-600 text-white max-w-[85%] self-start shadow-sm animate-pulse">⏳ ИИ печатает...</div>`;
-            chatBox.scrollTop = chatBox.scrollHeight;
-
-            const formData = new FormData();
-            formData.append('user_id', currentUser.user_id);
-            formData.append('message', msg);
-            formData.append('doc_id', currentDocId || 'default');
-            formData.append('lang', selectedLang);
-
-            try {
-                const res = await fetch('/api/chat', { method: 'POST', body: formData });
-                const data = await res.json();
-                document.getElementById(loadingId).remove();
-
-                if (res.ok) {
-                    currentUser.tokens = data.tokens_left;
-                    currentUser.is_subscribed = data.is_subscribed;
-                    localStorage.setItem('studyai_user', JSON.stringify(currentUser));
-                    checkAuth();
-
-                    chatBox.innerHTML += `<div class="p-3.5 rounded-2xl bg-indigo-600 text-white max-w-[85%] self-start shadow-sm leading-relaxed">${data.reply}</div>`;
-                    renderMath(chatBox);
-                } else if (data.error === "PAYMENT_REQUIRED") {
-                    openPayModal();
-                } else alert(data.error);
-            } catch (e) {
-                document.getElementById(loadingId).remove();
-                chatBox.innerHTML += `<div class="p-3 rounded-2xl bg-rose-50 border border-rose-200 text-rose-700 max-w-[85%] self-start">❌ Ошибка соединения</div>`;
-            }
-            chatBox.scrollTop = chatBox.scrollHeight;
-        }
-
-        // --- ИНТЕРАКТИВНЫЙ КАЛЕНДАРЬ И ПЕРЕКЛЮЧЕНИЕ МЕСЯЦЕВ С АНИМАЦИЕЙ ---
-        function openPlannerView() {
-            const container = document.getElementById('result-container');
-            renderAdvancedCalendar(container);
-        }
-
-        function changeCalendarMonth(delta) {
-            slideDirection = delta > 0 ? 'slide-left' : 'slide-right';
-            calMonth += delta;
-            if (calMonth > 11) {
-                calMonth = 0;
-                calYear++;
-            } else if (calMonth < 0) {
-                calMonth = 11;
-                calYear--;
-            }
-            openPlannerView();
-        }
-
-        function renderAdvancedCalendar(container) {
-            const now = new Date();
-            const monthNames = ["Январь", "Февраль", "Март", "Апрель", "Май", "Июнь", "Июль", "Август", "Сентябрь", "Октябрь", "Ноябрь", "Декабрь"];
-            
-            const firstDayIndex = new Date(calYear, calMonth, 1).getDay();
-            const totalDays = new Date(calYear, calMonth + 1, 0).getDate();
-
-            let daysHtml = '';
-            for (let i = 1; i < (firstDayIndex === 0 ? 7 : firstDayIndex); i++) {
-                daysHtml += `<div class="p-2 text-slate-200 text-xs"></div>`;
-            }
-
-            for (let day = 1; day <= totalDays; day++) {
-                let dateStr = `${calYear}-${String(calMonth + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
-                let dayTasks = studentTasks.filter(t => t.date === dateStr);
-                let isToday = (day === now.getDate() && calMonth === now.getMonth() && calYear === now.getFullYear());
-
-                daysHtml += `
-                    <div onclick="showDayTasks('${dateStr}', ${day})" class="calendar-day p-3 rounded-2xl border text-center cursor-pointer transition flex flex-col items-center justify-center relative ${isToday ? 'bg-indigo-600 text-white font-black shadow-lg shadow-indigo-500/30' : 'bg-slate-50 border-slate-200 hover:border-indigo-400 hover:bg-indigo-50/50'}">
-                        <span class="text-xs font-extrabold">${day}</span>
-                        ${dayTasks.length > 0 ? `<span class="absolute top-1 right-1 w-4 h-4 bg-amber-500 text-white text-[9px] font-bold rounded-full flex items-center justify-center shadow-sm">${dayTasks.length}</span>` : ''}
-                    </div>
-                `;
-            }
-
-            let tasksListHtml = studentTasks.map((t) => `
-                <div class="flex items-center justify-between p-4 rounded-2xl border ${t.done ? 'bg-slate-50 border-slate-200 opacity-60' : 'bg-white border-indigo-100 shadow-sm'} transition">
-                    <div class="flex items-center space-x-3">
-                        <button onclick="toggleTask(${t.id})" class="w-6 h-6 rounded-lg border-2 flex items-center justify-center transition ${t.done ? 'bg-emerald-500 border-emerald-500 text-white' : 'border-slate-300 hover:border-indigo-500'}">
-                            ${t.done ? '✓' : ''}
-                        </button>
-                        <div>
-                            <p class="text-xs md:text-sm font-bold ${t.done ? 'line-through text-slate-400' : 'text-slate-800'}">${t.title}</p>
-                            <p class="text-[11px] text-slate-500">${t.desc || 'Без описания'}</p>
-                            <span class="text-[10px] font-extrabold text-indigo-500">⏳ Дедлайн: ${t.date}</span>
-                        </div>
-                    </div>
-                    <div class="flex items-center space-x-2">
-                        <button onclick="sendTaskReminder('${t.title.replace(/'/g, "\\'")}', '${t.date}')" class="bg-indigo-50 hover:bg-indigo-100 text-indigo-600 px-3 py-1.5 rounded-xl text-[10px] font-extrabold transition shadow-sm" title="Отправить напоминание в Telegram">
-                            🔔 Напомнить
-                        </button>
-                        <span class="text-xs font-black text-amber-500 bg-amber-50 px-2.5 py-1 rounded-xl">+${t.xp} XP</span>
-                        <button onclick="deleteTask(${t.id})" class="text-slate-300 hover:text-rose-500 text-xs p-1">✕</button>
-                    </div>
-                </div>
-            `).join('');
-
-            container.innerHTML = `
-                <div class="w-full space-y-6 text-left quiz-slide-enter">
-                    <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-gradient-to-r from-amber-500 to-orange-600 text-white p-6 rounded-3xl shadow-lg">
-                        <div>
-                            <span class="text-[10px] font-black uppercase tracking-widest text-amber-200">ИИ-Календарь & Расписание</span>
-                            <h3 class="text-xl font-black">📅 Полный Календарь Дедлайнов</h3>
-                            <p class="text-xs text-amber-100 mt-1">Переключайте месяцы стрелками. Нажмите на день, чтобы просмотреть задачи или отправить напоминание!</p>
-                        </div>
-                        <div class="bg-white/20 backdrop-blur-md px-4 py-3 rounded-2xl text-center border border-white/30">
-                            <span class="text-xs text-amber-100 font-bold block">Ваш счет XP</span>
-                            <span class="text-2xl font-black">⭐ <span id="planner-score-disp">${currentUser ? (currentUser.score || 0) : 0}</span> XP</span>
-                        </div>
-                    </div>
-
-                    <div class="bg-white border border-indigo-100 p-6 rounded-3xl shadow-sm space-y-4">
-                        <div class="flex justify-between items-center border-b pb-3 border-slate-100">
-                            <div class="flex items-center space-x-3">
-                                <button onclick="changeCalendarMonth(-1)" class="w-8 h-8 rounded-xl bg-slate-100 hover:bg-indigo-600 hover:text-white font-black text-xs transition flex items-center justify-center">←</button>
-                                <h4 class="text-base font-black text-slate-800">${monthNames[calMonth]} ${calYear}</h4>
-                                <button onclick="changeCalendarMonth(1)" class="w-8 h-8 rounded-xl bg-slate-100 hover:bg-indigo-600 hover:text-white font-black text-xs transition flex items-center justify-center">→</button>
-                            </div>
-                            <span class="text-xs text-indigo-600 font-extrabold bg-indigo-50 px-3 py-1 rounded-full border border-indigo-100">Нажмите на день для деталей</span>
-                        </div>
-                        
-                        <div class="grid grid-cols-7 gap-2 text-center text-[10px] font-extrabold text-slate-400 uppercase">
-                            <div>Пн</div><div>Вт</div><div>Ср</div><div>Чт</div><div>Пт</div><div>Сб</div><div>Вс</div>
-                        </div>
-                        
-                        <div class="grid grid-cols-7 gap-2 ${slideDirection}">${daysHtml}</div>
-                    </div>
-
-                    <div class="bg-white border border-indigo-100 p-5 rounded-3xl space-y-4 shadow-sm">
-                        <h4 class="text-xs font-black uppercase text-slate-400 tracking-wider">➕ Ручное добавление</h4>
-                        <div class="flex flex-col md:flex-row gap-3">
-                            <input type="text" id="task-title-input" placeholder="Название задачи..." class="flex-grow px-4 py-3 rounded-2xl bg-slate-50 border border-slate-200 text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-indigo-500">
-                            <input type="date" id="task-date-input" class="px-4 py-3 rounded-2xl bg-slate-50 border border-slate-200 text-xs font-extrabold text-slate-700">
-                            <button onclick="addNewTask()" class="bg-indigo-600 hover:bg-indigo-700 text-white font-extrabold px-6 py-3 rounded-2xl text-xs shadow-md glow-btn">Добавить</button>
-                        </div>
-                    </div>
-
-                    <div class="space-y-3">
-                        <div class="flex justify-between items-center">
-                            <h4 class="text-xs font-black uppercase text-slate-400 tracking-wider">📋 Текущий список дел</h4>
-                            <span class="text-xs text-indigo-600 font-extrabold">${studentTasks.filter(t => !t.done).length} активных</span>
-                        </div>
-                        <div class="space-y-2 max-h-60 overflow-y-auto pr-1">${tasksListHtml}</div>
-                    </div>
-
-                    <div class="bg-gradient-to-br from-indigo-900 to-purple-950 text-white p-6 rounded-3xl space-y-4 shadow-xl">
-                        <div class="flex items-center justify-between">
-                            <span class="text-xs font-black text-indigo-300 uppercase tracking-widest">🤖 Перепланировщик ИИ</span>
-                        </div>
-                        <p class="text-xs text-slate-300">Напишите ваши новые планы/задачи. ИИ полностью перераспределит их по дням в календаре и распишет краткую информацию в мини-окнах!</p>
-                        <div class="flex gap-2">
-                            <input type="text" id="ai-planner-query" placeholder="Например: Распредели подготовку к алгоритмам и C++ на эту неделю" class="flex-grow px-4 py-3 rounded-2xl bg-white/10 border border-white/20 text-white text-xs placeholder:text-slate-400 focus:outline-none">
-                            <button onclick="askAIPlanner()" class="bg-gradient-to-r from-amber-400 to-yellow-500 text-slate-900 font-black px-6 py-3 rounded-2xl text-xs glow-btn">Запустить ИИ</button>
-                        </div>
-                        <div id="ai-planner-response" class="hidden p-4 rounded-2xl bg-white/10 border border-white/15 text-xs text-slate-200 leading-relaxed whitespace-pre-wrap"></div>
-                    </div>
-                </div>
-            `;
-        }
-
-        function showDayTasks(dateStr, dayNum) {
-            const modal = document.getElementById('day-modal');
-            document.getElementById('day-modal-title').textContent = `Задачи на ${dayNum}-е число (${dateStr})`;
-            const dayTasks = studentTasks.filter(t => t.date === dateStr);
-            
-            let html = dayTasks.length === 0 ? '<p class="text-xs text-slate-400 text-center py-6">На этот день нет запланированных задач.</p>' :
-                dayTasks.map(t => `
-                    <div class="p-3.5 bg-slate-50 border border-slate-200 rounded-2xl text-xs space-y-2">
-                        <div class="font-extrabold text-slate-800 flex justify-between">
-                            <span>${t.title}</span>
-                            <span class="text-[10px] ${t.done ? 'text-emerald-600' : 'text-amber-600'} font-black">${t.done ? '✓ Готово' : '⏳ В процессе'}</span>
-                        </div>
-                        <p class="text-[11px] text-slate-600 bg-white p-2 rounded-xl border border-slate-100">${t.desc || 'Информация от ИИ отсутствует'}</p>
-                        <button onclick="sendTaskReminder('${t.title.replace(/'/g, "\\'")}', '${t.date}')" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white py-2 rounded-xl text-[11px] font-extrabold transition shadow-sm">
-                            🔔 Напомнить в Telegram
-                        </button>
-                    </div>
-                `).join('');
-            
-            document.getElementById('day-modal-tasks').innerHTML = html;
-            modal.classList.remove('hidden');
-        }
-
-        function closeDayModal() {
-            document.getElementById('day-modal').classList.add('hidden');
-        }
-
-        function addNewTask() {
-            const title = document.getElementById('task-title-input').value.trim();
-            const date = document.getElementById('task-date-input').value;
-            if (!title) return alert('Введите название задачи');
-            const newTask = {
-                id: Date.now(),
-                title: title,
-                date: date || new Date().toISOString().split('T')[0],
-                desc: 'Добавлено пользователем вручную',
-                done: false,
-                xp: 50
-            };
-            studentTasks.unshift(newTask);
-            localStorage.setItem('studyai_tasks', JSON.stringify(studentTasks));
-            openPlannerView();
-        }
-
-        async function toggleTask(taskId) {
-            const task = studentTasks.find(t => t.id === taskId);
-            if (task) {
-                task.done = !task.done;
-                localStorage.setItem('studyai_tasks', JSON.stringify(studentTasks));
-                if (task.done && currentUser) {
-                    showScorePopup("+50 XP");
-                    try {
-                        const formData = new FormData();
-                        formData.append('user_id', currentUser.user_id);
-                        formData.append('points', 50);
-                        const res = await fetch('/api/user/add-score', { method: 'POST', body: formData });
-                        const data = await res.json();
-                        if (data.success) {
-                            currentUser.score = data.new_score;
-                            localStorage.setItem('studyai_user', JSON.stringify(currentUser));
-                            checkAuth();
-                        }
-                    } catch (e) {}
-                }
-                openPlannerView();
-            }
-        }
-
-        function deleteTask(taskId) {
-            studentTasks = studentTasks.filter(t => t.id !== taskId);
-            localStorage.setItem('studyai_tasks', JSON.stringify(studentTasks));
-            openPlannerView();
-        }
-
         function showScorePopup(text) {
             const popup = document.getElementById('score-popup');
             document.getElementById('score-popup-text').textContent = text;
@@ -730,294 +628,444 @@
             setTimeout(() => { popup.classList.add('hidden'); }, 1200);
         }
 
-        async function askAIPlanner() {
-            if (!currentUser) return checkAuth();
-            const query = document.getElementById('ai-planner-query').value.trim();
-            const respDiv = document.getElementById('ai-planner-response');
-            respDiv.classList.remove('hidden');
-            respDiv.innerHTML = '⏳ ИИ анализирует задачи, формирует инструкции и переносит расписание в календарь...';
-
-            const formData = new FormData();
-            formData.append("doc_id", "planner");
-            formData.append("action", "planner");
-            formData.append("user_id", currentUser.user_id);
-            formData.append("lang", selectedLang);
-            formData.append("custom_prompt", query || 'Перераспредели задачи студента');
-
-            try {
-                const res = await fetch('/generate', { method: 'POST', body: formData });
-                const data = await res.json();
-                
-                if (res.ok) {
-                    currentUser.tokens = data.tokens_left;
-                    currentUser.is_subscribed = data.is_subscribed;
-                    localStorage.setItem('studyai_user', JSON.stringify(currentUser));
-                    checkAuth();
-
-                    respDiv.innerHTML = data.result;
-                    
-                    try {
-                        let jsonMatch = data.result.match(/```json([\s\S]*?)```/);
-                        if (jsonMatch) {
-                            let aiTasks = JSON.parse(jsonMatch[1].trim());
-                            studentTasks = [];
-                            aiTasks.forEach((at, index) => {
-                                studentTasks.push({
-                                    id: Date.now() + index,
-                                    title: at.title,
-                                    date: at.date || new Date().toISOString().split('T')[0],
-                                    desc: at.desc || 'Инструкция сформирована ИИ',
-                                    done: false,
-                                    xp: 50
-                                });
-                            });
-                            localStorage.setItem('studyai_tasks', JSON.stringify(studentTasks));
-                            setTimeout(() => openPlannerView(), 1200);
-                        }
-                    } catch (e) {}
-
-                    renderMath(respDiv);
-                } else if (data.error === "PAYMENT_REQUIRED") {
-                    currentUser.is_subscribed = false;
-                    localStorage.setItem('studyai_user', JSON.stringify(currentUser));
-                    checkAuth();
-                    openPayModal();
-                } else {
-                    alert(data.error);
-                }
-            } catch (e) {
-                respDiv.innerHTML = '❌ Ошибка сети при соединении с сервером';
-            }
-        }
-
-        async function generate(action, page = 1) {
-            if (!currentUser) return checkAuth();
-            currentPage = page;
-            const container = document.getElementById('result-container');
-            container.innerHTML = `<div class="py-12"><div class="w-10 h-10 border-4 border-indigo-600 border-t-transparent rounded-full animate-spin mx-auto mb-2"></div><p class="text-xs font-bold text-indigo-600">Генерация ответа ИИ...</p></div>`;
-
-            const formData = new FormData();
-            formData.append("doc_id", currentDocId || "default");
-            formData.append("action", action);
-            formData.append("user_id", currentUser.user_id);
-            formData.append("lang", selectedLang);
-            formData.append("title", document.getElementById('topic-input').value || "Урок");
-            formData.append("page", page);
-
-            try {
-                const res = await fetch('/generate', { method: 'POST', body: formData });
-                const data = await res.json();
-                
-                if (res.ok) {
-                    currentUser.tokens = data.tokens_left;
-                    currentUser.is_subscribed = data.is_subscribed;
-                    localStorage.setItem('studyai_user', JSON.stringify(currentUser));
-                    checkAuth();
-
-                    if (action === 'flashcards') parseAndRenderFlashcards(data.result);
-                    else if (action === 'quiz') initQuiz(data.result);
-                    else renderGenericResult(data.result);
-                } else if (data.error === "PAYMENT_REQUIRED") {
-                    currentUser.is_subscribed = false;
-                    localStorage.setItem('studyai_user', JSON.stringify(currentUser));
-                    checkAuth();
-                    openPayModal();
-                } else {
-                    alert(data.error);
-                }
-            } catch (e) { alert("Ошибка выполнения"); }
-        }
-
-        function initQuiz(rawText) {
-            try {
-                let cleanJson = rawText.replace(/```json/g, '').replace(/```/g, '').trim();
-                quizQuestions = JSON.parse(cleanJson);
-            } catch (e) { quizQuestions = []; }
-            if (!quizQuestions.length) return renderGenericResult(rawText);
-            quizCurrentIndex = 0;
-            userAnswers = {};
-            renderQuizStep();
-        }
-
-        function renderQuizStep() {
-            const container = document.getElementById('result-container');
-            const q = quizQuestions[quizCurrentIndex];
-            const total = quizQuestions.length;
-            const progress = Math.round(((quizCurrentIndex + 1) / total) * 100);
-            const selectedOpt = userAnswers[quizCurrentIndex];
-
-            let optionsHtml = q.options.map((opt, idx) => {
-                let optKey = String.fromCharCode(65 + idx);
-                let isSelected = selectedOpt === optKey;
-                return `
-                    <button onclick="selectQuizAnswer('${optKey}')" class="w-full text-left p-4 rounded-2xl border-2 transition-all flex items-center justify-between ${isSelected ? 'border-indigo-600 bg-indigo-50/80 text-indigo-950 shadow-md font-extrabold' : 'border-slate-100 bg-slate-50/60 hover:bg-slate-100 text-slate-700 font-semibold'}">
-                        <span class="text-xs md:text-sm">${opt}</span>
-                        <div class="w-6 h-6 rounded-full border-2 flex items-center justify-center text-xs ${isSelected ? 'border-indigo-600 bg-indigo-600 text-white font-bold' : 'border-slate-300'}">${isSelected ? '✓' : ''}</div>
-                    </button>
-                `;
-            }).join('');
-
-            container.innerHTML = `
-                <div class="w-full max-w-2xl mx-auto space-y-6 text-left quiz-slide-enter">
-                    <div>
-                        <div class="flex justify-between items-center text-xs font-black text-slate-400 mb-2">
-                            <span class="text-indigo-600 uppercase tracking-wider">Вопрос ${quizCurrentIndex + 1} из ${total}</span>
-                            <span>${progress}%</span>
-                        </div>
-                        <div class="w-full bg-slate-100 h-2.5 rounded-full overflow-hidden">
-                            <div class="bg-gradient-to-r from-indigo-500 to-purple-600 h-full transition-all duration-300" style="width: ${progress}%"></div>
-                        </div>
-                    </div>
-                    <div class="bg-white border border-indigo-100 p-6 md:p-8 rounded-3xl shadow-sm space-y-6">
-                        <h3 class="text-base md:text-lg font-extrabold text-slate-900 leading-snug">${q.question}</h3>
-                        <div class="space-y-3">${optionsHtml}</div>
-                    </div>
-                    <div class="flex justify-between items-center pt-2">
-                        <button onclick="quizPrev()" ${quizCurrentIndex === 0 ? 'disabled class="opacity-30 cursor-not-allowed"' : ''} class="bg-slate-100 hover:bg-slate-200 text-slate-700 px-6 py-3 rounded-2xl text-xs font-bold transition">← Назад</button>
-                        ${quizCurrentIndex === total - 1 ? `
-                            <button onclick="finishQuiz()" class="glow-btn bg-emerald-600 hover:bg-emerald-500 text-white px-8 py-3.5 rounded-2xl text-xs font-extrabold shadow-lg">Проверить тест 🎯</button>
-                        ` : `
-                            <button onclick="quizNext()" class="glow-btn bg-indigo-600 hover:bg-indigo-500 text-white px-8 py-3.5 rounded-2xl text-xs font-extrabold shadow-lg">Вперед →</button>
-                        `}
-                    </div>
-                </div>
-            `;
-            renderMath(container);
-        }
-
-        function selectQuizAnswer(ansKey) { userAnswers[quizCurrentIndex] = ansKey; renderQuizStep(); }
-        function quizPrev() { if (quizCurrentIndex > 0) { quizCurrentIndex--; renderQuizStep(); } }
-        function quizNext() { if (quizCurrentIndex < quizQuestions.length - 1) { quizCurrentIndex++; renderQuizStep(); } }
-
-        async function finishQuiz() {
-            const container = document.getElementById('result-container');
-            let score = 0;
-            quizQuestions.forEach((q, idx) => { if (userAnswers[idx] === q.answer) score++; });
-            const total = quizQuestions.length;
-            const percent = Math.round((score / total) * 100);
-
-            if (currentUser) {
-                const pointsGained = score * 10;
-                showScorePopup(`+${pointsGained} XP`);
-                try {
-                    const formData = new FormData();
-                    formData.append('user_id', currentUser.user_id);
-                    formData.append('points', pointsGained);
-                    const res = await fetch('/api/user/add-score', { method: 'POST', body: formData });
-                    const data = await res.json();
-                    if (data.success) {
-                        currentUser.score = data.new_score;
-                        localStorage.setItem('studyai_user', JSON.stringify(currentUser));
-                        checkAuth();
-                    }
-                } catch (e) {}
-            }
-
-            container.innerHTML = `
-                <div class="w-full max-w-2xl mx-auto space-y-6 text-center quiz-slide-enter">
-                    <div class="bg-gradient-to-br from-indigo-600 to-purple-700 text-white p-8 rounded-3xl shadow-xl space-y-3">
-                        <div class="text-5xl font-black">${percent}%</div>
-                        <h3 class="text-lg font-extrabold">Вы набрали ${score} из ${total} баллов!</h3>
-                        <p class="text-xs text-indigo-100">+${score * 10} XP добавлено в ваш профиль!</p>
-                    </div>
-                    <button onclick="generate('quiz', ${currentPage + 1})" class="w-full bg-gradient-to-r from-indigo-600 to-purple-600 text-white font-extrabold py-4 rounded-2xl shadow-lg glow-btn text-xs">🔄 Следующие 20 вопросов ➔</button>
-                </div>
-            `;
-        }
-
-        function parseAndRenderFlashcards(rawText) {
-            cardsData = [];
-            currentCardIndex = 0;
-            const blocks = rawText.split(/###\s*Карточка\s*\d+/i).filter(b => b.trim().length > 10);
-            blocks.forEach(block => {
-                const qMatch = block.match(/\*\*Вопрос:\*\*\s*([\s\S]*?)(?=\*\*Ответ:\*\*|$)/i);
-                const aMatch = block.match(/\*\*Ответ:\*\*\s*([\s\S]*?)(?=$|---)/i);
-                if (qMatch && aMatch) cardsData.push({ q: qMatch[1].trim(), a: aMatch[1].trim() });
-            });
-            if (!cardsData.length) return renderGenericResult(rawText);
-            showCurrentCard();
-        }
-
-        function showCurrentCard() {
-            const container = document.getElementById('result-container');
-            const card = cardsData[currentCardIndex];
-            container.innerHTML = `
-                <div class="space-y-6 max-w-xl mx-auto w-full text-left">
-                    <div class="flex justify-between items-center text-xs font-bold text-slate-400">
-                        <span class="bg-indigo-50 text-indigo-600 px-3 py-1 rounded-full border border-indigo-100">КАРТОЧКА ${currentCardIndex + 1} ИЗ ${cardsData.length}</span>
-                        <span>Нажмите, чтобы перевернуть</span>
-                    </div>
-                    <div class="perspective-1000" onclick="this.querySelector('.flashcard-inner').classList.toggle('flipped')">
-                        <div class="flashcard-inner shadow-xl rounded-3xl">
-                            <div class="flashcard-front bg-gradient-to-br from-indigo-600 to-purple-700 text-white">
-                                <div class="text-base font-bold">${card.q}</div>
-                            </div>
-                            <div class="flashcard-back bg-gradient-to-br from-slate-800 to-indigo-950 text-white">
-                                <div class="text-sm font-semibold">${card.a}</div>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="flex justify-between pt-2">
-                        <button onclick="prevCard()" ${currentCardIndex === 0 ? 'disabled class="opacity-30"' : ''} class="bg-slate-100 px-5 py-2.5 rounded-xl text-xs font-bold">Назад</button>
-                        <button onclick="nextCard()" ${currentCardIndex === cardsData.length - 1 ? 'disabled class="opacity-30"' : ''} class="bg-indigo-600 text-white px-5 py-2.5 rounded-xl text-xs font-bold">Вперед</button>
-                    </div>
-                </div>
-            `;
-            renderMath(container);
-        }
-        function prevCard() { if (currentCardIndex > 0) { currentCardIndex--; showCurrentCard(); } }
-        function nextCard() { if (currentCardIndex < cardsData.length - 1) { currentCardIndex++; showCurrentCard(); } }
-
-        function renderGenericResult(rawText) {
-            const container = document.getElementById('result-container');
-            let formattedHtml = rawText.replace(/### (.*?)\n/g, '<h3 class="text-base font-extrabold text-indigo-600 mt-6 mb-2">$1</h3>').replace(/\*\*(.*?)\*\*/g, '<strong class="text-indigo-900">$1</strong>').replace(/\n/g, '<br>');
-            container.innerHTML = `<div class="bg-white border border-indigo-100 p-6 rounded-3xl shadow-sm text-slate-700 text-xs md:text-sm leading-relaxed space-y-3 text-left w-full max-h-[70vh] overflow-y-auto">${formattedHtml}</div>`;
-            renderMath(container);
-        }
-
         async function uploadMaterial() {
+            const t = translations[selectedLang];
             const fileInput = document.getElementById('pdf-file');
             const topicInput = document.getElementById('topic-input').value;
             if (fileInput.files.length > 0) {
-                const formData = new FormData();
-                formData.append("file", fileInput.files[0]);
-                const res = await fetch('/upload', { method: 'POST', body: formData });
+                const fd = new FormData();
+                fd.append("file", fileInput.files[0]);
+                const res = await fetch('/upload', { method: 'POST', body: fd });
                 const data = await res.json();
-                if (res.ok) { currentDocId = data.doc_id; alert("Файл успешно загружен!"); }
+                if (res.ok) { currentDocId = data.doc_id; alert(t.fileUploaded); }
             } else if (topicInput) {
                 currentDocId = "topic_" + topicInput;
-                alert("Тема сохранена!");
+                alert(t.topicSaved);
             }
         }
 
-        function openPayModal() { document.getElementById('pay-modal').classList.remove('hidden'); }
-        function closePayModal() { document.getElementById('pay-modal').classList.add('hidden'); }
-        async function activateSubscription() {
-            const formData = new FormData();
-            formData.append('user_id', currentUser.user_id);
-            const res = await fetch('/api/user/subscribe', { method: 'POST', body: formData });
-            if (res.ok) { alert('Подписка активирована!'); currentUser.is_subscribed = true; localStorage.setItem('studyai_user', JSON.stringify(currentUser)); closePayModal(); checkAuth(); }
+        // --- ИИ ЧАТ ПО ПРОЕКТУ ---
+        function openChatView() {
+            window.currentActiveView = 'chat';
+            const t = translations[selectedLang];
+            const container = document.getElementById('result-container');
+            container.innerHTML = `
+                <div class="w-full flex flex-col h-[65vh] text-left quiz-slide-enter">
+                    <div class="border-b border-white/10 pb-3 mb-3 flex items-center justify-between">
+                        <h3 class="display text-lg font-bold text-white">💬 ${t.modeChat}</h3>
+                    </div>
+                    <div id="chat-messages" class="flex-grow overflow-y-auto space-y-3 p-3 tile mb-3 text-xs flex flex-col">
+                        <div class="p-3.5 rounded-2xl bg-[#c8ff2e] text-black font-semibold max-w-[85%] self-start">
+                            ${t.chatWelcome}
+                        </div>
+                    </div>
+                    <div class="flex gap-2">
+                        <input type="text" id="chat-input" onkeydown="if(event.key==='Enter') sendChatMessage()" placeholder="${t.chatPlaceholder}" class="field flex-grow">
+                        <button onclick="sendChatMessage()" class="btn-accent px-6 py-3 text-xs">${t.chatSend}</button>
+                    </div>
+                </div>
+            `;
         }
-        async function openCabinet() {
-            document.getElementById('cabinet-modal').classList.remove('hidden');
-            
-            try {
-                const res = await fetch(`/api/user/${currentUser.user_id}/saves`);
-                const data = await res.json();
-                currentUser.is_subscribed = data.is_subscribed;
-                currentUser.tokens = data.tokens;
-                currentUser.score = data.score;
-                localStorage.setItem('studyai_user', JSON.stringify(currentUser));
-                checkAuth();
-            } catch(e) {}
 
-            document.getElementById('stat-tokens').textContent = currentUser.is_subscribed ? '∞' : currentUser.tokens;
-            document.getElementById('stat-score').textContent = currentUser.score || 0;
-            document.getElementById('stat-sub').textContent = currentUser.is_subscribed ? 'Активна (500₸)' : 'Нет';
-            
+        async function sendChatMessage() {
+            if (!currentUser) return checkAuth();
+            const t = translations[selectedLang];
+            const input = document.getElementById('chat-input');
+            const msg = input.value.trim();
+            if (!msg) return;
+
+            const chatBox = document.getElementById('chat-messages');
+            chatBox.insertAdjacentHTML('beforeend', `<div class="p-3 rounded-2xl bg-[#1c1c1c] border border-white/10 text-white max-w-[85%] self-end font-semibold">${escapeHtml(msg)}</div>`);
+            input.value = '';
+            chatBox.scrollTop = chatBox.scrollHeight;
+
+            const loadingId = 'loading-' + Date.now();
+            chatBox.insertAdjacentHTML('beforeend', `<div id="${loadingId}" class="p-3 rounded-2xl bg-[#c8ff2e]/80 text-black font-semibold max-w-[85%] self-start animate-pulse">${t.chatLoading}</div>`);
+            chatBox.scrollTop = chatBox.scrollHeight;
+
+            const fd = new FormData();
+            fd.append('user_id', currentUser.user_id);
+            fd.append('message', msg);
+            fd.append('doc_id', currentDocId || 'default');
+            fd.append('lang', selectedLang);
+
+            try {
+                const res = await fetch('/api/chat', { method: 'POST', body: fd });
+                const data = await res.json();
+                document.getElementById(loadingId).remove();
+                if (res.ok) {
+                    currentUser.tokens = data.tokens_left;
+                    localStorage.setItem('studyai_user', JSON.stringify(currentUser));
+                    checkAuth();
+                    chatBox.insertAdjacentHTML('beforeend', `<div class="p-3.5 rounded-2xl bg-[#c8ff2e] text-black font-medium max-w-[85%] self-start leading-relaxed">${data.reply}</div>`);
+                    renderMath(chatBox);
+                } else { alert(data.error); }
+            } catch(e) {
+                document.getElementById(loadingId).remove();
+                chatBox.insertAdjacentHTML('beforeend', `<div class="p-3 rounded-2xl bg-rose-950 text-rose-300 max-w-[85%] self-start">❌ Error</div>`);
+            }
+            chatBox.scrollTop = chatBox.scrollHeight;
+        }
+
+        // --- 1. ИИ МУГАЛИМ ---
+        function openAITeacherView() {
+            window.currentActiveView = 'teacher';
+            const t = translations[selectedLang];
+            const container = document.getElementById('result-container');
+            container.innerHTML = `
+                <div class="w-full space-y-5 text-left quiz-slide-enter">
+                    <div class="banner">
+                        <h3 class="display text-2xl font-bold text-white">${t.teacherTitle}</h3>
+                        <p class="text-xs text-neutral-400 mt-1">${t.teacherDesc}</p>
+                    </div>
+                    <div class="tile p-5 space-y-3">
+                        <input type="text" id="teacher-topic" placeholder="${t.teacherTopicPlaceholder}" class="field">
+                        <textarea id="teacher-comment" placeholder="${t.teacherCommentPlaceholder}" class="field"></textarea>
+                        <button onclick="startAITeacherGame()" class="btn-accent w-full py-3.5 text-xs">${t.teacherBtn}</button>
+                    </div>
+                    <div id="teacher-game-area"></div>
+                </div>
+            `;
+        }
+
+        async function startAITeacherGame() {
+            const t = translations[selectedLang];
+            const topic = document.getElementById('teacher-topic').value;
+            const comment = document.getElementById('teacher-comment').value;
+            if (!topic) return alert(t.teacherTopicPlaceholder);
+
+            const area = document.getElementById('teacher-game-area');
+            area.innerHTML = `<div class="p-8 text-center text-xs font-bold text-[#c8ff2e] animate-pulse">${t.teacherLoading}</div>`;
+
+            const fd = new FormData();
+            fd.append('user_id', currentUser ? currentUser.user_id : 1);
+            fd.append('topic', topic);
+            fd.append('comment', comment);
+            fd.append('doc_id', currentDocId || 'default');
+            fd.append('lang', selectedLang);
+
+            const res = await fetch('/api/ai-teacher', { method: 'POST', body: fd });
+            const data = await res.json();
+
+            try {
+                let clean = data.result.replace(/```json/g, '').replace(/```/g, '').trim();
+                let parsed = JSON.parse(clean);
+
+                let questionsHtml = parsed.game_questions.map((g, idx) => `
+                    <div class="tile p-4 space-y-2">
+                        <p class="font-bold text-white text-sm">${idx + 1}. ${g.q}</p>
+                        <div class="grid grid-cols-2 gap-2">
+                            ${g.options.map(opt => `<button onclick="checkGameAnswer(this, '${opt[0]}', '${g.answer}')" class="opt">${opt}</button>`).join('')}
+                        </div>
+                    </div>
+                `).join('');
+
+                area.innerHTML = `
+                    <div class="space-y-5 quiz-slide-enter">
+                        <div class="banner space-y-3">
+                            <h4 class="mono" style="color:var(--accent)">${t.teacherExplanation}</h4>
+                            <p class="text-sm text-neutral-300 leading-relaxed">${parsed.explanation}</p>
+                        </div>
+                        <div class="space-y-3">
+                            <h4 class="mono">${t.teacherGame}</h4>
+                            ${questionsHtml}
+                        </div>
+                    </div>
+                `;
+            } catch(e) {
+                area.innerHTML = `<div class="p-4 bg-rose-950 text-rose-300 text-xs rounded-2xl">${data.result}</div>`;
+            }
+        }
+
+        async function checkGameAnswer(btn, chosen, correct) {
+            const t = translations[selectedLang];
+            if (chosen === correct) {
+                btn.className = "opt opt-correct";
+                showScorePopup("+50 XP");
+                if (currentUser) {
+                    currentUser.score = (currentUser.score || 0) + 50;
+                    localStorage.setItem('studyai_user', JSON.stringify(currentUser));
+                    checkAuth();
+                }
+                alert(t.correctAlert);
+            } else {
+                btn.className = "opt opt-wrong";
+                alert(t.wrongAlert + correct);
+            }
+        }
+
+        // --- 2. БИЛЕТЫ ---
+        function openTicketsView() {
+            window.currentActiveView = 'tickets';
+            const t = translations[selectedLang];
+            const container = document.getElementById('result-container');
+            container.innerHTML = `
+                <div class="w-full space-y-5 text-left quiz-slide-enter">
+                    <div class="banner">
+                        <h3 class="display text-2xl font-bold text-white">${t.ticketTitle}</h3>
+                        <p class="text-xs text-neutral-400 mt-1">${t.ticketDesc}</p>
+                    </div>
+                    <div class="tile p-5 space-y-3">
+                        <input type="text" id="ticket-theme" placeholder="${t.ticketThemePlaceholder}" class="field">
+                        <textarea id="ticket-comment" placeholder="${t.ticketCommentPlaceholder}" class="field"></textarea>
+                        <input type="number" id="ticket-count" value="3" min="1" max="10" class="field">
+                        <button onclick="startTicketGame()" class="btn-accent w-full py-3.5 text-xs">${t.ticketBtn}</button>
+                    </div>
+                    <div id="ticket-game-area"></div>
+                </div>
+            `;
+        }
+
+        async function startTicketGame() {
+            const t = translations[selectedLang];
+            const theme = document.getElementById('ticket-theme').value;
+            const comment = document.getElementById('ticket-comment').value;
+            const count = document.getElementById('ticket-count').value;
+            if (!theme) return alert(t.ticketThemePlaceholder);
+
+            const area = document.getElementById('ticket-game-area');
+            area.innerHTML = `<div class="p-8 text-center text-xs font-bold text-[#c8ff2e] animate-pulse">${t.ticketLoading}</div>`;
+
+            const fd = new FormData();
+            fd.append('user_id', currentUser ? currentUser.user_id : 1);
+            fd.append('theme', theme);
+            fd.append('comment', comment);
+            fd.append('count', count);
+            fd.append('doc_id', currentDocId || 'default');
+            fd.append('lang', selectedLang);
+
+            const res = await fetch('/api/tickets', { method: 'POST', body: fd });
+            const data = await res.json();
+
+            try {
+                let clean = data.result.replace(/```json/g, '').replace(/```/g, '').trim();
+                let tickets = JSON.parse(clean);
+
+                let ticketsHtml = tickets.map((item) => `
+                    <div class="tile p-5 space-y-3">
+                        <span class="mono border border-white/10 px-3 py-1 rounded-full inline-block" style="color:var(--accent)">БИЛЕТ №${item.ticket_num}</span>
+                        <p class="font-bold text-white text-sm">❓ ${item.question}</p>
+                        <p class="text-xs text-neutral-300 bg-white/5 p-3 rounded-xl border border-white/10">🎮 <b>Задание:</b> ${item.game_task}</p>
+                        <div class="grid grid-cols-3 gap-2">
+                            ${item.options.map(opt => `<button onclick="checkTicketAnswer(this, '${opt[0]}', '${item.correct}')" class="opt">${opt}</button>`).join('')}
+                        </div>
+                    </div>
+                `).join('');
+
+                area.innerHTML = `<div class="space-y-4 quiz-slide-enter">${ticketsHtml}</div>`;
+            } catch(e) {
+                area.innerHTML = `<div class="p-4 tile leading-relaxed whitespace-pre-wrap text-xs text-neutral-200">${data.result}</div>`;
+            }
+        }
+
+        function checkTicketAnswer(btn, chosen, correct) {
+            const t = translations[selectedLang];
+            if (chosen === correct) {
+                btn.className = "opt opt-correct";
+                showScorePopup("+50 XP");
+                alert(t.ticketCorrectAlert);
+            } else {
+                btn.className = "opt opt-wrong";
+                alert(t.wrongAlert + correct);
+            }
+        }
+
+        // --- 3. КАЛЕНДАРЬ И ПЛАНЕР ---
+        function openPlannerView() {
+            window.currentActiveView = 'planner';
+            const container = document.getElementById('result-container');
+            renderAdvancedCalendar(container);
+        }
+
+        function changeCalendarMonth(delta) {
+            slideDirection = delta > 0 ? 'slide-left' : 'slide-right';
+            calMonth += delta;
+            if (calMonth > 11) { calMonth = 0; calYear++; }
+            else if (calMonth < 0) { calMonth = 11; calYear--; }
+            openPlannerView();
+        }
+
+        function renderAdvancedCalendar(container) {
+            const t = translations[selectedLang];
+            const now = new Date();
+            const monthNames = selectedLang === 'ru' ? ["Январь", "Февраль", "Март", "Апрель", "Май", "Июнь", "Июль", "Август", "Сентябрь", "Октябрь", "Ноябрь", "Декабрь"] :
+                               selectedLang === 'en' ? ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"] :
+                               ["Қаңтар", "Ақпан", "Наурыз", "Сәуір", "Мамыр", "Маусым", "Шілде", "Тамыз", "Қыркүйек", "Қазан", "Қараша", "Желтоқсан"];
+
+            const firstDayIndex = new Date(calYear, calMonth, 1).getDay();
+            const totalDays = new Date(calYear, calMonth + 1, 0).getDate();
+
+            let daysHtml = '';
+            for (let i = 1; i < (firstDayIndex === 0 ? 7 : firstDayIndex); i++) {
+                daysHtml += `<div class="p-2"></div>`;
+            }
+
+            for (let day = 1; day <= totalDays; day++) {
+                let dateStr = `${calYear}-${String(calMonth + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+                let dayTasks = studentTasks.filter(item => item.date === dateStr);
+                let isToday = (day === now.getDate() && calMonth === now.getMonth() && calYear === now.getFullYear());
+
+                daysHtml += `
+                    <div onclick="showDayTasks('${dateStr}', ${day})" class="calendar-day p-3 rounded-2xl border text-center cursor-pointer flex flex-col items-center justify-center relative ${isToday ? 'bg-[#c8ff2e] text-black border-[#c8ff2e]' : 'bg-[#0d0d0d] border-white/10 hover:border-[#c8ff2e]/50 text-neutral-300'}">
+                        <span class="text-xs font-extrabold">${day}</span>
+                        ${dayTasks.length > 0 ? `<span class="absolute top-1 right-1 w-4 h-4 ${isToday ? 'bg-black text-[#c8ff2e]' : 'bg-[#c8ff2e] text-black'} text-[9px] font-bold rounded-full flex items-center justify-center">${dayTasks.length}</span>` : ''}
+                    </div>
+                `;
+            }
+
+            let tasksListHtml = studentTasks.map((item) => `
+                <div class="flex items-center justify-between p-4 rounded-2xl border border-white/10 ${item.done ? 'bg-[#0d0d0d] opacity-50' : 'bg-[#141414]'} transition">
+                    <div class="flex items-center space-x-3">
+                        <button onclick="toggleTask(${item.id})" class="w-6 h-6 rounded-full border-2 flex items-center justify-center text-xs ${item.done ? 'bg-[#c8ff2e] border-[#c8ff2e] text-black' : 'border-neutral-600'}">${item.done ? '✓' : ''}</button>
+                        <div>
+                            <p class="text-xs md:text-sm font-bold ${item.done ? 'line-through text-neutral-500' : 'text-white'}">${item.title}</p>
+                            <p class="text-[11px] text-neutral-400">${item.desc || ''}</p>
+                            <span class="mono" style="color:var(--accent)">Deadline: ${item.date}</span>
+                        </div>
+                    </div>
+                    <button onclick="sendTaskReminder('${item.title.replace(/'/g, "\\'")}', '${item.date}')" class="btn-ghost px-3 py-1.5 text-[10px]">🔔 Reminder</button>
+                </div>
+            `).join('');
+
+            container.innerHTML = `
+                <div class="w-full space-y-5 text-left quiz-slide-enter">
+                    <div class="banner">
+                        <h3 class="display text-2xl font-bold text-white">${t.plannerTitle}</h3>
+                        <p class="text-xs text-neutral-400 mt-1">${t.plannerDesc}</p>
+                    </div>
+                    <div class="tile p-5 space-y-4">
+                        <div class="flex justify-between items-center border-b border-white/10 pb-3">
+                            <div class="flex items-center space-x-3">
+                                <button onclick="changeCalendarMonth(-1)" class="w-8 h-8 rounded-full border border-white/10 text-white font-bold hover:bg-white/10">←</button>
+                                <h4 class="display text-xl font-bold text-white">${monthNames[calMonth]} ${calYear}</h4>
+                                <button onclick="changeCalendarMonth(1)" class="w-8 h-8 rounded-full border border-white/10 text-white font-bold hover:bg-white/10">→</button>
+                            </div>
+                        </div>
+                        <div class="grid grid-cols-7 gap-2 text-center mono">
+                            <div>Mo</div><div>Tu</div><div>We</div><div>Th</div><div>Fr</div><div>Sa</div><div>Su</div>
+                        </div>
+                        <div class="grid grid-cols-7 gap-2 ${slideDirection}">${daysHtml}</div>
+                    </div>
+                    <div class="banner space-y-3">
+                        <div class="flex gap-2">
+                            <input type="text" id="ai-planner-query" placeholder="${t.plannerInputPlaceholder}" class="field flex-grow">
+                            <button onclick="askAIPlanner()" class="btn-accent px-6 py-3 text-xs">${t.plannerBtn}</button>
+                        </div>
+                        <div id="ai-planner-response" class="hidden p-4 rounded-2xl bg-[#0d0d0d] border border-white/10 text-xs leading-relaxed text-neutral-200"></div>
+                    </div>
+                    <div class="space-y-2 max-h-48 overflow-y-auto">${tasksListHtml}</div>
+                </div>
+            `;
+        }
+
+        async function sendTaskReminder(title, date) {
+            if (!currentUser || !currentUser.telegram_id) return alert('Telegram ID not found!');
+            const fd = new FormData();
+            fd.append('chat_id', currentUser.telegram_id);
+            fd.append('task_title', title);
+            fd.append('task_date', date);
+            fd.append('user_id', currentUser.user_id);
+            const res = await fetch('/api/telegram/reminder', { method: 'POST', body: fd });
+            if (res.ok) alert('🔔 Reminder sent to Telegram!');
+        }
+
+        async function askAIPlanner() {
+            const t = translations[selectedLang];
+            const query = document.getElementById('ai-planner-query').value;
+            const respDiv = document.getElementById('ai-planner-response');
+            respDiv.classList.remove('hidden');
+            respDiv.innerHTML = t.plannerLoading;
+
+            const fd = new FormData();
+            fd.append("doc_id", "planner");
+            fd.append("action", "planner");
+            fd.append("user_id", currentUser ? currentUser.user_id : 1);
+            fd.append("lang", selectedLang);
+            fd.append("custom_prompt", query);
+
+            const res = await fetch('/generate', { method: 'POST', body: fd });
+            const data = await res.json();
+            if (res.ok) {
+                respDiv.innerHTML = data.result;
+                try {
+                    let jsonMatch = data.result.match(/```json([\s\S]*?)```/);
+                    if (jsonMatch) {
+                        let aiTasks = JSON.parse(jsonMatch[1].trim());
+                        aiTasks.forEach((at, i) => studentTasks.push({ id: Date.now() + i, title: at.title, date: at.date, desc: at.desc, done: false, xp: 50 }));
+                        localStorage.setItem('studyai_tasks', JSON.stringify(studentTasks));
+                        setTimeout(() => openPlannerView(), 1000);
+                    }
+                } catch(e){}
+            }
+        }
+
+        function showDayTasks(dateStr, dayNum) {
+            const modal = document.getElementById('day-modal');
+            document.getElementById('day-modal-title').textContent = `Day tasks (${dateStr})`;
+            const dayTasks = studentTasks.filter(item => item.date === dateStr);
+            let html = dayTasks.length === 0 ? '<p class="text-xs text-neutral-500 py-4 text-center">No tasks for this day.</p>' :
+                dayTasks.map(item => `<div class="tile p-3 text-xs space-y-1 text-neutral-200"><b>${item.title}</b><p class="text-neutral-400">${item.desc}</p></div>`).join('');
+            document.getElementById('day-modal-tasks').innerHTML = html;
+            modal.classList.remove('hidden');
+        }
+        function closeDayModal() { document.getElementById('day-modal').classList.add('hidden'); }
+        function toggleTask(id) {
+            let item = studentTasks.find(x => x.id === id);
+            if (item) { item.done = !item.done; localStorage.setItem('studyai_tasks', JSON.stringify(studentTasks)); openPlannerView(); }
+        }
+
+        // --- 4. СТАНДАРТНЫЕ ГЕНЕРАТОРЫ ---
+        async function generate(action, page = 1) {
+            if (!currentUser) return checkAuth();
+            const t = translations[selectedLang];
+            currentPage = page;
+            const container = document.getElementById('result-container');
+            container.innerHTML = `<div class="py-12"><div class="w-10 h-10 border-4 border-[#c8ff2e] border-t-transparent rounded-full animate-spin mx-auto mb-3"></div><p class="mono">${t.aiGenerating}</p></div>`;
+
+            window.currentActiveView = action;
+            const fd = new FormData();
+            fd.append("doc_id", currentDocId || "default");
+            fd.append("action", action);
+            fd.append("user_id", currentUser.user_id);
+            fd.append("lang", selectedLang);
+            fd.append("title", document.getElementById('topic-input').value || "Lesson");
+            fd.append("page", page);
+
+            try {
+                const res = await fetch('/generate', { method: 'POST', body: fd });
+                const data = await res.json();
+                if (res.ok) {
+                    currentUser.tokens = data.tokens_left;
+                    localStorage.setItem('studyai_user', JSON.stringify(currentUser));
+                    checkAuth();
+                    renderGenericResult(data.result);
+                } else { alert(data.error); }
+            } catch(e) { alert("Error occurred"); }
+        }
+
+        function renderGenericResult(rawText) {
+            const container = document.getElementById('result-container');
+            let fmt = rawText
+                .replace(/### (.*?)\n/g, '<h3 class="display text-xl font-bold text-[#c8ff2e] mt-6 mb-2">$1</h3>')
+                .replace(/\*\*(.*?)\*\*/g, '<strong class="text-white">$1</strong>')
+                .replace(/\n/g, '<br>');
+            container.innerHTML = `<div class="tile p-6 text-neutral-300 text-sm leading-relaxed space-y-3 text-left w-full max-h-[70vh] overflow-y-auto">${fmt}</div>`;
+            renderMath(container);
+        }
+
+        // --- 5. КАБИНЕТ И ИСТОРИЯ ---
+        async function openCabinet() {
+            if (!currentUser) return checkAuth();
+            document.getElementById('cabinet-modal').classList.remove('hidden');
             const res = await fetch(`/api/user/${currentUser.user_id}/saves`);
             const data = await res.json();
-            document.getElementById('saves-container').innerHTML = data.saves.length === 0 ? `<div class="text-center py-6 text-slate-400 text-xs">Нет сохраненных материалов</div>` : data.saves.map(s => `<div class="p-3 bg-slate-50 border rounded-xl text-xs"><b>${s.type}</b>: ${s.title}</div>`).join('');
+            document.getElementById('stat-tokens').textContent = data.tokens;
+            document.getElementById('stat-score').textContent = data.score || 0;
+            document.getElementById('stat-sub').textContent = data.is_subscribed ? 'Active' : 'No';
+
+            let html = data.saves.map(s => `<div class="tile p-3 text-xs text-neutral-300"><b style="color:var(--accent)">[${s.type}]</b> ${s.title}</div>`).join('');
+            if (data.chats) data.chats.forEach(c => html += `<div class="tile p-3 text-xs text-neutral-300"><b style="color:var(--accent)">[Chat]</b> ${c.message}</div>`);
+            document.getElementById('saves-container').innerHTML = html || '<p class="text-xs text-neutral-500">History is empty</p>';
         }
         function closeCabinet() { document.getElementById('cabinet-modal').classList.add('hidden'); }
         function logout() { localStorage.removeItem('studyai_user'); location.reload(); }
