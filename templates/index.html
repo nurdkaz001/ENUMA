@@ -176,6 +176,79 @@
             margin-right: .6rem; padding: .45rem .8rem; border: 0; border-radius: 999px;
             background: var(--accent); color: #000; font-weight: 800; font-size: .7rem; cursor: pointer;
         }
+        /* ===== v2: палитра, анимация букв, тест, билеты, подписка ===== */
+        :root { --violet:#8b5cf6; --coral:#ff5d73; --cyan:#3de0ff; --gold:#ffd23f; }
+        .btn-accent:hover { box-shadow: 0 12px 30px -8px rgba(200,255,46,.45), 0 0 0 4px rgba(139,92,246,.18); }
+        .bento-card:hover { border-color: rgba(139,92,246,.4); }
+        .mode-row:nth-child(5n+2):hover .num { color: var(--violet); }
+        .mode-row:nth-child(5n+3):hover .num { color: var(--coral); }
+        .mode-row:nth-child(5n+4):hover .num { color: var(--cyan); }
+
+        #home { overflow: hidden; }
+        #home > .max-w-6xl { position: relative; z-index: 1; }
+        .blobs i { position:absolute; border-radius:50%; filter:blur(80px); opacity:.26; animation: drift 14s ease-in-out infinite alternate; pointer-events:none; }
+        .blobs i:nth-child(1){ width:420px;height:420px;background:var(--violet);top:-80px;left:-100px; }
+        .blobs i:nth-child(2){ width:380px;height:380px;background:var(--cyan);top:120px;right:-120px;animation-delay:-5s; }
+        .blobs i:nth-child(3){ width:320px;height:320px;background:var(--coral);bottom:-120px;left:38%;animation-delay:-9s; }
+        @keyframes drift { to { transform: translate(60px,40px) scale(1.15); } }
+
+        .ltr { display:inline-block; animation: ltrIn .8s cubic-bezier(.2,.9,.3,1.3) backwards; animation-delay: calc(var(--i) * 55ms); transition: transform .25s, color .25s; cursor: default; }
+        @keyframes ltrIn { from { opacity:0; transform: translateY(.7em) rotate(8deg) scale(.6); } }
+        .ltr:hover { transform: translateY(-.1em) rotate(-5deg); color: var(--accent); }
+        #hero-word-2 .ltr:nth-child(5n+1){ color:var(--violet); } #hero-word-2 .ltr:nth-child(5n+2){ color:var(--coral); }
+        #hero-word-2 .ltr:nth-child(5n+3){ color:var(--cyan); } #hero-word-2 .ltr:nth-child(5n+4){ color:var(--gold); }
+        #hero-word-2 .ltr:nth-child(5n){ color:var(--accent); }
+        .marquee-track span:nth-child(6n+2) i { color: var(--violet); } .marquee-track span:nth-child(6n+3) i { color: var(--coral); }
+        .marquee-track span:nth-child(6n+4) i { color: var(--cyan); } .marquee-track span:nth-child(6n+5) i { color: var(--gold); }
+
+        /* XP-всплывашка и конфетти */
+        .xp-toast { position:fixed; top:5.5rem; right:1rem; z-index:80; display:flex; gap:.5rem; align-items:center; padding:.7rem 1.2rem; border-radius:999px;
+            background:linear-gradient(135deg,#c8ff2e,#3de0ff); color:#000; font-weight:900; box-shadow:0 14px 40px -10px rgba(200,255,46,.6);
+            animation: toastIn 2.1s cubic-bezier(.2,.9,.3,1.2) forwards; pointer-events:none; }
+        @keyframes toastIn { 0%{opacity:0;transform:translateY(-20px) scale(.6)} 15%{opacity:1;transform:translateY(0) scale(1.1)} 25%{transform:scale(1)} 80%{opacity:1} 100%{opacity:0;transform:translateY(-14px)} }
+        .xp-star { display:inline-block; animation: starSpin .9s ease-out; } @keyframes starSpin { from { transform: rotate(-200deg) scale(0); } }
+        .spark { position:absolute; left:50%; top:50%; width:6px; height:6px; border-radius:50%; animation: spark .9s ease-out forwards; }
+        @keyframes spark { to { transform: translate(var(--x),var(--y)) scale(0); opacity:0; } }
+        .cf { position:fixed; top:-14px; width:8px; height:14px; z-index:90; pointer-events:none; animation: cf 2.6s linear forwards; }
+        @keyframes cf { to { transform: translate(var(--dx),105vh) rotate(720deg); } }
+
+        /* Тест */
+        .qbar { height:6px; border-radius:9px; background:rgba(255,255,255,.08); overflow:hidden; }
+        .qbar i { display:block; height:100%; background:linear-gradient(90deg,var(--violet),var(--cyan),var(--accent)); transition:width .4s; }
+        .qopt { display:flex; gap:.8rem; align-items:center; text-align:left; padding:.85rem 1rem; border-radius:1rem; background:#161616; border:1px solid var(--line); color:#e8e8e3; font-weight:600; font-size:.88rem; transition:all .2s; width:100%; }
+        .qopt b { width:2rem; height:2rem; flex:none; border-radius:.7rem; display:grid; place-items:center; background:#222; font-family:'JetBrains Mono',monospace; font-size:.8rem; }
+        .qopt:not(:disabled):hover { border-color:var(--violet); transform:translateX(4px); }
+        .qopt.ok { background:rgba(200,255,46,.14); border-color:var(--accent); color:#fff; animation: qpop .45s; } .qopt.ok b { background:var(--accent); color:#000; }
+        .qopt.bad { background:rgba(255,93,115,.14); border-color:var(--coral); animation: qshake .4s; } .qopt.bad b { background:var(--coral); color:#fff; }
+        .qopt:disabled:not(.ok):not(.bad) { opacity:.45; }
+        @keyframes qpop { 40% { transform: scale(1.03); } } @keyframes qshake { 25% { transform: translateX(-6px); } 75% { transform: translateX(6px); } }
+        .ring-wrap { position:relative; width:12rem; height:12rem; margin:0 auto; } .ring-wrap svg { transform: rotate(-90deg); }
+        .ring-fg { transition: stroke-dashoffset 1.4s cubic-bezier(.2,.8,.2,1); }
+        .ring-num { position:absolute; inset:0; display:flex; flex-direction:column; align-items:center; justify-content:center; }
+        .xp-chip { display:inline-flex; gap:.4rem; align-items:center; padding:.5rem 1.1rem; border-radius:999px; background:linear-gradient(135deg,var(--accent),var(--cyan)); color:#000; font-weight:900; animation: qpop .6s .9s backwards; }
+
+        /* Билеты */
+        .tk { position:relative; aspect-ratio:3/4; border-radius:1.4rem; padding:1rem; display:flex; flex-direction:column; justify-content:space-between; text-align:left; color:#000; font-weight:800; overflow:hidden; transition: transform .3s cubic-bezier(.34,1.56,.64,1); }
+        .tk:hover { transform: translateY(-6px) rotate(-1.5deg); }
+        .tk1 { background:linear-gradient(145deg,#c8ff2e,#7ee08a); } .tk2 { background:linear-gradient(145deg,#a78bfa,#8b5cf6); color:#fff; }
+        .tk3 { background:linear-gradient(145deg,#ff8fa0,#ff5d73); } .tk4 { background:linear-gradient(145deg,#7ceaff,#3de0ff); }
+        .tk-q { font-size:4.5rem; line-height:1; font-family:'Inter Tight',sans-serif; } .tk-done { opacity:.35; filter:grayscale(.6); }
+
+        /* Вход */
+        .otp-one { width:100%; text-align:center; text-indent:.5em; font-size:1.9rem; font-weight:800; letter-spacing:.5em; padding:.8rem .5rem; border-radius:1rem; background:var(--tile); border:1px solid var(--line); color:#fff; font-family:'JetBrains Mono',monospace; outline:none; }
+        .otp-one:focus { border-color:var(--accent); box-shadow:0 0 0 3px rgba(200,255,46,.15); }
+        .otp-one.err { animation: qshake .4s; border-color:var(--coral); }
+        @media (max-width:768px) { #telegram-auth-modal { backdrop-filter:none !important; } .blobs i { filter:blur(60px); } }
+
+        /* Подписка */
+        .price-card { position:relative; border-radius:2rem; padding:2rem; background:linear-gradient(160deg,#171717,#0e0e0e); overflow:hidden; }
+        .price-card::before { content:''; position:absolute; inset:0; border-radius:inherit; padding:1px; pointer-events:none;
+            background:linear-gradient(135deg,var(--accent),var(--violet),var(--coral)); -webkit-mask:linear-gradient(#000 0 0) content-box,linear-gradient(#000 0 0); -webkit-mask-composite:xor; mask-composite:exclude; }
+        .kaspi { border-radius:2rem; padding:2rem; background:linear-gradient(150deg,#f14635,#b3261a); color:#fff; position:relative; overflow:hidden; }
+        .kaspi::after { content:''; position:absolute; width:220px; height:220px; right:-60px; top:-60px; border-radius:50%; background:rgba(255,255,255,.12); }
+        .copy-btn { border-radius:999px; background:#fff; color:#b3261a; font-weight:800; padding:.55rem 1.1rem; font-size:.75rem; transition: transform .2s; } .copy-btn:active { transform: scale(.94); }
+
+        @media (prefers-reduced-motion: reduce) { .ltr, .blobs i, .xp-toast, .cf, .marquee-track { animation: none !important; } }
     </style>
 </head>
 <body class="min-h-screen flex flex-col">
@@ -198,6 +271,7 @@
             <nav class="hidden md:flex items-center space-x-1 text-sm font-semibold text-neutral-300">
                 <a href="#work" onclick="scrollToSection('workspace-section'); return false;" class="px-4 py-2 rounded-full hover:bg-white/10 hover:text-white transition" id="nav-work">work</a>
                 <a href="#about" onclick="scrollToSection('about'); return false;" class="px-4 py-2 rounded-full hover:bg-white/10 hover:text-white transition" id="nav-about">about</a>
+                <a href="#pricing" onclick="scrollToSection('pricing'); return false;" class="px-4 py-2 rounded-full hover:bg-white/10 hover:text-white transition" id="nav-pricing" style="color:var(--accent)">premium</a>
                 <a href="#contact" onclick="scrollToSection('contact'); return false;" class="px-4 py-2 rounded-full hover:bg-white/10 hover:text-white transition" id="nav-contact">contact</a>
             </nav>
 
@@ -233,30 +307,30 @@
     </div>
 
     
-<div id="telegram-auth-modal" class="fixed inset-0 bg-black/90 backdrop-blur-xl z-50 flex items-center justify-center p-4 hidden">
-        <div class="bento-card rounded-[28px] p-8 max-w-md w-full shadow-2xl space-y-6 text-center">
+<div id="telegram-auth-modal" class="fixed inset-0 bg-black/95 z-50 flex items-center justify-center p-4 hidden" style="backdrop-filter: blur(12px);">
+        <div class="bento-card rounded-[28px] p-6 sm:p-8 max-w-md w-full shadow-2xl space-y-5 text-center">
             <div class="w-16 h-16 bg-[#c8ff2e] text-black rounded-full flex items-center justify-center text-3xl mx-auto animate-float">✈️</div>
-            <div>
-                <h3 id="auth-title" class="display text-3xl font-bold text-white">HUB-қа кіру</h3>
-                <div class="mt-4 text-left space-y-1.5 text-xs text-neutral-300 tile p-4">
-                    <p id="auth-step-1">1. <a href="https://t.me/enuuma_bot" target="_blank" class="text-[#c8ff2e] font-extrabold underline">@enuuma_bot</a> ашыңыз</p>
-                    <p id="auth-step-2">2. 6 таңбалы кодты енгізіңіз</p>
-                </div>
+            <h3 id="auth-title" class="display text-3xl font-bold text-white">HUB-қа кіру</h3>
+            <a id="tg-link" href="https://t.me/enuuma_bot" target="_blank" rel="noopener" class="btn-accent w-full py-4 text-sm inline-flex items-center justify-center gap-2">✈️ <span id="tg-btn-text">Открыть Telegram</span></a>
+            <div class="text-left space-y-1 text-xs text-neutral-400 tile p-3.5">
+                <p id="auth-step-1">1. @enuuma_bot</p>
+                <p id="auth-step-2">2. 6</p>
+                <p id="auth-auto" class="text-[#c8ff2e] font-bold"></p>
             </div>
-            <div class="flex justify-center gap-2">
-                <input type="text" maxlength="1" class="otp-input" oninput="moveToNext(this, 1)">
-                <input type="text" maxlength="1" class="otp-input" oninput="moveToNext(this, 2)">
-                <input type="text" maxlength="1" class="otp-input" oninput="moveToNext(this, 3)">
-                <input type="text" maxlength="1" class="otp-input" oninput="moveToNext(this, 4)">
-                <input type="text" maxlength="1" class="otp-input" oninput="moveToNext(this, 5)">
-                <input type="text" maxlength="1" class="otp-input" oninput="moveToNext(this, 6)">
+            <div class="flex items-center gap-3 text-neutral-600"><span class="flex-1 h-px bg-white/10"></span><span id="auth-or" class="mono">или</span><span class="flex-1 h-px bg-white/10"></span></div>
+            <input id="otp" class="otp-one" type="text" inputmode="numeric" pattern="[0-9]*" autocomplete="one-time-code" maxlength="40" placeholder="······" oninput="otpInput(this)" onkeydown="if(event.key==='Enter') verifyCode()">
+            <p id="auth-err" class="text-xs text-[#ff6b6b] min-h-[1rem]"></p>
+            <div class="flex gap-2">
+                <button onclick="pasteCode()" id="auth-paste" class="btn-ghost px-5 py-3.5 text-sm">📋</button>
+                <button onclick="verifyCode()" id="auth-btn" class="btn-accent flex-1 py-3.5 text-sm">Кіру</button>
             </div>
-            <button onclick="verifyCode()" id="auth-btn" class="btn-accent w-full py-3.5 text-sm">Кіру</button>
         </div>
     </div>
 
+
     <!-- HERO -->
     <section id="home" class="w-full pt-36 lg:pt-44 pb-14 px-6 lg:px-12 relative">
+        <div class="blobs" aria-hidden="true"><i></i><i></i><i></i></div>
         <div class="max-w-6xl mx-auto">
             <p class="mono flex items-center gap-2 mb-6">
                 <span class="w-1.5 h-1.5 rounded-full bg-[#c8ff2e]"></span>
@@ -302,7 +376,7 @@
                 <div class="space-y-6">
                     <div class="space-y-2.5">
                         <h2 id="lbl-sec-1" class="mono">1. Материал</h2>
-                        <input type="file" id="pdf-file" accept=".pdf" class="w-full text-xs text-neutral-400 cursor-pointer tile p-2">
+                        <input type="file" id="pdf-file" accept=".pdf,.docx,.xlsx,.txt" class="w-full text-xs text-neutral-400 cursor-pointer tile p-2">
                         <input type="text" id="topic-input" placeholder="Немесе тақырып..." class="field">
                         <button onclick="uploadMaterial()" id="btn-upload" class="btn-accent w-full py-3 text-xs">🚀 ЖИ белсендіру</button>
                     </div>
@@ -358,6 +432,10 @@
             </main>
         </div>
     </div>
+
+    <section id="pricing" class="w-full max-w-6xl mx-auto px-4 lg:px-6 py-20 scroll-mt-24">
+        <div id="pricing-box"></div>
+    </section>
 
     <!-- ABOUT -->
     <section id="about" class="w-full max-w-6xl mx-auto px-6 lg:px-12 py-20 scroll-mt-24 border-t border-white/10">
@@ -1615,6 +1693,353 @@
         function closeCabinet() { document.getElementById('cabinet-modal').classList.add('hidden'); }
         function logout() { localStorage.removeItem('studyai_user'); location.reload(); }
     
+</script>
+<script>
+(function () {
+const $ = id => document.getElementById(id);
+const esc = escapeHtml;
+const PAL = ['#c8ff2e', '#8b5cf6', '#ff5d73', '#3de0ff', '#ffd23f'];
+const KASPI = '87081477426', KASPI_VIEW = '8 708 147 74 26';
+
+const T2 = {
+  ru: { tg: 'Открыть Telegram', s1: '1. Нажмите кнопку и в боте нажмите START', s2: '2. Код придёт сам — или введите его ниже', auto: 'Вход произойдёт автоматически ✨', or: 'или код', codeErr: 'Введите 6 цифр', bad: 'Неверный или просроченный код',
+    q: 'Вопрос', next: 'Дальше', finish: 'Результат', score: 'правильных', xp: 'XP получено', review: '🧠 Работа над ошибками', retry: 'Пройти заново', perfect: 'Безупречно! Тема закреплена 🏆', good: 'Отличный результат!', mid: 'Неплохо — разберём ошибки', low: 'Начало положено. Разберём ошибки',
+    yours: 'Ваш ответ', right: 'Верно', recap: 'Закрепление темы простыми словами', selfcheck: 'Проверь себя', tip: 'Как запомнить', revLoad: 'ИИ разбирает ваши ошибки…', quizLoad: 'ИИ составляет 20 вопросов…', again: 'Другой билет', back: 'К билетам',
+    tTitle: '🎟️ Экзаменационные билеты', tDesc: 'Получите 4 закрытых билета, вытяните случайный — в каждом 20 точных вопросов.', tTheme: 'Предмет или тема…', tComment: 'Пожелания (необязательно)…', getT: 'Получить 4 билета 🎟️', custom: '📎 Свои вопросы (PDF / Word / Excel)', rnd: '🎲 Случайный билет', ticket: 'Билет', qs: 'вопросов', needT: 'Введите тему, загрузите материал или свои вопросы', tLoad: 'Открываем билет…', parsing: 'ИИ собирает билеты из ваших вопросов…',
+    pTitle: 'Premium', pSub: 'Больше токенов — больше практики', perM: '/ месяц', f1: '50 токенов в день вместо 5', f2: 'Тесты, билеты и разбор ошибок без ожидания', f3: 'Все режимы ИИ без ограничений по темам', kaspi: 'Kaspi Freedom', sendCheck: 'Отправьте чек на этот номер и свой ник — и вам откроется доступ', nick: 'Ваш ник', copy: 'Скопировать', copied: 'Скопировано ✓', active: 'Подписка активна ✓', activeD: 'Спасибо! Все возможности Premium открыты.', login: 'Войдите, чтобы увидеть свой ник',
+    adm: '🛡 Админ', admSearch: 'Поиск: ник, имя или Telegram ID…', on: 'Активировать', off: 'Отключить', sub: 'Premium', free: 'Free' },
+  kz: { tg: 'Telegram ашу', s1: '1. Батырманы басып, ботта START басыңыз', s2: '2. Код өзі келеді — немесе төменге енгізіңіз', auto: 'Кіру автоматты түрде орындалады ✨', or: 'немесе код', codeErr: '6 санды енгізіңіз', bad: 'Код қате немесе мерзімі өтті',
+    q: 'Сұрақ', next: 'Келесі', finish: 'Нәтиже', score: 'дұрыс', xp: 'XP алынды', review: '🧠 Қатемен жұмыс', retry: 'Қайта өту', perfect: 'Мінсіз! Тақырып бекіді 🏆', good: 'Тамаша нәтиже!', mid: 'Жаман емес — қателерді талдайық', low: 'Бастама жасалды. Қателерді талдайық',
+    yours: 'Сіздің жауабыңыз', right: 'Дұрыс', recap: 'Тақырыпты қарапайым тілмен бекіту', selfcheck: 'Өзіңді тексер', tip: 'Қалай есте сақтау', revLoad: 'ЖИ қателеріңізді талдауда…', quizLoad: 'ЖИ 20 сұрақ құрастыруда…', again: 'Басқа билет', back: 'Билеттерге',
+    tTitle: '🎟️ Емтихан билеттері', tDesc: '4 жабық билет алыңыз, кездейсоқ біреуін тартыңыз — әрқайсысында 20 нақты сұрақ.', tTheme: 'Пән немесе тақырып…', tComment: 'Тілектер (міндетті емес)…', getT: '4 билет алу 🎟️', custom: '📎 Өз сұрақтарым (PDF / Word / Excel)', rnd: '🎲 Кездейсоқ билет', ticket: 'Билет', qs: 'сұрақ', needT: 'Тақырып енгізіңіз, материал немесе өз сұрақтарыңызды жүктеңіз', tLoad: 'Билет ашылуда…', parsing: 'ЖИ сұрақтарыңыздан билет құрастыруда…',
+    pTitle: 'Premium', pSub: 'Көбірек токен — көбірек практика', perM: '/ ай', f1: 'Күніне 5 емес, 50 токен', f2: 'Тест, билет және қателермен жұмыс — күтусіз', f3: 'Барлық ЖИ режимдері шектеусіз', kaspi: 'Kaspi Freedom', sendCheck: 'Чекті осы нөмірге және өз никіңізді жіберіңіз — қолжетімділік ашылады', nick: 'Сіздің ник', copy: 'Көшіру', copied: 'Көшірілді ✓', active: 'Жазылым белсенді ✓', activeD: 'Рахмет! Premium мүмкіндіктері ашық.', login: 'Никіңізді көру үшін кіріңіз',
+    adm: '🛡 Админ', admSearch: 'Іздеу: ник, аты немесе Telegram ID…', on: 'Қосу', off: 'Өшіру', sub: 'Premium', free: 'Free' },
+  en: { tg: 'Open Telegram', s1: '1. Tap the button and press START in the bot', s2: '2. The code arrives by itself — or type it below', auto: 'You will be logged in automatically ✨', or: 'or code', codeErr: 'Enter 6 digits', bad: 'Wrong or expired code',
+    q: 'Question', next: 'Next', finish: 'Results', score: 'correct', xp: 'XP earned', review: '🧠 Review mistakes', retry: 'Try again', perfect: 'Flawless! Topic locked in 🏆', good: 'Great result!', mid: 'Not bad — let’s review the mistakes', low: 'A start. Let’s review the mistakes',
+    yours: 'Your answer', right: 'Correct', recap: 'Topic recap in plain words', selfcheck: 'Check yourself', tip: 'How to remember', revLoad: 'AI is reviewing your mistakes…', quizLoad: 'AI is writing 20 questions…', again: 'Another ticket', back: 'Back to tickets',
+    tTitle: '🎟️ Exam tickets', tDesc: 'Get 4 sealed tickets and draw a random one — 20 precise questions each.', tTheme: 'Subject or topic…', tComment: 'Notes (optional)…', getT: 'Get 4 tickets 🎟️', custom: '📎 My own questions (PDF / Word / Excel)', rnd: '🎲 Random ticket', ticket: 'Ticket', qs: 'questions', needT: 'Enter a topic, upload material or your own questions', tLoad: 'Opening ticket…', parsing: 'AI is building tickets from your questions…',
+    pTitle: 'Premium', pSub: 'More tokens, more practice', perM: '/ month', f1: '50 tokens a day instead of 5', f2: 'Quizzes, tickets and mistake review without waiting', f3: 'Every AI mode, no topic limits', kaspi: 'Kaspi Freedom', sendCheck: 'Send the receipt to this number with your nickname — and access will be unlocked', nick: 'Your nickname', copy: 'Copy', copied: 'Copied ✓', active: 'Subscription active ✓', activeD: 'Thank you! All Premium features are unlocked.', login: 'Log in to see your nickname',
+    adm: '🛡 Admin', admSearch: 'Search: nickname, name or Telegram ID…', on: 'Activate', off: 'Deactivate', sub: 'Premium', free: 'Free' }
+};
+const L = () => T2[selectedLang] || T2.ru;
+const copyText = async (txt, btn) => { try { await navigator.clipboard.writeText(txt); } catch (e) {} if (btn) { const o = btn.textContent; btn.textContent = L().copied; setTimeout(() => btn.textContent = o, 1500); } };
+window.copyKaspi = btn => copyText(KASPI, btn);
+window.copyNick = (btn, v) => copyText(v, btn);
+
+// ---------- 1. Анимация букв ----------
+function splitLetters(el) {
+  if (!el) return;
+  const s = el.textContent; el.setAttribute('aria-label', s);
+  el.innerHTML = [...s].map((c, i) => c === ' ' ? ' ' : `<span class="ltr" style="--i:${i}" aria-hidden="true">${esc(c)}</span>`).join('');
+}
+window.animateTitles = () => ['hero-word-1', 'hero-word-2', 'work-title', 'about-title'].forEach(id => splitLetters($(id)));
+const _cl = window.changeLanguage;
+window.changeLanguage = function () { _cl(); window.animateTitles(); authTexts(); renderPricing(); };
+
+// ---------- 2. XP-всплывашка, конфетти ----------
+function burst(host, n = 14) {
+  for (let i = 0; i < n; i++) {
+    const p = document.createElement('i'); p.className = 'spark';
+    const a = Math.random() * 6.28, d = 40 + Math.random() * 50;
+    p.style.setProperty('--x', Math.cos(a) * d + 'px'); p.style.setProperty('--y', Math.sin(a) * d + 'px'); p.style.background = PAL[i % PAL.length];
+    host.appendChild(p);
+  }
+}
+window.showScorePopup = text => {
+  const e = document.createElement('div'); e.className = 'xp-toast';
+  e.innerHTML = `<span class="xp-star">⭐</span><span>${esc(text)}</span>`; document.body.appendChild(e); burst(e);
+  setTimeout(() => e.remove(), 2200);
+};
+function confetti(n = 70) {
+  for (let i = 0; i < n; i++) {
+    const c = document.createElement('i'); c.className = 'cf';
+    c.style.left = Math.random() * 100 + 'vw'; c.style.background = PAL[i % PAL.length];
+    c.style.setProperty('--dx', (Math.random() * 200 - 100) + 'px'); c.style.animationDelay = Math.random() * .5 + 's';
+    document.body.appendChild(c); setTimeout(() => c.remove(), 3300);
+  }
+}
+
+// ---------- 3. Вход: автоматически через /start + быстрый ввод кода ----------
+let nonce = null, pollT = null, polling = false;
+function authTexts() {
+  const l = L(); const set = (id, v) => { const e = $(id); if (e) e.textContent = v; };
+  set('tg-btn-text', l.tg); set('auth-or', l.or); set('auth-auto', l.auto);
+  set('auth-step-1', l.s1); set('auth-step-2', l.s2);
+}
+async function prepareLogin() {
+  if (currentUser || nonce) return;
+  authTexts();
+  const r = await api('/api/auth/start', 'POST', {});
+  if (!r.ok || !r.data.nonce) return;
+  nonce = r.data.nonce; $('tg-link').href = 'https://t.me/enuuma_bot?start=' + nonce;
+  clearInterval(pollT); const until = Date.now() + 10 * 60 * 1000;
+  pollT = setInterval(() => { if (Date.now() > until) { clearInterval(pollT); nonce = null; prepareLogin(); } else pollOnce(); }, 2000);
+}
+async function pollOnce() {
+  if (polling || !nonce || currentUser) return; polling = true;
+  try { const r = await api('/api/auth/poll?nonce=' + nonce); if (r.ok && r.data.ready) loginDone(r.data); } finally { polling = false; }
+}
+function loginDone(data) {
+  clearInterval(pollT); nonce = null; currentUser = data; persistUser(); checkAuth(); loadTasks(); renderPricing();
+}
+document.addEventListener('visibilitychange', () => { if (!document.hidden) pollOnce(); });
+window.otpInput = el => {
+  const m = el.value.match(/\d{6}/); const digits = m ? m[0] : el.value.replace(/\D/g, '').slice(0, 6);
+  el.value = digits; $('auth-err').textContent = ''; if (digits.length === 6) verifyCode();
+};
+window.pasteCode = async () => {
+  try { const t = await navigator.clipboard.readText(); $('otp').value = t; otpInput($('otp')); } catch (e) { $('otp').focus(); }
+};
+let verifying = false;
+window.verifyCode = async function () {
+  const el = $('otp'), code = el.value.replace(/\D/g, '');
+  if (code.length < 6) { $('auth-err').textContent = L().codeErr; el.classList.add('err'); setTimeout(() => el.classList.remove('err'), 450); return; }
+  if (verifying) return; verifying = true;
+  const fd = new FormData(); fd.append('code', code);
+  try {
+    const res = await fetch('/api/auth/verify-code', { method: 'POST', body: fd }); const data = await res.json().catch(() => ({}));
+    if (res.ok) loginDone(data); else { $('auth-err').textContent = data.error || L().bad; el.classList.add('err'); setTimeout(() => el.classList.remove('err'), 450); }
+  } catch (e) { $('auth-err').textContent = 'Network error'; }
+  verifying = false;
+};
+const _ca = window.checkAuth;
+window.checkAuth = function () { _ca(); if (!currentUser) prepareLogin(); else ensureAdminTab(); };
+
+// ---------- 4. Тест: вопросы по одному, красивый результат, работа над ошибками ----------
+let Q = null;
+const normQ = list => (list || []).map(it => {
+  const options = normalizeOptions(it.options || it.choices);
+  return { q: it.q || it.question || '', options, correct: normalizeAnswer(it.correct ?? it.answer, options), explain: it.explain || it.explanation || '' };
+}).filter(x => x.q && x.options.length >= 2);
+const loader = msg => `<div class="py-12"><div class="w-10 h-10 border-4 border-[#c8ff2e] border-t-transparent rounded-full animate-spin mx-auto mb-3"></div><p class="mono">${esc(msg)}</p></div>`;
+
+const _gen = window.generate;
+window.generate = async function (action, page) {
+  if (action !== 'quiz') return _gen(action, page);
+  if (!currentUser) return checkAuth();
+  window.currentActiveView = 'quiz';
+  const c = $('result-container'); c.innerHTML = loader(L().quizLoad);
+  const fd = new FormData(); fd.append('doc_id', currentDocId || 'default'); fd.append('lang', selectedLang); fd.append('title', $('topic-input').value || 'Lesson');
+  const res = await fetch('/api/quiz', { method: 'POST', body: fd }).catch(() => null); const data = res ? await res.json().catch(() => ({})) : {};
+  if (!res || !res.ok) { c.innerHTML = errorBox(data.error || 'Error'); return; }
+  setTokens(data.tokens_left);
+  const list = normQ(data.questions); if (list.length < 3) { c.innerHTML = errorBox('AI format error'); return; }
+  runQuiz(list, { kind: 'quiz', label: 'Quiz' });
+};
+
+function runQuiz(list, meta) { Q = { list, meta, i: 0, ans: [], ok: 0, streak: 0 }; renderQ(); }
+function renderQ() {
+  const l = L(), it = Q.list[Q.i], n = Q.list.length;
+  $('result-container').innerHTML = `
+    <div class="w-full max-w-2xl mx-auto text-left quiz-slide-enter">
+      <div class="flex items-center justify-between mb-3"><span class="mono">${esc(Q.meta.label)} · ${l.q} ${Q.i + 1}/${n}</span><span class="mono" style="color:var(--accent)">✓ ${Q.ok}</span></div>
+      <div class="qbar"><i style="width:${Q.i / n * 100}%"></i></div>
+      <h3 class="display text-xl lg:text-2xl font-bold text-white mt-6 mb-5 leading-tight">${esc(it.q)}</h3>
+      <div class="grid gap-2.5">${it.options.map(o => `<button class="qopt" data-l="${o.letter}" onclick="quizPick(this)"><b>${o.letter}</b><span>${esc(o.text)}</span></button>`).join('')}</div>
+      <div id="q-fb" class="mt-4"></div>
+    </div>`;
+  renderMath($('result-container'));
+}
+window.quizPick = btn => {
+  const it = Q.list[Q.i]; if (Q.ans[Q.i]) return;
+  const chosen = btn.dataset.l; Q.ans[Q.i] = chosen; const good = chosen === it.correct;
+  btn.parentElement.querySelectorAll('button').forEach(b => { b.disabled = true; if (b.dataset.l === it.correct) b.classList.add('ok'); });
+  if (good) { Q.ok++; Q.streak++; showScorePopup('+5 XP' + (Q.streak >= 3 ? ' 🔥×' + Q.streak : '')); } else { btn.classList.add('bad'); Q.streak = 0; }
+  const last = Q.i === Q.list.length - 1;
+  $('q-fb').innerHTML = `${it.explain ? `<p class="text-xs text-neutral-300 leading-relaxed p-3.5 rounded-2xl border ${good ? 'border-[#c8ff2e]/30 bg-[#c8ff2e]/5' : 'border-[#ff5d73]/30 bg-[#ff5d73]/5'} mb-3">${good ? '✅' : '💡'} ${esc(it.explain)}</p>` : ''}
+    <button onclick="quizNext()" class="btn-accent w-full py-3.5 text-sm">${last ? L().finish : L().next} →</button>`;
+};
+window.quizNext = () => { if (Q.i < Q.list.length - 1) { Q.i++; renderQ(); } else renderResults(); };
+
+function renderResults() {
+  const l = L(), n = Q.list.length, pct = Math.round(Q.ok / n * 100), wrongN = n - Q.ok, xp = Q.ok * 5, circ = 2 * Math.PI * 70;
+  const msg = pct === 100 ? l.perfect : pct >= 80 ? l.good : pct >= 50 ? l.mid : l.low;
+  const isT = Q.meta.kind === 'ticket';
+  $('result-container').innerHTML = `
+    <div class="w-full max-w-xl mx-auto text-center space-y-6 quiz-slide-enter">
+      <div class="ring-wrap">
+        <svg viewBox="0 0 160 160" class="w-full h-full"><defs><linearGradient id="rg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#c8ff2e"/><stop offset=".5" stop-color="#3de0ff"/><stop offset="1" stop-color="#8b5cf6"/></linearGradient></defs>
+          <circle cx="80" cy="80" r="70" fill="none" stroke="rgba(255,255,255,.08)" stroke-width="12"/>
+          <circle id="ring-fg" class="ring-fg" cx="80" cy="80" r="70" fill="none" stroke="url(#rg)" stroke-width="12" stroke-linecap="round" stroke-dasharray="${circ}" stroke-dashoffset="${circ}"/></svg>
+        <div class="ring-num"><span id="ring-pct" class="display text-5xl font-bold text-white">0%</span><span class="mono mt-1">${Q.ok}/${n} ${l.score}</span></div>
+      </div>
+      <h3 class="display text-2xl font-bold text-white">${msg}</h3>
+      <div>${xp ? `<span class="xp-chip">⭐ +${xp} ${l.xp}</span>` : ''}</div>
+      <div class="flex flex-col sm:flex-row gap-2.5 justify-center">
+        ${wrongN ? `<button onclick="quizReview()" class="btn-accent px-6 py-3.5 text-sm">${l.review} (${wrongN})</button>` : ''}
+        ${isT ? `<button onclick="ticketsBack()" class="btn-ghost px-6 py-3.5 text-sm">${l.again}</button>` : `<button onclick="generate('quiz',1)" class="btn-ghost px-6 py-3.5 text-sm">${l.retry}</button>`}
+      </div>
+    </div>`;
+  requestAnimationFrame(() => requestAnimationFrame(() => { $('ring-fg').style.strokeDashoffset = circ * (1 - pct / 100); }));
+  let cur = 0; const step = () => { cur = Math.min(pct, cur + Math.max(1, pct / 40)); $('ring-pct') && ($('ring-pct').textContent = Math.round(cur) + '%'); if (cur < pct) requestAnimationFrame(step); }; step();
+  if (pct >= 80) confetti(pct === 100 ? 110 : 60);
+  if (xp && !Q.paid) { Q.paid = true; api('/api/xp', 'POST', { amount: xp, reason: Q.meta.kind }).then(r => { if (r.ok) { currentUser.score = r.data.score; persistUser(); checkAuth(); } }); }
+}
+
+window.quizReview = async () => {
+  const l = L(), c = $('result-container');
+  const wrong = Q.list.filter((it, i) => Q.ans[i] !== it.correct).map(it => {
+    const tx = k => (it.options.find(o => o.letter === k) || {}).text || '';
+    return { it, w: { q: it.q, correct: tx(it.correct), chosen: tx(Q.ans[Q.list.indexOf(it)]) } };
+  });
+  c.innerHTML = loader(l.revLoad);
+  const r = await api('/api/quiz/review', 'POST', { wrong: wrong.map(x => x.w), lang: selectedLang });
+  if (!r.ok) { c.innerHTML = errorBox(r.data.error || 'Error') + `<button onclick="renderResultsBack()" class="btn-ghost px-5 py-2.5 text-xs mt-3">←</button>`; return; }
+  setTokens(r.data.tokens_left);
+  const d = r.data.result, items = d.items || [];
+  c.innerHTML = `<div class="w-full max-w-2xl mx-auto text-left space-y-4 quiz-slide-enter max-h-[70vh] overflow-y-auto pr-1">
+    <div class="flex items-center justify-between"><h3 class="display text-xl font-bold text-white">${l.review}</h3><button onclick="renderResultsBack()" class="mono hover:text-white">←</button></div>
+    ${wrong.map((x, i) => { const e = items[i] || {}; return `<div class="tile p-4 space-y-2.5">
+      <p class="font-bold text-white text-sm">${i + 1}. ${esc(x.w.q)}</p>
+      <p class="text-xs"><span class="text-[#ff5d73]">✕ ${l.yours}:</span> <span class="text-neutral-400">${esc(x.w.chosen)}</span></p>
+      <p class="text-xs"><span class="text-[#c8ff2e]">✓ ${l.right}:</span> <span class="text-white font-semibold">${esc(x.w.correct)}</span></p>
+      ${e.explain ? `<p class="text-sm text-neutral-300 leading-relaxed p-3 rounded-xl bg-white/5">💬 ${formatText(e.explain)}</p>` : ''}
+      ${e.tip ? `<p class="text-xs text-[#3de0ff]">🧩 ${l.tip}: ${esc(e.tip)}</p>` : ''}</div>`; }).join('')}
+    ${(d.recap || []).length ? `<div class="banner space-y-2"><h4 class="mono" style="color:var(--accent)">${l.recap}</h4><ul class="space-y-1.5 text-sm text-neutral-200 list-disc pl-5">${d.recap.map(x => `<li>${esc(x)}</li>`).join('')}</ul></div>` : ''}
+    ${(d.selfcheck || []).length ? `<div class="banner space-y-2"><h4 class="mono" style="color:var(--violet)">${l.selfcheck}</h4><ol class="space-y-1.5 text-sm text-neutral-300 list-decimal pl-5">${d.selfcheck.map(x => `<li>${esc(x)}</li>`).join('')}</ol></div>` : ''}
+  </div>`;
+  renderMath(c);
+};
+window.renderResultsBack = () => renderResults();
+
+// Ответы в «ИИ Учитель»: без alert, красиво
+window.checkAnswer = function (btn, correct, kind) {
+  const group = btn.parentElement;
+  group.querySelectorAll('button').forEach(b => { b.disabled = true; b.style.cursor = 'default'; if (b.dataset.l === correct) b.className = 'opt opt-correct'; });
+  if (btn.dataset.l === correct) addXP(50); else btn.className = 'opt opt-wrong';
+};
+
+// ---------- 5. Билеты: 4 закрытых, случайный, свои вопросы ----------
+let TK = null;
+window.openTicketsView = function () {
+  window.currentActiveView = 'tickets'; const l = L();
+  $('result-container').innerHTML = `
+    <div class="w-full space-y-5 text-left quiz-slide-enter">
+      <div class="banner"><h3 class="display text-2xl font-bold text-white">${l.tTitle}</h3><p class="text-xs text-neutral-400 mt-1">${l.tDesc}</p></div>
+      <div class="tile p-5 space-y-3">
+        <input type="text" id="ticket-theme" placeholder="${l.tTheme}" class="field" value="${esc(TK && !TK.groups ? TK.theme : '')}">
+        <textarea id="ticket-comment" placeholder="${l.tComment}" class="field">${esc(TK ? TK.comment : '')}</textarea>
+        <div class="flex flex-col sm:flex-row gap-2">
+          <button onclick="getTickets()" class="btn-accent flex-1 py-3.5 text-xs">${l.getT}</button>
+          <button onclick="document.getElementById('ticket-file').click()" class="btn-ghost flex-1 py-3.5 text-xs">${l.custom}</button>
+          <input type="file" id="ticket-file" accept=".pdf,.docx,.xlsx,.txt" class="hidden" onchange="customTickets(this.files[0]); this.value=''">
+        </div>
+      </div>
+      <div id="ticket-game-area"></div>
+    </div>`;
+  if (TK) renderBoard();
+};
+window.getTickets = () => {
+  const theme = $('ticket-theme').value.trim();
+  if (!currentUser) return checkAuth();
+  if (!theme && !currentDocId) return alert(L().needT);
+  TK = { theme, comment: $('ticket-comment').value.trim(), groups: null, done: new Set() }; renderBoard();
+};
+window.customTickets = async file => {
+  if (!file) return; if (!currentUser) return checkAuth();
+  const area = $('ticket-game-area'); area.innerHTML = loader(L().parsing);
+  const fd = new FormData(); fd.append('file', file);
+  const res = await fetch('/api/tickets/custom', { method: 'POST', body: fd }).catch(() => null); const data = res ? await res.json().catch(() => ({})) : {};
+  if (!res || !res.ok) { area.innerHTML = errorBox(data.error || 'Error'); return; }
+  setTokens(data.tokens_left); TK = { theme: file.name, comment: '', groups: data.groups, done: new Set() }; renderBoard();
+};
+function renderBoard() {
+  const l = L(), area = $('ticket-game-area'); if (!area) return;
+  area.innerHTML = `<div class="grid grid-cols-2 lg:grid-cols-4 gap-3 quiz-slide-enter">${[1, 2, 3, 4].map(n => {
+    const g = TK.groups ? TK.groups[n - 1] : null; if (TK.groups && !g) return '';
+    return `<button class="tk tk${n} ${TK.done.has(n) ? 'tk-done' : ''}" onclick="openTicket(${n})"><span class="text-xs tracking-widest">${l.ticket} ${n}</span><span class="tk-q">${TK.done.has(n) ? '✓' : '?'}</span><small class="text-[11px] opacity-80">${g ? g.length : 20} ${l.qs}</small></button>`;
+  }).join('')}</div>
+  <button onclick="randomTicket()" class="btn-accent w-full py-3.5 text-sm mt-4">${l.rnd}</button>`;
+}
+window.randomTicket = () => {
+  const max = TK.groups ? TK.groups.length : 4; let left = [...Array(max).keys()].map(i => i + 1).filter(n => !TK.done.has(n));
+  if (!left.length) { TK.done.clear(); left = [...Array(max).keys()].map(i => i + 1); }
+  openTicket(left[Math.floor(Math.random() * left.length)]);
+};
+window.openTicket = async n => {
+  if (!currentUser) return checkAuth(); const c = $('result-container'); c.innerHTML = loader(L().tLoad);
+  const fd = new FormData(); fd.append('theme', TK.theme); fd.append('comment', TK.comment); fd.append('num', n); fd.append('doc_id', currentDocId || 'default'); fd.append('lang', selectedLang);
+  if (TK.groups) fd.append('questions', JSON.stringify(TK.groups[n - 1]));
+  const res = await fetch('/api/tickets/open', { method: 'POST', body: fd }).catch(() => null); const data = res ? await res.json().catch(() => ({})) : {};
+  if (!res || !res.ok) { c.innerHTML = errorBox(data.error || 'Error') + `<button onclick="ticketsBack()" class="btn-ghost px-5 py-2.5 text-xs mt-3">${L().back}</button>`; return; }
+  setTokens(data.tokens_left); const list = normQ(data.questions); if (list.length < 3) { c.innerHTML = errorBox('AI format error'); return; }
+  TK.done.add(n); runQuiz(list, { kind: 'ticket', label: `${L().ticket} ${n}` });
+};
+window.ticketsBack = () => openTicketsView();
+
+// ---------- 6. Подписка ----------
+window.renderPricing = function () {
+  const b = $('pricing-box'); if (!b) return; const l = L(), sub = currentUser && currentUser.is_subscribed;
+  const nick = currentUser ? (currentUser.username ? '@' + currentUser.username : (currentUser.display_name || '')) : '';
+  b.innerHTML = `<div class="grid lg:grid-cols-2 gap-5">
+    <div class="price-card space-y-6">
+      <div><p class="mono" style="color:var(--violet)">${l.pTitle}</p><h2 class="display text-4xl lg:text-5xl font-bold text-white mt-2">${l.pSub}</h2></div>
+      <div class="flex items-end gap-2"><span class="display text-7xl font-bold" style="background:linear-gradient(135deg,#c8ff2e,#3de0ff);-webkit-background-clip:text;background-clip:text;color:transparent">499 ₸</span><span class="text-neutral-400 mb-2 text-sm">${l.perM}</span></div>
+      <ul class="space-y-3 text-sm text-neutral-200">${[l.f1, l.f2, l.f3].map((f, i) => `<li class="flex gap-3 items-start"><span class="w-6 h-6 rounded-full flex items-center justify-center text-xs text-black shrink-0" style="background:${PAL[i + 1]}">✓</span>${f}</li>`).join('')}</ul>
+      ${sub ? `<div class="p-4 rounded-2xl bg-[#c8ff2e]/10 border border-[#c8ff2e]/40"><p class="font-extrabold text-[#c8ff2e]">${l.active}</p><p class="text-xs text-neutral-300 mt-1">${l.activeD}</p></div>` : ''}
+    </div>
+    <div class="kaspi space-y-5 relative z-0">
+      <p class="font-extrabold text-lg relative z-10">${l.kaspi}</p>
+      <div class="relative z-10"><p class="display text-4xl sm:text-5xl font-bold tracking-tight">${KASPI_VIEW}</p></div>
+      <button class="copy-btn relative z-10" onclick="copyKaspi(this)">${l.copy}</button>
+      <p class="text-base font-bold leading-snug relative z-10">${l.sendCheck}</p>
+      <div class="relative z-10 flex flex-wrap items-center gap-2 p-3 rounded-2xl bg-black/25">
+        <span class="text-xs opacity-80">${l.nick}:</span>
+        ${nick ? `<b class="text-sm">${esc(nick)}</b><button class="copy-btn" data-v="${esc(nick)}" onclick="copyNick(this, this.dataset.v)">${l.copy}</button>` : `<span class="text-xs">${l.login}</span>`}
+      </div>
+    </div></div>`;
+};
+
+// ---------- 7. Админ-панель в кабинете ----------
+function ensureAdminTab() {
+  if (!currentUser || !currentUser.is_admin) return;
+  ['ru', 'kz', 'en'].forEach(k => { if (cabText[k]) cabText[k].tabs.admin = T2[k].adm; });
+}
+const _lct = window.loadCabTab;
+window.loadCabTab = function (tab) {
+  if (tab !== 'admin') return _lct(tab);
+  cab.loading = false; cab.error = false; renderCabinet(); admLoad('');
+};
+const _rcab = window.renderCabinet;
+window.renderCabinet = function () {
+  _rcab();
+  if (cab.tab !== 'admin' || cab.view) return;
+  const host = document.querySelector('#cab-body section > div.space-y-4'); if (!host) return;
+  host.innerHTML = `<input id="adm-q" class="field" placeholder="${L().admSearch}" oninput="admSearch(this.value)"><div id="adm-list" class="space-y-2"></div>`;
+  admDraw();
+};
+let admTimer = null;
+window.admSearch = v => { clearTimeout(admTimer); admTimer = setTimeout(() => admLoad(v.trim()), 350); };
+async function admLoad(q) { const r = await api('/api/admin/users?q=' + encodeURIComponent(q)); if (r.ok) { cab.adm = r.data.users; admDraw(); } }
+function admDraw() {
+  const box = $('adm-list'); if (!box) return; const l = L(), users = cab.adm || [];
+  box.innerHTML = users.map(u => `<div class="cab-row" style="cursor:default">
+    <div class="cab-ico" style="${u.is_subscribed ? 'background:var(--accent);color:#000' : ''}">${esc(String(u.display_name || u.username || '?').charAt(0).toUpperCase())}</div>
+    <div class="min-w-0 flex-grow"><p class="text-sm font-bold text-white truncate">${esc(u.display_name || u.username || '—')} ${u.username ? `<span class="text-neutral-500 font-medium">@${esc(u.username)}</span>` : ''}</p>
+      <p class="mono">ID ${esc(u.telegram_id)} · ⚡${u.tokens} · ⭐${u.score} · <span style="color:${u.is_subscribed ? 'var(--accent)' : '#8a8a85'}">${u.is_subscribed ? l.sub : l.free}</span></p></div>
+    <button onclick="admToggle('${u.id}', ${!u.is_subscribed})" class="${u.is_subscribed ? 'btn-ghost' : 'btn-accent'} px-4 py-2 text-[11px] shrink-0">${u.is_subscribed ? l.off : l.on}</button></div>`).join('') || `<div class="cab-empty">—</div>`;
+}
+window.admToggle = async (id, active) => {
+  const r = await api('/api/admin/subscription', 'POST', { user_id: id, active });
+  if (!r.ok) return alert(r.data.error || 'Error');
+  cab.adm = (cab.adm || []).map(u => u.id === id ? r.data.user : u); admDraw(); showScorePopup(active ? 'Premium ✓' : 'Free');
+};
+
+// ---------- сохранённые тесты и билеты в кабинете ----------
+const _rd = window.readableContent;
+window.readableContent = it => {
+  if (it.type === 'quiz' || it.type === 'tickets') {
+    const p = parseAIJson(it.content);
+    if (p && Array.isArray(p.questions)) return p.questions.map((x, i) => `${i + 1}. ${x.q || x.question || ''}\n${(x.options || []).join('\n')}\n✔ ${x.correct ?? ''}${x.explain ? '\n💬 ' + x.explain : ''}`).join('\n\n');
+  }
+  return _rd(it);
+};
+
+// ---------- старт ----------
+animateTitles(); authTexts(); renderPricing();
+if (currentUser) api('/api/me').then(r => { if (r.ok) { Object.assign(currentUser, { is_admin: r.data.is_admin, is_subscribed: r.data.is_subscribed, tokens: r.data.tokens, score: r.data.score }); persistUser(); ensureAdminTab(); renderPricing(); checkAuth(); } });
+else prepareLogin();
+})();
 </script>
 </body>
 </html>
