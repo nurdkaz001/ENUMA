@@ -4,6 +4,8 @@ import io
 import json
 import logging
 import os
+import random
+import re
 import secrets
 import time
 from collections import defaultdict, deque
@@ -17,6 +19,8 @@ from fastapi import Body, Depends, FastAPI, File, Form, Header, HTTPException, R
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import HTMLResponse, JSONResponse
 from pydantic import BaseModel, Field
+import openpyxl
+from docx import Document
 from pypdf import PdfReader
 from starlette.exceptions import HTTPException as StarletteHTTPException
 from supabase import Client, create_client
@@ -34,6 +38,8 @@ JWT_SECRET = os.getenv("JWT_SECRET", "")
 TELEGRAM_BOT_TOKEN = os.getenv("TELEGRAM_BOT_TOKEN", "")
 TELEGRAM_WEBHOOK_SECRET = os.getenv("TELEGRAM_WEBHOOK_SECRET", "")
 DAILY_TOKENS = int(os.getenv("DAILY_TOKENS", "5"))
+PRO_TOKENS = int(os.getenv("PRO_TOKENS", "50"))          # токенов в день по подписке
+ADMIN_IDS = {int(x) for x in re.split(r"[,\s]+", os.getenv("ADMIN_TELEGRAM_IDS", "")) if x.isdigit()}
 MAX_DOC_CHARS = int(os.getenv("MAX_DOC_CHARS", "30000"))   # сколько текста отдаём модели
 MAX_STORE_CHARS = 200_000                                  # сколько текста PDF храним
 MAX_UPLOAD_BYTES = 15 * 1024 * 1024
@@ -101,7 +107,7 @@ def current_user(authorization: Optional[str] = Header(default=None)) -> dict:
     user = res.data[0]
     # ежедневное пополнение токенов
     if str(user.get("tokens_refilled_on")) < today_utc().isoformat():
-        refilled = sb.rpc("refill_tokens", {"p_user": user["id"], "p_amount": DAILY_TOKENS}).execute().data
+        refilled = sb.rpc("refill_tokens", {"p_user": user["id"], "p_amount": PRO_TOKENS if user.get("is_subscribed") else DAILY_TOKENS}).execute().data
         if refilled is not None:
             user["tokens"] = refilled
     return user
@@ -112,7 +118,7 @@ def public_profile(u: dict) -> dict:
         "user_id": u["id"], "telegram_id": u.get("telegram_id"),
         "username": u.get("username"), "display_name": u.get("display_name") or u.get("username"),
         "tokens": u.get("tokens", 0), "score": u.get("score", 0),
-        "is_subscribed": bool(u.get("is_subscribed")), "created_at": u.get("created_at"),
+        "is_subscribed": bool(u.get("is_subscribed")), "is_admin": u.get("telegram_id") in ADMIN_IDS, "created_at": u.get("created_at"),
     }
 
 
@@ -153,6 +159,31 @@ def verify_code(request: Request, code: str = Form(...)):
     return {**public_profile(prof), "token": make_token(prof["id"])}
 
 
+@app.post("/api/auth/start")
+def auth_start():
+    return {"nonce": secrets.token_urlsafe(12)}
+
+
+@app.get("/api/auth/poll")
+def auth_poll(request: Request, nonce: str):
+    ip = request.client.host if request.client else "?"
+    rate_limit(f"poll:{ip}", 400, 600)
+    if not re.fullmatch(r"[A-Za-z0-9_-]{8,40}", nonce):
+        raise HTTPException(400, "bad nonce")
+    now = datetime.now(timezone.utc).isoformat()
+    found = (sb.table("auth_codes").select("*").eq("nonce", nonce).eq("used", False)
+             .gt("expires_at", now).limit(1).execute().data)
+    if not found:
+        return {"ready": False}
+    row = found[0]
+    if not sb.table("auth_codes").update({"used": True}).eq("code", row["code"]).eq("used", False).execute().data:
+        return {"ready": False}
+    prof = sb.table("profiles").upsert(
+        {"telegram_id": row["telegram_id"], "username": row.get("username"), "display_name": row.get("display_name")},
+        on_conflict="telegram_id").execute().data[0]
+    return {"ready": True, **public_profile(prof), "token": make_token(prof["id"])}
+
+
 def tg_send(chat_id: int, text: str) -> bool:
     if not TELEGRAM_BOT_TOKEN:
         return False
@@ -173,6 +204,8 @@ def telegram_webhook(update: dict = Body(...),
     if TELEGRAM_WEBHOOK_SECRET and x_telegram_bot_api_secret_token != TELEGRAM_WEBHOOK_SECRET:
         raise HTTPException(403, "forbidden")
     msg = update.get("message") or {}
+    parts = (msg.get("text") or "").split()
+    nonce = parts[1] if len(parts) > 1 and parts[0].startswith("/start") and re.fullmatch(r"[A-Za-z0-9_-]{8,40}", parts[1]) else None
     chat_id = (msg.get("chat") or {}).get("id")
     frm = msg.get("from") or {}
     if not chat_id:
@@ -184,7 +217,7 @@ def telegram_webhook(update: dict = Body(...),
         try:
             sb.table("auth_codes").insert({
                 "code": code, "telegram_id": chat_id, "username": frm.get("username"),
-                "display_name": name,
+                "display_name": name, "nonce": nonce,
                 "expires_at": (datetime.now(timezone.utc) + timedelta(minutes=CODE_TTL_MIN)).isoformat(),
             }).execute()
             break
@@ -193,7 +226,8 @@ def telegram_webhook(update: dict = Body(...),
     if not code:
         tg_send(chat_id, "Не удалось создать код, попробуйте ещё раз.")
         return {"ok": True}
-    tg_send(chat_id, f"Ваш код для входа: {code}\nДействует {CODE_TTL_MIN} минут.")
+    tg_send(chat_id, (("✅ Готово! Вернитесь на сайт — вход выполнится автоматически.\n" if nonce else "")
+                      + f"Ваш код для входа: {code}\nДействует {CODE_TTL_MIN} минут."))
     return {"ok": True}
 
 
@@ -208,12 +242,12 @@ def telegram_reminder(task_title: str = Form(...), task_date: str = Form(""), us
 
 
 # ==================== ПОМОЩНИКИ ====================
-def ask_ai(prompt: str, json_mode: bool = False) -> str:
+def ask_ai(prompt: str, json_mode: bool = False, max_tokens: int = 4000) -> str:
     """DeepSeek (OpenAI-совместимый API). В json_mode модель обязана вернуть JSON-ОБЪЕКТ."""
     payload = {
         "model": DEEPSEEK_MODEL,
         "messages": [{"role": "user", "content": prompt}],
-        "max_tokens": 4000,
+        "max_tokens": max_tokens,
         "temperature": 0.7,
     }
     if json_mode:
@@ -328,25 +362,56 @@ def health():
     return {"ok": True}
 
 
-@app.post("/upload")
-def upload_pdf(file: UploadFile = File(...), user: dict = Depends(current_user)):
-    if not (file.filename or "").lower().endswith(".pdf"):
-        raise HTTPException(400, "Пожалуйста, загрузите файл в формате PDF.")
+def read_upload(file: UploadFile) -> str:
+    """Достаёт текст из PDF, Word (.docx), Excel (.xlsx) или .txt."""
+    name = (file.filename or "").lower()
     data = file.file.read(MAX_UPLOAD_BYTES + 1)
     if len(data) > MAX_UPLOAD_BYTES:
         raise HTTPException(413, "Файл больше 15 МБ.")
+    parts: list[str] = []
     try:
-        reader = PdfReader(io.BytesIO(data))
-        if reader.is_encrypted:
-            raise HTTPException(400, "PDF защищён паролем.")
-        text = "\n".join(filter(None, (p.extract_text() for p in reader.pages)))
+        if name.endswith(".pdf"):
+            reader = PdfReader(io.BytesIO(data))
+            if reader.is_encrypted:
+                raise HTTPException(400, "PDF защищён паролем.")
+            parts = list(filter(None, (p.extract_text() for p in reader.pages)))
+        elif name.endswith(".docx"):
+            d = Document(io.BytesIO(data))
+            parts = [p.text for p in d.paragraphs if p.text.strip()]
+            for t in d.tables:
+                for row in t.rows:
+                    parts.append(" | ".join(c.text.strip() for c in row.cells))
+        elif name.endswith((".xlsx", ".xlsm")):
+            wb = openpyxl.load_workbook(io.BytesIO(data), read_only=True, data_only=True)
+            size = 0
+            for ws in wb.worksheets:
+                parts.append(f"# Лист: {ws.title}")
+                for row in ws.iter_rows(values_only=True):
+                    cells = [str(c).strip() for c in row if c is not None and str(c).strip()]
+                    if cells:
+                        line = " | ".join(cells)
+                        parts.append(line)
+                        size += len(line)
+                if size > MAX_STORE_CHARS:
+                    break
+        elif name.endswith(".txt"):
+            parts = [data.decode("utf-8", "ignore")]
+        else:
+            raise HTTPException(400, "Поддерживаются PDF, Word (.docx), Excel (.xlsx) и .txt.")
     except HTTPException:
         raise
     except Exception:
-        raise HTTPException(400, "Не удалось прочитать PDF.")
+        log.exception("read_upload failed")
+        raise HTTPException(400, "Не удалось прочитать файл.")
+    text = "\n".join(parts)
     if len(text.strip()) < 30:
-        raise HTTPException(400, "В PDF не найден текст (возможно, это скан).")
+        raise HTTPException(400, "В файле не найден текст (возможно, это скан).")
+    return text
 
+
+@app.post("/upload")
+def upload_file(file: UploadFile = File(...), user: dict = Depends(current_user)):
+    text = read_upload(file)
     doc_id = secrets.token_hex(8)
     sb.table("documents").insert({
         "id": doc_id, "user_id": user["id"], "filename": (file.filename or "")[:200],
@@ -461,6 +526,155 @@ def tickets(theme: str = Form(...), comment: str = Form(""), count: int = Form(3
     data, left = paid(user, run)
     save_generation(user["id"], "tickets", theme, json.dumps(data, ensure_ascii=False), doc_id)
     return {"result": data, "tokens_left": left}
+
+
+QUIZ_FMT = (
+    'Верни ТОЛЬКО JSON-объект: {"questions":[{"q":"вопрос","options":["A) ...","B) ...","C) ...","D) ..."],'
+    '"correct":"A","explain":"одно короткое предложение: почему это верно"}]}. '
+    "Ровно 4 варианта, один верный; верные ответы равномерно распредели по A, B, C, D. "
+    "Вопросы точные и однозначные, без вариантов «всё вышеперечисленное»."
+)
+
+
+def make_questions(prompt: str, n: int):
+    def run():
+        data = parse_json(ask_ai(prompt, json_mode=True, max_tokens=6000))
+        if isinstance(data, dict):
+            data = data.get("questions")
+        if not isinstance(data, list) or len(data) < min(n, 4):
+            raise HTTPException(502, "ИИ вернул неверный формат. Попробуйте ещё раз.")
+        return data[:n]
+    return run
+
+
+@app.post("/api/quiz")
+def quiz(doc_id: str = Form("default"), lang: str = Form("kz"), title: str = Form(""),
+         user: dict = Depends(current_user)):
+    context = build_context(doc_id, title, user)
+    prompt = f"Составь 20 тестовых вопросов по материалу. {QUIZ_FMT}\n{lang_line(lang)}\n\nМатериал:\n{context}"
+    data, left = paid(user, make_questions(prompt, 20))
+    save_generation(user["id"], "quiz", title if title != "Lesson" else "",
+                    json.dumps({"questions": data}, ensure_ascii=False), doc_id)
+    return {"questions": data, "tokens_left": left}
+
+
+class WrongIn(BaseModel):
+    q: str = Field(max_length=500)
+    correct: str = Field(max_length=300)
+    chosen: str = Field(default="", max_length=300)
+
+
+class ReviewIn(BaseModel):
+    wrong: list[WrongIn] = Field(min_length=1, max_length=20)
+    lang: str = "ru"
+
+
+@app.post("/api/quiz/review")
+def quiz_review(body: ReviewIn, user: dict = Depends(current_user)):
+    listing = "\n".join(f"{i + 1}. Вопрос: {w.q}\n   Ответ студента: {w.chosen}\n   Верный ответ: {w.correct}"
+                        for i, w in enumerate(body.wrong))
+    prompt = (
+        "Ты добрый учитель. Студент ошибся в этих вопросах:\n" + listing + "\n"
+        "Для каждой ошибки объясни ПРОСТЫМИ словами, как другу, с бытовым примером: почему верный ответ именно такой "
+        "и в чём была ловушка; дай короткий способ запомнить. Затем сделай «закрепление темы»: 4–6 коротких пунктов "
+        "главного и 3 вопроса для самопроверки. " + lang_line(body.lang) +
+        ' Верни ТОЛЬКО JSON: {"items":[{"explain":"...","tip":"..."}],"recap":["..."],"selfcheck":["..."]}. '
+        "items — в том же порядке и количестве, что и ошибки."
+    )
+
+    def run():
+        data = parse_json(ask_ai(prompt, json_mode=True, max_tokens=5000))
+        if not isinstance(data, dict) or not data.get("items"):
+            raise HTTPException(502, "ИИ вернул неверный формат. Попробуйте ещё раз.")
+        return data
+
+    data, left = paid(user, run)
+    return {"result": data, "tokens_left": left}
+
+
+@app.post("/api/tickets/open")
+def ticket_open(theme: str = Form(""), comment: str = Form(""), num: int = Form(1), doc_id: str = Form("default"),
+                lang: str = Form("kz"), questions: str = Form(""), user: dict = Depends(current_user)):
+    """Открывает один билет: 20 точных вопросов с вариантами. Содержимое генерируется только при открытии."""
+    num = max(1, min(num, 4))
+    theme = theme.strip()[:200]
+    ctx = (get_doc_text(doc_id, user) or "")[:MAX_DOC_CHARS]
+    given = parse_json(questions) if questions else None
+    if isinstance(given, list) and given:
+        given = [str(q)[:300] for q in given[:20]]
+        n = len(given)
+        task = ("Для КАЖДОГО из этих экзаменационных вопросов составь тестовый вопрос (сохрани смысл) "
+                "с 4 вариантами и верным ответом:\n" + "\n".join(f"{i + 1}. {q}" for i, q in enumerate(given)))
+    else:
+        if not theme and not ctx:
+            raise HTTPException(400, "Введите тему или загрузите материал.")
+        n = 20
+        task = (f"Составь экзаменационный билет №{num} из 4 по теме «{theme or 'материал'}»: ровно 20 точных вопросов. "
+                f"Четыре билета покрывают РАЗНЫЕ части темы, в этом билете сделай упор на часть №{num} из 4. "
+                f"Пожелания: {comment[:500] or 'нет'}. Вариация: {secrets.token_hex(3)}.")
+    prompt = f"{task}\n{QUIZ_FMT}\n{lang_line(lang)}\n" + (f"Опирайся на материал:\n{ctx}\n" if ctx else "")
+    data, left = paid(user, make_questions(prompt, n))
+    save_generation(user["id"], "tickets", f"{theme or 'Билет'} · №{num}",
+                    json.dumps({"questions": data}, ensure_ascii=False), doc_id)
+    return {"questions": data, "tokens_left": left}
+
+
+@app.post("/api/tickets/custom")
+def tickets_custom(file: UploadFile = File(...), user: dict = Depends(current_user)):
+    """Свои вопросы из PDF/Word/Excel: ИИ вытаскивает вопросы, сервер случайно раскладывает их по 4 билетам."""
+    text = read_upload(file)
+    prompt = ("Из текста выдели все экзаменационные вопросы (не больше 80), без номеров, по одному на строку, "
+              'смысл не меняй. Верни ТОЛЬКО JSON: {"questions":["..."]}.\n\n' + text[:MAX_DOC_CHARS])
+
+    def run():
+        data = parse_json(ask_ai(prompt, json_mode=True, max_tokens=4000))
+        qs = data.get("questions") if isinstance(data, dict) else data
+        qs = [str(q).strip() for q in (qs or []) if str(q).strip()][:80]
+        if len(qs) < 4:
+            raise HTTPException(400, "Не нашёл вопросов в файле (нужно минимум 4).")
+        return qs
+
+    qs, left = paid(user, run)
+    random.shuffle(qs)
+    per = min(20, -(-len(qs) // 4))
+    groups = [g for g in (qs[i * per:(i + 1) * per] for i in range(4)) if g]
+    return {"groups": groups, "tokens_left": left}
+
+
+# ==================== АДМИН-ПАНЕЛЬ (подписки) ====================
+def admin_user(user: dict = Depends(current_user)) -> dict:
+    if user.get("telegram_id") not in ADMIN_IDS:
+        raise HTTPException(403, "Нет доступа.")
+    return user
+
+
+@app.get("/api/admin/users")
+def admin_users(q: str = "", _: dict = Depends(admin_user)):
+    query = sb.table("profiles").select("id,telegram_id,username,display_name,tokens,score,is_subscribed,created_at")
+    q = re.sub(r"[,()%*]", " ", q).strip().lstrip("@")[:40]
+    if q:
+        flt = f"username.ilike.%{q}%,display_name.ilike.%{q}%"
+        if q.isdigit():
+            flt += f",telegram_id.eq.{q}"
+        query = query.or_(flt)
+    return {"users": query.order("created_at", desc=True).limit(50).execute().data}
+
+
+class SubIn(BaseModel):
+    user_id: str
+    active: bool
+
+
+@app.post("/api/admin/subscription")
+def admin_subscription(body: SubIn, _: dict = Depends(admin_user)):
+    cur = sb.table("profiles").select("tokens").eq("id", body.user_id).limit(1).execute().data
+    if not cur:
+        raise HTTPException(404, "Пользователь не найден.")
+    upd: dict = {"is_subscribed": body.active}
+    if body.active:
+        upd["tokens"] = max(cur[0]["tokens"], PRO_TOKENS)
+    row = sb.table("profiles").update(upd).eq("id", body.user_id).execute().data[0]
+    return {"user": {k: row.get(k) for k in ("id", "telegram_id", "username", "display_name", "tokens", "score", "is_subscribed", "created_at")}}
 
 
 # ==================== ЛИЧНЫЙ КАБИНЕТ ====================
@@ -653,7 +867,7 @@ def tasks_clear(user: dict = Depends(current_user)):
 
 # ---------- XP ----------
 class XpIn(BaseModel):
-    amount: int = Field(ge=1, le=50)
+    amount: int = Field(ge=1, le=200)
     reason: str = Field(default="quiz", max_length=40)
 
 
