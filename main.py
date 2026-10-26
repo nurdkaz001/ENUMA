@@ -105,6 +105,13 @@ def current_user(authorization: Optional[str] = Header(default=None)) -> dict:
     if not res.data:
         raise HTTPException(401, "Пользователь не найден.")
     user = res.data[0]
+    # подписка закончилась: снимаем Premium и аннулируем токены
+    until = user.get("subscription_until")
+    if user.get("is_subscribed") and until and _dt(until) < datetime.now(timezone.utc):
+        upd = {"is_subscribed": False, "subscription_until": None, "tokens": 0,
+               "tokens_refilled_on": today_utc().isoformat()}
+        sb.table("profiles").update(upd).eq("id", user["id"]).execute()
+        user.update(upd)
     # ежедневное пополнение токенов
     if str(user.get("tokens_refilled_on")) < today_utc().isoformat():
         refilled = sb.rpc("refill_tokens", {"p_user": user["id"], "p_amount": PRO_TOKENS if user.get("is_subscribed") else DAILY_TOKENS}).execute().data
@@ -118,7 +125,7 @@ def public_profile(u: dict) -> dict:
         "user_id": u["id"], "telegram_id": u.get("telegram_id"),
         "username": u.get("username"), "display_name": u.get("display_name") or u.get("username"),
         "tokens": u.get("tokens", 0), "score": u.get("score", 0),
-        "is_subscribed": bool(u.get("is_subscribed")), "is_admin": u.get("telegram_id") in ADMIN_IDS, "created_at": u.get("created_at"),
+        "is_subscribed": bool(u.get("is_subscribed")), "is_admin": u.get("telegram_id") in ADMIN_IDS, "subscription_until": u.get("subscription_until"), "created_at": u.get("created_at"),
     }
 
 
@@ -650,7 +657,7 @@ def admin_user(user: dict = Depends(current_user)) -> dict:
 
 @app.get("/api/admin/users")
 def admin_users(q: str = "", _: dict = Depends(admin_user)):
-    query = sb.table("profiles").select("id,telegram_id,username,display_name,tokens,score,is_subscribed,created_at")
+    query = sb.table("profiles").select("id,telegram_id,username,display_name,tokens,score,is_subscribed,subscription_until,created_at")
     q = re.sub(r"[,()%*]", " ", q).strip().lstrip("@")[:40]
     if q:
         flt = f"username.ilike.%{q}%,display_name.ilike.%{q}%"
@@ -665,16 +672,23 @@ class SubIn(BaseModel):
     active: bool
 
 
+SUB_DAYS = 30
+ADMIN_FIELDS = ("id", "telegram_id", "username", "display_name", "tokens", "score", "is_subscribed", "subscription_until", "created_at")
+
+
 @app.post("/api/admin/subscription")
 def admin_subscription(body: SubIn, _: dict = Depends(admin_user)):
     cur = sb.table("profiles").select("tokens").eq("id", body.user_id).limit(1).execute().data
     if not cur:
         raise HTTPException(404, "Пользователь не найден.")
-    upd: dict = {"is_subscribed": body.active}
-    if body.active:
-        upd["tokens"] = max(cur[0]["tokens"], PRO_TOKENS)
+    if body.active:   # включить на 30 дней
+        upd: dict = {"is_subscribed": True, "tokens": max(cur[0]["tokens"], PRO_TOKENS),
+                     "subscription_until": (datetime.now(timezone.utc) + timedelta(days=SUB_DAYS)).isoformat()}
+    else:             # выключить: токены аннулируются
+        upd = {"is_subscribed": False, "subscription_until": None, "tokens": 0,
+               "tokens_refilled_on": today_utc().isoformat()}
     row = sb.table("profiles").update(upd).eq("id", body.user_id).execute().data[0]
-    return {"user": {k: row.get(k) for k in ("id", "telegram_id", "username", "display_name", "tokens", "score", "is_subscribed", "created_at")}}
+    return {"user": {k: row.get(k) for k in ADMIN_FIELDS}}
 
 
 # ==================== ЛИЧНЫЙ КАБИНЕТ ====================
