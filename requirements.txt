@@ -5,3 +5,5 @@ python-multipart
 supabase>=2.4
 PyJWT>=2.8
 httpx
+python-docx
+openpyxl
