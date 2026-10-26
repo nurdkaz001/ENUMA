@@ -2016,7 +2016,7 @@ function admDraw() {
   box.innerHTML = users.map(u => `<div class="cab-row" style="cursor:default">
     <div class="cab-ico" style="${u.is_subscribed ? 'background:var(--accent);color:#000' : ''}">${esc(String(u.display_name || u.username || '?').charAt(0).toUpperCase())}</div>
     <div class="min-w-0 flex-grow"><p class="text-sm font-bold text-white truncate">${esc(u.display_name || u.username || '—')} ${u.username ? `<span class="text-neutral-500 font-medium">@${esc(u.username)}</span>` : ''}</p>
-      <p class="mono">ID ${esc(u.telegram_id)} · ⚡${u.tokens} · ⭐${u.score} · <span style="color:${u.is_subscribed ? 'var(--accent)' : '#8a8a85'}">${u.is_subscribed ? l.sub : l.free}</span></p></div>
+      <p class="mono">ID ${esc(u.telegram_id)} · ⚡${u.tokens} · ⭐${u.score} · <span style="color:${u.is_subscribed ? 'var(--accent)' : '#8a8a85'}">${u.is_subscribed ? l.sub + (u.subscription_until ? ' → ' + new Date(u.subscription_until).toLocaleDateString('ru-RU') : '') : l.free}</span></p></div>
     <button onclick="admToggle('${u.id}', ${!u.is_subscribed})" class="${u.is_subscribed ? 'btn-ghost' : 'btn-accent'} px-4 py-2 text-[11px] shrink-0">${u.is_subscribed ? l.off : l.on}</button></div>`).join('') || `<div class="cab-empty">—</div>`;
 }
 window.admToggle = async (id, active) => {
