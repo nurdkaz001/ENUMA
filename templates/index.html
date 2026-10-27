@@ -304,6 +304,16 @@
         .w-in { display: inline-block; animation: mdIn .5s backwards; }
         .del { background: rgba(255,93,115,.14); text-decoration: line-through; text-decoration-color: rgba(255,93,115,.6); color: #ffb3bd; padding: .05em .25em; border-radius: .3em; }
         .ins { background: rgba(200,255,46,.14); color: #e8ffa0; padding: .05em .25em; border-radius: .3em; }
+        /* paywall */
+        .pw-ov { position:fixed; inset:0; z-index:70; background:rgba(0,0,0,.82); display:flex; align-items:center; justify-content:center; padding:1rem; animation: pwFade .25s; }
+        @keyframes pwFade { from { opacity:0; } }
+        .pw-card { position:relative; width:100%; max-width:30rem; max-height:92vh; overflow-y:auto; border-radius:2rem; padding:1.8rem; background:linear-gradient(160deg,#1a1a1a,#0d0d0d); animation: pwPop .5s cubic-bezier(.2,1.3,.4,1); }
+        .pw-card::before { content:''; position:absolute; inset:0; border-radius:inherit; padding:1px; pointer-events:none; background:linear-gradient(135deg,var(--accent),var(--violet),var(--coral)); -webkit-mask:linear-gradient(#000 0 0) content-box,linear-gradient(#000 0 0); -webkit-mask-composite:xor; mask-composite:exclude; }
+        @keyframes pwPop { from { opacity:0; transform: translateY(30px) scale(.9); } }
+        .pw-ico { width:4.2rem; height:4.2rem; border-radius:1.4rem; display:grid; place-items:center; font-size:2rem; margin:0 auto; background:linear-gradient(135deg,var(--violet),var(--coral)); animation: pwBob 2s ease-in-out infinite; }
+        @keyframes pwBob { 50% { transform: translateY(-6px) rotate(-4deg); } }
+        .pw-li { display:flex; gap:.75rem; align-items:flex-start; font-size:.85rem; color:#e4e4de; animation: mdIn .5s backwards; }
+        .pw-li i { font-style:normal; flex:none; width:2rem; height:2rem; border-radius:.7rem; display:grid; place-items:center; color:#000; }
     </style>
 </head>
 <body class="min-h-screen flex flex-col">
@@ -2294,7 +2304,7 @@ function renderHuman() {
       <div class="text-center">${ring('hz-r1', '#ff5d73')}<p class="mono mt-2">${l.was} · ${l.aiLike}</p></div>
       <span class="display text-3xl text-neutral-600">→</span>
       <div class="text-center">${ring('hz-r2', '#c8ff2e')}<p class="mono mt-2">${l.now} · ${l.aiLike}</p></div></div>
-      ${r.verdict ? `<p class="text-xs text-neutral-300 text-center mt-4">${esc(r.verdict)}</p>` : ''}</div>
+      ${r.style ? `<p class="text-center mt-4"><span class="chip" style="background:rgba(139,92,246,.15);border-color:rgba(139,92,246,.5);color:#d9ccff">${({ru:"Стиль",kz:"Стиль",en:"Style"})[selectedLang] || "Стиль"}: ${esc(r.style)}</span></p>` : ''}${r.verdict ? `<p class="text-xs text-neutral-300 text-center mt-4">${esc(r.verdict)}</p>` : ''}</div>
     ${(r.markers || []).length ? `<div class="tile p-5 space-y-3"><h4 class="mono" style="color:var(--coral)">${l.markers}</h4><div class="flex flex-wrap gap-2">${r.markers.slice(0, 6).map((m, i) => `<span class="chip" style="animation-delay:${i * 90}ms" title="${esc(m.why || '')}">“${esc(m.phrase || '')}”</span>`).join('')}</div>
       <ul class="text-[11px] text-neutral-400 space-y-1">${r.markers.slice(0, 6).map(m => `<li>• <b class="text-neutral-200">${esc(m.phrase || '')}</b> — ${esc(m.why || '')}</li>`).join('')}</ul></div>` : ''}
     <div class="tile p-5 space-y-4"><h4 class="mono" style="color:var(--cyan)">${l.metrics}</h4>
@@ -2339,6 +2349,43 @@ window.readableContent = it => {
   return _rd3(it);
 };
 modeLabels();
+})();
+</script>
+<script>
+(function () {
+const $ = id => document.getElementById(id), esc = escapeHtml;
+const T4 = {
+  ru: { t: 'Токены закончились', s: 'Бесплатные токены обновятся завтра. Или откройте Premium и продолжайте прямо сейчас.',
+    b: [['⚡', 'В 16 раз больше токенов', '50 в день вместо 3 — хватит на тесты, билеты, карточки и Humanizer каждый день'], ['📅', 'ИИ-планер', 'План подготовки к экзаменам за секунды: ИИ сам расставит задачи по дням'], ['🚀', 'Без ожидания', 'Не нужно ждать завтра, когда токены кончились посреди подготовки'], ['💸', 'Всего 499 ₸ в месяц', 'Это около 16 ₸ в день — дешевле одной жвачки']],
+    cta: 'Получить Premium · 499 ₸', later: 'Подожду до завтра', how: 'Переведите 499 ₸ на Kaspi Freedom и отправьте чек с вашим ником на тот же номер', copy: 'Копировать номер', copied: 'Скопировано ✓' },
+  kz: { t: 'Токендер таусылды', s: 'Тегін токендер ертең жаңарады. Немесе Premium ашып, дәл қазір жалғастырыңыз.',
+    b: [['⚡', '16 есе көп токен', 'Күніне 3 емес, 50 — тест, билет, карточка және Humanizer күн сайын жетеді'], ['📅', 'ЖИ-жоспарлаушы', 'Емтиханға дайындық жоспары секундтарда: ЖИ тапсырмаларды күндерге өзі бөледі'], ['🚀', 'Күтусіз', 'Дайындық ортасында токен біткенде ертеңді күтудің қажеті жоқ'], ['💸', 'Айына небәрі 499 ₸', 'Бұл күніне шамамен 16 ₸']],
+    cta: 'Premium алу · 499 ₸', later: 'Ертеңге дейін күтемін', how: '499 ₸ Kaspi Freedom-ға аударып, чекті никіңізбен сол нөмірге жіберіңіз', copy: 'Нөмірді көшіру', copied: 'Көшірілді ✓' },
+  en: { t: 'You are out of tokens', s: 'Free tokens refresh tomorrow. Or open Premium and keep going right now.',
+    b: [['⚡', '16× more tokens', '50 a day instead of 3 — enough for quizzes, tickets, flashcards and Humanizer every day'], ['📅', 'AI Planner', 'An exam-prep plan in seconds: the AI spreads tasks across your days'], ['🚀', 'No waiting', 'No more waiting for tomorrow when tokens run out mid-prep'], ['💸', 'Just 499 ₸ a month', 'About 16 ₸ a day']],
+    cta: 'Get Premium · 499 ₸', later: 'I will wait until tomorrow', how: 'Send 499 ₸ to Kaspi Freedom and send the receipt with your nickname to the same number', copy: 'Copy number', copied: 'Copied ✓' }
+};
+const PALX = ['#c8ff2e', '#3de0ff', '#ff8fa0', '#ffd23f'];
+const isSub = () => !!(currentUser && currentUser.is_subscribed);
+window.closePaywall = () => { const e = $('pw'); if (e) e.remove(); };
+window.showPaywall = function () {
+  if (isSub() || $('pw')) return; const l = T4[selectedLang] || T4.ru;
+  document.body.insertAdjacentHTML('beforeend', `<div id="pw" class="pw-ov" onclick="if(event.target===this) closePaywall()"><div class="pw-card space-y-5">
+    <div class="pw-ico">🔋</div>
+    <div class="text-center"><h3 class="display text-2xl font-bold text-white">${l.t}</h3><p class="text-xs text-neutral-400 mt-2">${l.s}</p></div>
+    <div class="space-y-3">${l.b.map((x, i) => `<div class="pw-li" style="animation-delay:${200 + i * 110}ms"><i style="background:${PALX[i]}">${x[0]}</i><div><p class="font-extrabold text-white">${x[1]}</p><p class="text-xs text-neutral-400">${x[2]}</p></div></div>`).join('')}</div>
+    <div class="p-3.5 rounded-2xl bg-[#f14635]/15 border border-[#f14635]/40 text-xs text-neutral-200 space-y-2"><p>${l.how}</p>
+      <div class="flex items-center justify-between gap-2"><b class="display text-lg text-white">8 708 147 74 26</b><button class="copy-btn" onclick="copyKaspi(this)">${l.copy}</button></div></div>
+    <div class="flex flex-col gap-2"><button class="btn-accent py-3.5 text-sm" onclick="closePaywall(); scrollToSection('pricing')">${l.cta}</button><button class="text-xs text-neutral-500 py-2 hover:text-white" onclick="closePaywall()">${l.later}</button></div>
+  </div></div>`);
+};
+document.addEventListener('keydown', e => { if (e.key === 'Escape') closePaywall(); });
+// 402 = токены закончились
+const _f = window.fetch.bind(window);
+window.fetch = async (...a) => { const r = await _f(...a); if (r.status === 402) showPaywall(); return r; };
+// последний токен потрачен — мягко показываем рекламу после результата
+let shownZero = false; const _st = window.setTokens;
+window.setTokens = function (n) { _st(n); if (n === 0 && !isSub() && !shownZero) { shownZero = true; setTimeout(showPaywall, 3000); } };
 })();
 </script>
 </body>
