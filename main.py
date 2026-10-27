@@ -37,7 +37,7 @@ SUPABASE_SERVICE_KEY = os.getenv("SUPABASE_SERVICE_KEY", "")
 JWT_SECRET = os.getenv("JWT_SECRET", "")
 TELEGRAM_BOT_TOKEN = os.getenv("TELEGRAM_BOT_TOKEN", "")
 TELEGRAM_WEBHOOK_SECRET = os.getenv("TELEGRAM_WEBHOOK_SECRET", "")
-DAILY_TOKENS = int(os.getenv("DAILY_TOKENS", "5"))
+DAILY_TOKENS = int(os.getenv("DAILY_TOKENS", "3"))
 PRO_TOKENS = int(os.getenv("PRO_TOKENS", "50"))          # токенов в день по подписке
 ADMIN_IDS = {int(x) for x in re.split(r"[,\s]+", os.getenv("ADMIN_TELEGRAM_IDS", "")) if x.isdigit()}
 MAX_DOC_CHARS = int(os.getenv("MAX_DOC_CHARS", "30000"))   # сколько текста отдаём модели
@@ -441,8 +441,10 @@ def generate_content(
     action: str = Form(...), doc_id: str = Form("default"), lang: str = Form("kz"),
     title: str = Form(""), custom_prompt: str = Form(""), user: dict = Depends(current_user),
 ):
-    # ИИ-планер: бесплатный, промпт собирает фронтенд, ответ — JSON-объект {"tasks": [...]}
+    # ИИ-планер: только для подписчиков, промпт собирает фронтенд, ответ — JSON {"tasks": [...]}
     if action == "planner":
+        if not user.get("is_subscribed"):
+            raise HTTPException(403, "ИИ-планер доступен по подписке Premium.")
         prompt = custom_prompt.strip()[:1500]
         if not prompt:
             raise HTTPException(400, "Введите запрос для планера.")
@@ -646,6 +648,66 @@ def tickets_custom(file: UploadFile = File(...), user: dict = Depends(current_us
     per = min(20, -(-len(qs) // 4))
     groups = [g for g in (qs[i * per:(i + 1) * per] for i in range(4)) if g]
     return {"groups": groups, "tokens_left": left}
+
+
+@app.post("/api/flashcards")
+def flashcards(doc_id: str = Form("default"), lang: str = Form("kz"), title: str = Form(""),
+               user: dict = Depends(current_user)):
+    context = build_context(doc_id, title, user)
+    prompt = ("Создай 12 карточек для заучивания ключевых понятий из материала. Вопрос короткий (до 15 слов), "
+              "ответ — 1–3 предложения. " + lang_line(lang) +
+              ' Верни ТОЛЬКО JSON: {"cards":[{"q":"...","a":"..."}]}.\n\nМатериал:\n' + context)
+
+    def run():
+        d = parse_json(ask_ai(prompt, json_mode=True, max_tokens=4000))
+        cards = d.get("cards") if isinstance(d, dict) else d
+        if not isinstance(cards, list) or len(cards) < 3:
+            raise HTTPException(502, "ИИ вернул неверный формат. Попробуйте ещё раз.")
+        return cards[:12]
+
+    cards, left = paid(user, run)
+    save_generation(user["id"], "flashcards", title if title != "Lesson" else "",
+                    json.dumps({"cards": cards}, ensure_ascii=False), doc_id)
+    return {"cards": cards, "tokens_left": left}
+
+
+@app.post("/api/humanize")
+def humanize(text: str = Form(...), lang: str = Form("ru"), user: dict = Depends(current_user)):
+    """Оценка «похоже на ИИ» + переписывание живым языком + список изменений. 1 токен."""
+    text = text.strip()[:6000]
+    if len(text) < 80:
+        raise HTTPException(400, "Вставьте текст (минимум 80 символов).")
+    prompt = (
+        "Ты — опытный редактор и копирайтер, пишущий в живом, разговорном и публицистическом стиле. "
+        "Выполни две задачи с текстом ниже.\n"
+        "ЗАДАЧА 1 — анализ. Оцени по шкале 0–100, насколько текст похож на написанный нейросетью "
+        "(ai_score), в одном предложении объясни вердикт, и найди до 6 признаков: фраза из текста (до 8 слов) и почему она выдаёт ИИ.\n"
+        "ЗАДАЧА 2 — полностью перепиши текст (human_text), сохранив смысл, факты, числа и имена; ничего не выдумывай.\n"
+        "ПРАВИЛА СТРУКТУРЫ: 1) чередуй длину предложений волнообразно: одно очень длинное (с причастным оборотом или "
+        "вводной конструкцией), следом экстремально короткое (1–3 слова), например «Это работает именно так. Без вариантов.»; "
+        "2) намеренно используй парцелляцию — разделяй связанные мысли точкой.\n"
+        "ПРАВИЛА ЛЕКСИКИ: 1) полностью исключи маркерные слова ИИ: «важно отметить», «таким образом», «в заключение», "
+        "«несомненно», «ключевой аспект», «стоит упомянуть», «погрузиться в», «экосистема», «инновационный», «трансформация»; "
+        "2) заменяй канцеляризмы простыми глаголами («осуществляет процесс анализа» → «анализирует»); "
+        "3) пиши только в активном залоге («мы сделали», «автор написал»); "
+        "4) используй лёгкие разговорные связки: «кстати», «собственно говоря», «на самом деле», «плюс ко всему», «а значит».\n"
+        "Язык результата — тот же, что у исходного текста (для не русского применяй те же принципы). "
+        "human_text содержит ТОЛЬКО очеловеченный текст: без комментариев, вступлений и кавычек. "
+        "Также оцени новый текст по той же шкале (human_score) и дай 4–6 пар фрагментов «было → стало» (changes), "
+        "где before — кусок исходного текста, after — соответствующий кусок нового. "
+        "Поля verdict и why пиши на языке интерфейса: " + lang_line(lang) + "\n"
+        'Верни ТОЛЬКО JSON: {"ai_score":0,"verdict":"...","markers":[{"phrase":"...","why":"..."}],'
+        '"human_text":"...","human_score":0,"changes":[{"before":"...","after":"..."}]}\n\nТЕКСТ:\n' + text
+    )
+
+    def run():
+        d = parse_json(ask_ai(prompt, json_mode=True, max_tokens=7000))
+        if not isinstance(d, dict) or not str(d.get("human_text", "")).strip():
+            raise HTTPException(502, "ИИ вернул неверный формат. Попробуйте ещё раз.")
+        return d
+
+    d, left = paid(user, run)
+    return {"result": d, "tokens_left": left}
 
 
 # ==================== АДМИН-ПАНЕЛЬ (подписки) ====================
