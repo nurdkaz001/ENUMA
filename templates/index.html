@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ENUMA AI Hub — ИИ Наставник</title>
+    <title>StudyAI Hub — ИИ Наставник</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Inter+Tight:wght@500;600;700;800&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
@@ -249,6 +249,61 @@
         .copy-btn { border-radius:999px; background:#fff; color:#b3261a; font-weight:800; padding:.55rem 1.1rem; font-size:.75rem; transition: transform .2s; } .copy-btn:active { transform: scale(.94); }
 
         @media (prefers-reduced-motion: reduce) { .ltr, .blobs i, .xp-toast, .cf, .marquee-track { animation: none !important; } }
+        /* ===== v3: markdown, чат, карточки, humanizer ===== */
+        .md { line-height: 1.7; font-size: .88rem; color: #d8d8d2; }
+        .md > * { animation: mdIn .5s cubic-bezier(.2,.8,.2,1) backwards; animation-delay: calc(var(--k, 0) * 70ms); }
+        @keyframes mdIn { from { opacity: 0; transform: translateY(10px); } }
+        .md h1, .md h2, .md h3, .md h4 { font-family: 'Inter Tight', sans-serif; font-weight: 800; color: #fff; margin: 1.1em 0 .4em; line-height: 1.2; }
+        .md h1 { font-size: 1.4rem; } .md h2 { font-size: 1.2rem; color: var(--accent); } .md h3 { font-size: 1.05rem; color: var(--cyan); } .md h4 { font-size: .95rem; color: var(--gold); }
+        .md > :first-child { margin-top: 0; }
+        .md strong { color: #fff; } .md em { color: #cfc4ff; }
+        .md ul, .md ol { margin: .5em 0; padding: 0; list-style: none; counter-reset: n; }
+        .md li { position: relative; padding-left: 1.7rem; margin: .4em 0; }
+        .md ul li::before { content: ''; position: absolute; left: .35rem; top: .62em; width: .45rem; height: .45rem; border-radius: 50%; background: linear-gradient(135deg, var(--accent), var(--cyan)); }
+        .md ol li { counter-increment: n; }
+        .md ol li::before { content: counter(n); position: absolute; left: 0; top: .15em; width: 1.2rem; height: 1.2rem; border-radius: .4rem; background: var(--violet); color: #fff; font-size: .65rem; font-weight: 800; display: grid; place-items: center; }
+        .md hr { border: 0; height: 1px; background: linear-gradient(90deg, transparent, rgba(255,255,255,.22), transparent); margin: 1.2em 0; }
+        .md code.ic { background: rgba(139,92,246,.2); color: #dccfff; padding: .1em .4em; border-radius: .4em; font-family: 'JetBrains Mono', monospace; font-size: .85em; }
+        .md-p { margin: .5em 0; }
+        .cb { border-radius: 1rem; overflow: hidden; background: #0a0a0a; border: 1px solid var(--line); margin: .8em 0; }
+        .cb-h { display: flex; justify-content: space-between; align-items: center; padding: .45rem .8rem; background: #161616; font-family: 'JetBrains Mono', monospace; font-size: .65rem; color: #8a8a85; text-transform: uppercase; letter-spacing: .08em; }
+        .cb-h button { color: var(--accent); font-weight: 700; text-transform: uppercase; }
+        .cb pre { margin: 0; padding: .9rem 1rem; overflow-x: auto; font-family: 'JetBrains Mono', monospace; font-size: .78rem; line-height: 1.6; color: #e6e6e0; white-space: pre; }
+
+        .ai-row { display: flex; gap: .6rem; align-self: flex-start; max-width: 94%; animation: mdIn .4s backwards; }
+        .ai-av { width: 2rem; height: 2rem; flex: none; border-radius: .8rem; background: linear-gradient(135deg, var(--accent), var(--cyan)); display: grid; place-items: center; color: #000; font-size: .9rem; }
+        .ai-bubble { padding: .9rem 1.1rem; border-radius: .3rem 1.3rem 1.3rem 1.3rem; background: #151515; border: 1px solid var(--line); min-width: 0; overflow: hidden; }
+        .me-bubble { align-self: flex-end; max-width: 85%; padding: .7rem 1.05rem; border-radius: 1.3rem 1.3rem .3rem 1.3rem; background: linear-gradient(135deg, var(--accent), #8ff0a4); color: #000; font-weight: 600; font-size: .85rem; animation: mdIn .3s backwards; word-break: break-word; }
+        .dots i { display: inline-block; width: .45rem; height: .45rem; margin: 0 .15rem; border-radius: 50%; background: var(--accent); animation: dotb 1s infinite; }
+        .dots i:nth-child(2) { animation-delay: .15s; background: var(--cyan); } .dots i:nth-child(3) { animation-delay: .3s; background: var(--violet); }
+        @keyframes dotb { 0%, 80%, 100% { transform: translateY(0); opacity: .5; } 40% { transform: translateY(-6px); opacity: 1; } }
+
+        .deck { perspective: 1400px; position: relative; padding-bottom: .5rem; }
+        .deck::before, .deck::after { content: ''; position: absolute; left: 1.2rem; right: 1.2rem; top: .9rem; bottom: 0; border-radius: 1.8rem; background: #1a1a1a; border: 1px solid var(--line); z-index: 0; transform: scale(.96); }
+        .deck::after { left: 2.2rem; right: 2.2rem; top: 1.5rem; background: #141414; transform: scale(.92); }
+        .fc-wrap { position: relative; z-index: 1; animation: cardIn .55s cubic-bezier(.2,1.2,.3,1) backwards; }
+        .fc-wrap.out { animation: cardOut .28s ease-in forwards; } .fc-wrap.out.again { animation-name: cardOutL; }
+        @keyframes cardIn { from { opacity: 0; transform: translateX(70px) rotate(6deg) scale(.92); } }
+        @keyframes cardOut { to { opacity: 0; transform: translateX(90px) rotate(8deg); } } @keyframes cardOutL { to { opacity: 0; transform: translateX(-90px) rotate(-8deg); } }
+        .fc { position: relative; width: 100%; height: 17rem; transform-style: preserve-3d; transition: transform .7s cubic-bezier(.3,1.3,.5,1); cursor: pointer; }
+        .fc.flip { transform: rotateY(180deg); }
+        .fc-face { position: absolute; inset: 0; backface-visibility: hidden; -webkit-backface-visibility: hidden; border-radius: 1.8rem; padding: 1.5rem; display: flex; flex-direction: column; justify-content: center; text-align: center; overflow: auto; box-shadow: 0 24px 50px -24px rgba(0,0,0,.8); }
+        .fc-back { transform: rotateY(180deg); background: #101010; border: 1.5px solid var(--accent); text-align: left; }
+        .fc-hint { margin-top: auto; padding-top: .8rem; font-size: .7rem; opacity: .6; animation: hintp 2s infinite; } @keyframes hintp { 50% { opacity: .25; } }
+        .kbtn { flex: 1; padding: .9rem; border-radius: 1rem; font-weight: 800; font-size: .8rem; transition: transform .15s; } .kbtn:active { transform: scale(.95); }
+
+        .scan { position: relative; overflow: hidden; }
+        .scan::after { content: ''; position: absolute; left: 0; right: 0; height: 3px; background: linear-gradient(90deg, transparent, var(--accent), transparent); box-shadow: 0 0 22px var(--accent); animation: scanl 1.3s ease-in-out infinite alternate; }
+        @keyframes scanl { from { top: 0; } to { top: calc(100% - 3px); } }
+        .gauge { position: relative; width: 9rem; height: 9rem; } .gauge svg { transform: rotate(-90deg); width: 100%; height: 100%; }
+        .gauge .g-fg { transition: stroke-dashoffset 1.5s cubic-bezier(.2,.8,.2,1); }
+        .gauge .g-n { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; }
+        .chip { display: inline-block; padding: .35rem .7rem; border-radius: 999px; font-size: .72rem; font-weight: 700; background: rgba(255,93,115,.12); border: 1px solid rgba(255,93,115,.4); color: #ffb3bd; animation: mdIn .4s backwards; }
+        .mbar { height: .5rem; border-radius: 9px; background: rgba(255,255,255,.07); overflow: hidden; } .mbar i { display: block; height: 100%; width: 0; border-radius: 9px; transition: width 1.2s cubic-bezier(.2,.8,.2,1); }
+        .hz-tab { padding: .5rem 1rem; border-radius: 999px; font-size: .75rem; font-weight: 800; border: 1px solid var(--line); color: #9a9a95; } .hz-tab.on { background: var(--accent); color: #000; border-color: var(--accent); }
+        .w-in { display: inline-block; animation: mdIn .5s backwards; }
+        .del { background: rgba(255,93,115,.14); text-decoration: line-through; text-decoration-color: rgba(255,93,115,.6); color: #ffb3bd; padding: .05em .25em; border-radius: .3em; }
+        .ins { background: rgba(200,255,46,.14); color: #e8ffa0; padding: .05em .25em; border-radius: .3em; }
     </style>
 </head>
 <body class="min-h-screen flex flex-col">
@@ -265,7 +320,7 @@
         <div class="mx-auto max-w-6xl flex items-center justify-between rounded-full border border-white/10 bg-[#0a0a0a]/70 backdrop-blur-xl pl-5 pr-2 py-2">
             <a href="#home" class="flex items-center space-x-2.5" onclick="scrollToSection('home'); return false;">
                 <span class="w-2.5 h-2.5 rounded-full bg-[#c8ff2e]"></span>
-                <span class="display text-base font-bold text-white">EnumaAI</span>
+                <span class="display text-base font-bold text-white">StudyAI</span>
             </a>
 
             <nav class="hidden md:flex items-center space-x-1 text-sm font-semibold text-neutral-300">
@@ -337,7 +392,7 @@
                 <span id="hero-kicker">ЖИ оқу платформасы · 2026</span>
             </p>
             <h1 class="hero-title display text-white flex flex-wrap items-center gap-x-5 gap-y-1">
-                <span id="hero-word-1">enuma</span>
+                <span id="hero-word-1">study</span>
                 <span class="chip-play animate-float"><span class="tri">▶</span>AI</span>
                 <span id="hero-word-2" class="text-neutral-500">platform</span>
             </h1>
@@ -395,6 +450,7 @@
                         <button onclick="openAITeacherView()" class="mode-row"><span class="num">06</span><span id="btn-mode-teacher">🤖 1. ИИ Мұғалім (Видео & Ойын)</span><span class="arrow">→</span></button>
                         <button onclick="openTicketsView()" class="mode-row"><span class="num">07</span><span id="btn-mode-tickets">🎟️ 2. Билеттер (Ойын викторина)</span><span class="arrow">→</span></button>
                         <button onclick="openPlannerView()" class="mode-row"><span class="num">08</span><span id="btn-mode-planner">📅 Күнтізбе & ЖИ-Планер</span><span class="arrow">→</span></button>
+                        <button onclick="openHumanizerView()" class="mode-row accent"><span class="num">09</span><span id="btn-mode-human">✍️ Мәтінді адамдандыру</span><span class="arrow">NEW</span></button>
                     </div>
                 </div>
 
@@ -443,7 +499,7 @@
             <h2 class="display text-4xl lg:text-6xl font-bold text-white lg:text-[1.1rem]" id="about-title">about</h2>
             <div class="space-y-10">
                 <p id="about-text" class="display text-2xl lg:text-4xl font-semibold text-white leading-[1.15]">
-                    EnumaAI Hub — ЖИ-наставник.
+                    StudyAI Hub — ЖИ-наставник.
                 </p>
                 <div class="flex flex-wrap gap-3">
                     <span class="mono border border-white/10 rounded-full px-4 py-2">PDF → Quiz</span>
@@ -464,7 +520,7 @@
                 <button onclick="openCabinet()" class="btn-ghost px-8 py-4 text-sm" id="footer-cabinet">Кабинет</button>
             </div>
             <div class="flex items-center justify-between pt-8 border-t border-white/10">
-                <span class="mono">© 2026 EnumaAI Hub</span>
+                <span class="mono">© 2026 StudyAI Hub</span>
                 <a href="#home" onclick="scrollToSection('home'); return false;" class="mono hover:text-white transition">↑ top</a>
             </div>
         </div>
@@ -1706,19 +1762,19 @@ const T2 = {
     q: 'Вопрос', next: 'Дальше', finish: 'Результат', score: 'правильных', xp: 'XP получено', review: '🧠 Работа над ошибками', retry: 'Пройти заново', perfect: 'Безупречно! Тема закреплена 🏆', good: 'Отличный результат!', mid: 'Неплохо — разберём ошибки', low: 'Начало положено. Разберём ошибки',
     yours: 'Ваш ответ', right: 'Верно', recap: 'Закрепление темы простыми словами', selfcheck: 'Проверь себя', tip: 'Как запомнить', revLoad: 'ИИ разбирает ваши ошибки…', quizLoad: 'ИИ составляет 20 вопросов…', again: 'Другой билет', back: 'К билетам',
     tTitle: '🎟️ Экзаменационные билеты', tDesc: 'Получите 4 закрытых билета, вытяните случайный — в каждом 20 точных вопросов.', tTheme: 'Предмет или тема…', tComment: 'Пожелания (необязательно)…', getT: 'Получить 4 билета 🎟️', custom: '📎 Свои вопросы (PDF / Word / Excel)', rnd: '🎲 Случайный билет', ticket: 'Билет', qs: 'вопросов', needT: 'Введите тему, загрузите материал или свои вопросы', tLoad: 'Открываем билет…', parsing: 'ИИ собирает билеты из ваших вопросов…',
-    pTitle: 'Premium', pSub: 'Больше токенов — больше практики', perM: '/ месяц', f1: '50 токенов в день вместо 5', f2: 'Тесты, билеты и разбор ошибок без ожидания', f3: 'Все режимы ИИ без ограничений по темам', kaspi: 'Kaspi Freedom', sendCheck: 'Отправьте чек на этот номер и свой ник — и вам откроется доступ', nick: 'Ваш ник', copy: 'Скопировать', copied: 'Скопировано ✓', active: 'Подписка активна ✓', activeD: 'Спасибо! Все возможности Premium открыты.', login: 'Войдите, чтобы увидеть свой ник',
+    pTitle: 'Premium', pSub: 'Больше токенов — больше практики', perM: '/ месяц', f1: '50 токенов в день вместо 3', f2: 'Тесты, билеты и разбор ошибок без ожидания', f3: 'Все режимы ИИ без ограничений по темам', kaspi: 'Kaspi Freedom', sendCheck: 'Отправьте чек на этот номер и свой ник — и вам откроется доступ', nick: 'Ваш ник', copy: 'Скопировать', copied: 'Скопировано ✓', active: 'Подписка активна ✓', activeD: 'Спасибо! Все возможности Premium открыты.', login: 'Войдите, чтобы увидеть свой ник',
     adm: '🛡 Админ', admSearch: 'Поиск: ник, имя или Telegram ID…', on: 'Активировать', off: 'Отключить', sub: 'Premium', free: 'Free' },
   kz: { tg: 'Telegram ашу', s1: '1. Батырманы басып, ботта START басыңыз', s2: '2. Код өзі келеді — немесе төменге енгізіңіз', auto: 'Кіру автоматты түрде орындалады ✨', or: 'немесе код', codeErr: '6 санды енгізіңіз', bad: 'Код қате немесе мерзімі өтті',
     q: 'Сұрақ', next: 'Келесі', finish: 'Нәтиже', score: 'дұрыс', xp: 'XP алынды', review: '🧠 Қатемен жұмыс', retry: 'Қайта өту', perfect: 'Мінсіз! Тақырып бекіді 🏆', good: 'Тамаша нәтиже!', mid: 'Жаман емес — қателерді талдайық', low: 'Бастама жасалды. Қателерді талдайық',
     yours: 'Сіздің жауабыңыз', right: 'Дұрыс', recap: 'Тақырыпты қарапайым тілмен бекіту', selfcheck: 'Өзіңді тексер', tip: 'Қалай есте сақтау', revLoad: 'ЖИ қателеріңізді талдауда…', quizLoad: 'ЖИ 20 сұрақ құрастыруда…', again: 'Басқа билет', back: 'Билеттерге',
     tTitle: '🎟️ Емтихан билеттері', tDesc: '4 жабық билет алыңыз, кездейсоқ біреуін тартыңыз — әрқайсысында 20 нақты сұрақ.', tTheme: 'Пән немесе тақырып…', tComment: 'Тілектер (міндетті емес)…', getT: '4 билет алу 🎟️', custom: '📎 Өз сұрақтарым (PDF / Word / Excel)', rnd: '🎲 Кездейсоқ билет', ticket: 'Билет', qs: 'сұрақ', needT: 'Тақырып енгізіңіз, материал немесе өз сұрақтарыңызды жүктеңіз', tLoad: 'Билет ашылуда…', parsing: 'ЖИ сұрақтарыңыздан билет құрастыруда…',
-    pTitle: 'Premium', pSub: 'Көбірек токен — көбірек практика', perM: '/ ай', f1: 'Күніне 5 емес, 50 токен', f2: 'Тест, билет және қателермен жұмыс — күтусіз', f3: 'Барлық ЖИ режимдері шектеусіз', kaspi: 'Kaspi Freedom', sendCheck: 'Чекті осы нөмірге және өз никіңізді жіберіңіз — қолжетімділік ашылады', nick: 'Сіздің ник', copy: 'Көшіру', copied: 'Көшірілді ✓', active: 'Жазылым белсенді ✓', activeD: 'Рахмет! Premium мүмкіндіктері ашық.', login: 'Никіңізді көру үшін кіріңіз',
+    pTitle: 'Premium', pSub: 'Көбірек токен — көбірек практика', perM: '/ ай', f1: 'Күніне 3 емес, 50 токен', f2: 'Тест, билет және қателермен жұмыс — күтусіз', f3: 'Барлық ЖИ режимдері шектеусіз', kaspi: 'Kaspi Freedom', sendCheck: 'Чекті осы нөмірге және өз никіңізді жіберіңіз — қолжетімділік ашылады', nick: 'Сіздің ник', copy: 'Көшіру', copied: 'Көшірілді ✓', active: 'Жазылым белсенді ✓', activeD: 'Рахмет! Premium мүмкіндіктері ашық.', login: 'Никіңізді көру үшін кіріңіз',
     adm: '🛡 Админ', admSearch: 'Іздеу: ник, аты немесе Telegram ID…', on: 'Қосу', off: 'Өшіру', sub: 'Premium', free: 'Free' },
   en: { tg: 'Open Telegram', s1: '1. Tap the button and press START in the bot', s2: '2. The code arrives by itself — or type it below', auto: 'You will be logged in automatically ✨', or: 'or code', codeErr: 'Enter 6 digits', bad: 'Wrong or expired code',
     q: 'Question', next: 'Next', finish: 'Results', score: 'correct', xp: 'XP earned', review: '🧠 Review mistakes', retry: 'Try again', perfect: 'Flawless! Topic locked in 🏆', good: 'Great result!', mid: 'Not bad — let’s review the mistakes', low: 'A start. Let’s review the mistakes',
     yours: 'Your answer', right: 'Correct', recap: 'Topic recap in plain words', selfcheck: 'Check yourself', tip: 'How to remember', revLoad: 'AI is reviewing your mistakes…', quizLoad: 'AI is writing 20 questions…', again: 'Another ticket', back: 'Back to tickets',
     tTitle: '🎟️ Exam tickets', tDesc: 'Get 4 sealed tickets and draw a random one — 20 precise questions each.', tTheme: 'Subject or topic…', tComment: 'Notes (optional)…', getT: 'Get 4 tickets 🎟️', custom: '📎 My own questions (PDF / Word / Excel)', rnd: '🎲 Random ticket', ticket: 'Ticket', qs: 'questions', needT: 'Enter a topic, upload material or your own questions', tLoad: 'Opening ticket…', parsing: 'AI is building tickets from your questions…',
-    pTitle: 'Premium', pSub: 'More tokens, more practice', perM: '/ month', f1: '50 tokens a day instead of 5', f2: 'Quizzes, tickets and mistake review without waiting', f3: 'Every AI mode, no topic limits', kaspi: 'Kaspi Freedom', sendCheck: 'Send the receipt to this number with your nickname — and access will be unlocked', nick: 'Your nickname', copy: 'Copy', copied: 'Copied ✓', active: 'Subscription active ✓', activeD: 'Thank you! All Premium features are unlocked.', login: 'Log in to see your nickname',
+    pTitle: 'Premium', pSub: 'More tokens, more practice', perM: '/ month', f1: '50 tokens a day instead of 3', f2: 'Quizzes, tickets and mistake review without waiting', f3: 'Every AI mode, no topic limits', kaspi: 'Kaspi Freedom', sendCheck: 'Send the receipt to this number with your nickname — and access will be unlocked', nick: 'Your nickname', copy: 'Copy', copied: 'Copied ✓', active: 'Subscription active ✓', activeD: 'Thank you! All Premium features are unlocked.', login: 'Log in to see your nickname',
     adm: '🛡 Admin', admSearch: 'Search: nickname, name or Telegram ID…', on: 'Activate', off: 'Deactivate', sub: 'Premium', free: 'Free' }
 };
 const L = () => T2[selectedLang] || T2.ru;
@@ -1750,6 +1806,7 @@ window.showScorePopup = text => {
   e.innerHTML = `<span class="xp-star">⭐</span><span>${esc(text)}</span>`; document.body.appendChild(e); burst(e);
   setTimeout(() => e.remove(), 2200);
 };
+window.confetti = confetti;
 function confetti(n = 70) {
   for (let i = 0; i < n; i++) {
     const c = document.createElement('i'); c.className = 'cf';
@@ -2039,6 +2096,249 @@ window.readableContent = it => {
 animateTitles(); authTexts(); renderPricing();
 if (currentUser) api('/api/me').then(r => { if (r.ok) { Object.assign(currentUser, { is_admin: r.data.is_admin, is_subscribed: r.data.is_subscribed, tokens: r.data.tokens, score: r.data.score }); persistUser(); ensureAdminTab(); renderPricing(); checkAuth(); } });
 else prepareLogin();
+})();
+</script>
+<script>
+(function () {
+const $ = id => document.getElementById(id);
+const esc = escapeHtml;
+const T3 = {
+  ru: { fcLoad: 'ИИ готовит карточки…', card: 'Карточка', qL: 'ВОПРОС', aL: 'ОТВЕТ', tap: 'нажмите, чтобы перевернуть', know: '✓ Знаю', again: '↺ Ещё раз', flip: 'Перевернуть', done: 'Колода пройдена!', known: 'выучено', repeat: 'Повторить сложные', allDone: 'Всё выучено! 🏆', redo: 'Новая колода',
+    hzMode: '✍️ Очеловечить текст', hzTitle: '✍️ Humanizer', hzDesc: 'Проверим, похож ли текст на написанный ИИ, перепишем живым языком и покажем, что изменилось.', hzPh: 'Вставьте текст (от 80 символов)…', hzBtn: 'Проверить и очеловечить · 1 токен', hzNote: 'Оценка — примерная, это не настоящий детектор: реальные ИИ-проверки ошибаются. Соблюдайте правила своего вуза.',
+    hz1: 'Сканирую текст…', hz2: 'Ищу шаблонные обороты ИИ…', hz3: 'Переписываю живым языком…', was: 'Было', now: 'Стало', aiLike: 'сходство с ИИ', markers: 'Что выдаёт ИИ', metrics: 'Что изменилось в цифрах', result: 'Результат', changes: 'Правки', copy: 'Копировать', copied: 'Скопировано ✓', words: 'слов', again2: 'Ещё вариант · 1 токен', newT: 'Новый текст',
+    m1: 'Разброс длины предложений', m2: 'Короткие фразы (≤3 слов)', m3: 'Шаблонные слова ИИ', m4: 'Средняя длина предложения', short: 'Слишком коротко', lockT: 'ИИ-планер — для подписчиков Premium', lockD: 'Календарь и задачи остаются бесплатными, а ИИ сам составит план после подписки.', lockB: 'Открыть Premium' },
+  kz: { fcLoad: 'ЖИ карточкаларды дайындауда…', card: 'Карточка', qL: 'СҰРАҚ', aL: 'ЖАУАП', tap: 'аудару үшін басыңыз', know: '✓ Білемін', again: '↺ Қайта', flip: 'Аудару', done: 'Топтама аяқталды!', known: 'жаттаған', repeat: 'Қиындарын қайталау', allDone: 'Бәрі жатталды! 🏆', redo: 'Жаңа топтама',
+    hzMode: '✍️ Мәтінді адамдандыру', hzTitle: '✍️ Humanizer', hzDesc: 'Мәтіннің ЖИ жазғанына ұқсастығын тексеріп, тірі тілмен қайта жазып, не өзгергенін көрсетеміз.', hzPh: 'Мәтінді қойыңыз (80 таңбадан)…', hzBtn: 'Тексеру және адамдандыру · 1 токен', hzNote: 'Баға шамамен, бұл нағыз детектор емес: нақты ЖИ-тексерулер қателесуі мүмкін. ЖОО ережесін сақтаңыз.',
+    hz1: 'Мәтінді сканерлеудемін…', hz2: 'ЖИ үлгі тіркестерін іздеудемін…', hz3: 'Тірі тілмен қайта жазудамын…', was: 'Болды', now: 'Болды→', aiLike: 'ЖИ-ға ұқсастық', markers: 'ЖИ-ды не әшкерелейді', metrics: 'Сандармен не өзгерді', result: 'Нәтиже', changes: 'Түзетулер', copy: 'Көшіру', copied: 'Көшірілді ✓', words: 'сөз', again2: 'Тағы нұсқа · 1 токен', newT: 'Жаңа мәтін',
+    m1: 'Сөйлем ұзындығының алшақтығы', m2: 'Қысқа тіркестер (≤3 сөз)', m3: 'ЖИ үлгі сөздері', m4: 'Сөйлемнің орташа ұзындығы', short: 'Тым қысқа', lockT: 'ЖИ-жоспарлаушы — Premium жазылушыларына', lockD: 'Күнтізбе мен тапсырмалар тегін, ал жоспарды ЖИ жазылымнан кейін құрастырады.', lockB: 'Premium ашу' },
+  en: { fcLoad: 'AI is preparing flashcards…', card: 'Card', qL: 'QUESTION', aL: 'ANSWER', tap: 'tap to flip', know: '✓ Got it', again: '↺ Again', flip: 'Flip', done: 'Deck complete!', known: 'learned', repeat: 'Review the hard ones', allDone: 'Everything learned! 🏆', redo: 'New deck',
+    hzMode: '✍️ Humanize text', hzTitle: '✍️ Humanizer', hzDesc: 'We check whether the text looks AI-written, rewrite it in a natural voice and show what changed.', hzPh: 'Paste your text (80+ characters)…', hzBtn: 'Check and humanize · 1 token', hzNote: 'The score is an estimate, not a real detector — real AI checks make mistakes too. Follow your school’s rules.',
+    hz1: 'Scanning the text…', hz2: 'Looking for AI-style phrases…', hz3: 'Rewriting in a human voice…', was: 'Before', now: 'After', aiLike: 'AI-likeness', markers: 'What gives it away', metrics: 'What changed in numbers', result: 'Result', changes: 'Edits', copy: 'Copy', copied: 'Copied ✓', words: 'words', again2: 'Another variant · 1 token', newT: 'New text',
+    m1: 'Sentence-length variation', m2: 'Short phrases (≤3 words)', m3: 'AI-cliché words', m4: 'Average sentence length', short: 'Too short', lockT: 'AI Planner is for Premium subscribers', lockD: 'The calendar and tasks stay free; the AI writes your plan after you subscribe.', lockB: 'Open Premium' }
+};
+T3.kz.now = 'Болды';  T3.kz.was = 'Бұрын';
+const L3 = () => T3[selectedLang] || T3.ru;
+
+// ---------- Markdown-рендер (чат, конспекты, объяснения) ----------
+function md(raw) {
+  const blocks = [];
+  const s = String(raw == null ? '' : raw).replace(/\r/g, '')
+    .replace(/```([\w+#-]*)[ \t]*\n?([\s\S]*?)```/g, (m, lg, code) => { blocks.push({ lg, code: code.replace(/\n+$/, '') }); return '\n\u0000' + (blocks.length - 1) + '\u0000\n'; });
+  const inl = t => t.replace(/`([^`\n]+)`/g, '<code class="ic">$1</code>').replace(/\*\*([^*\n]+)\*\*/g, '<strong>$1</strong>')
+    .replace(/(^|[\s(])\*([^*\n]+)\*(?=[\s).,!?:;]|$)/g, '$1<em>$2</em>');
+  const out = []; let list = null, para = [];
+  const flushP = () => { if (para.length) { out.push('<div class="md-p">' + inl(para.join('<br>')) + '</div>'); para = []; } };
+  const flushL = () => { if (list) { out.push(`<${list.t}>${list.items.map(i => '<li>' + inl(i) + '</li>').join('')}</${list.t}>`); list = null; } };
+  for (const line of esc(s).split('\n')) {
+    let m;
+    if ((m = line.match(/^\u0000(\d+)\u0000$/))) { flushP(); flushL(); const b = blocks[+m[1]]; out.push(`<div class="cb"><div class="cb-h"><span>${esc(b.lg || 'code')}</span><button onclick="copyCode(this)">copy</button></div><pre><code>${esc(b.code)}</code></pre></div>`); }
+    else if ((m = line.match(/^\s{0,3}(#{1,4})\s+(.+)$/))) { flushP(); flushL(); out.push(`<h${m[1].length}>${inl(m[2])}</h${m[1].length}>`); }
+    else if (/^\s*(-{3,}|\*{3,}|_{3,})\s*$/.test(line)) { flushP(); flushL(); out.push('<hr>'); }
+    else if ((m = line.match(/^\s*[-*•]\s+(.+)$/))) { flushP(); if (!list || list.t !== 'ul') { flushL(); list = { t: 'ul', items: [] }; } list.items.push(m[1]); }
+    else if ((m = line.match(/^\s*\d+[.)]\s+(.+)$/))) { flushP(); if (!list || list.t !== 'ol') { flushL(); list = { t: 'ol', items: [] }; } list.items.push(m[1]); }
+    else if (!line.trim()) { flushP(); flushL(); }
+    else { flushL(); para.push(line.trim()); }
+  }
+  flushP(); flushL(); return out.join('');
+}
+const stagger = el => [...el.children].forEach((c, i) => c.style.setProperty('--k', Math.min(i, 14)));
+window.formatText = md;
+window.copyCode = btn => { const t = btn.closest('.cb').querySelector('pre').innerText; navigator.clipboard.writeText(t).catch(() => {}); const o = btn.textContent; btn.textContent = '✓'; setTimeout(() => btn.textContent = o, 1200); };
+window.renderGenericResult = function (rawText) {
+  const c = $('result-container');
+  c.innerHTML = `<div class="tile p-6 md text-left w-full max-h-[70vh] overflow-y-auto quiz-slide-enter">${md(rawText)}</div>`;
+  stagger(c.firstElementChild); renderMath(c);
+};
+
+// ---------- Красивый ИИ-чат ----------
+const aiBubble = html => `<div class="ai-row"><div class="ai-av">✨</div><div class="ai-bubble md">${html}</div></div>`;
+function addAI(box, text) {
+  box.insertAdjacentHTML('beforeend', aiBubble(md(text)));
+  stagger(box.lastElementChild.querySelector('.ai-bubble')); renderMath(box.lastElementChild);
+}
+window.openChatView = function () {
+  window.currentActiveView = 'chat'; const t = translations[selectedLang];
+  $('result-container').innerHTML = `
+    <div class="w-full flex flex-col h-[68vh] text-left quiz-slide-enter">
+      <div class="border-b border-white/10 pb-3 mb-3 flex items-center gap-3"><div class="ai-av">✨</div>
+        <div><h3 class="display text-lg font-bold text-white leading-none">${esc(t.modeChat)}</h3><p class="mono mt-1" style="color:var(--accent)">● online</p></div></div>
+      <div id="chat-messages" class="flex-grow overflow-y-auto space-y-3 p-3 tile mb-3 flex flex-col"></div>
+      <div class="flex gap-2"><input type="text" id="chat-input" onkeydown="if(event.key==='Enter') sendChatMessage()" placeholder="${esc(t.chatPlaceholder)}" class="field flex-grow">
+        <button onclick="sendChatMessage()" class="btn-accent px-6 py-3 text-xs">${esc(t.chatSend)}</button></div>
+    </div>`;
+  addAI($('chat-messages'), t.chatWelcome);
+};
+window.sendChatMessage = async function () {
+  if (!currentUser) return checkAuth();
+  const input = $('chat-input'), msg = input.value.trim(), box = $('chat-messages'); if (!msg) return;
+  box.insertAdjacentHTML('beforeend', `<div class="me-bubble">${esc(msg)}</div>`); input.value = '';
+  const id = 'typing-' + Date.now();
+  box.insertAdjacentHTML('beforeend', `<div id="${id}" class="ai-row"><div class="ai-av">✨</div><div class="ai-bubble"><span class="dots"><i></i><i></i><i></i></span></div></div>`);
+  box.scrollTop = box.scrollHeight;
+  const fd = new FormData(); fd.append('message', msg); fd.append('doc_id', currentDocId || 'default'); fd.append('lang', selectedLang);
+  let res = null, data = {};
+  try { res = await fetch('/api/chat', { method: 'POST', body: fd }); data = await res.json().catch(() => ({})); } catch (e) {}
+  $(id) && $(id).remove();
+  if (res && res.ok) { setTokens(data.tokens_left); addAI(box, data.reply); }
+  else box.insertAdjacentHTML('beforeend', `<div class="ai-row">${errorBox(data.error || 'Error')}</div>`);
+  box.scrollTop = box.scrollHeight;
+};
+
+// ---------- Карточки: переворот, колода, «знаю / ещё раз» ----------
+const GR = [['linear-gradient(145deg,#c8ff2e,#7ee08a)', '#000'], ['linear-gradient(145deg,#a78bfa,#8b5cf6)', '#fff'], ['linear-gradient(145deg,#ff8fa0,#ff5d73)', '#000'], ['linear-gradient(145deg,#7ceaff,#3de0ff)', '#000'], ['linear-gradient(145deg,#ffe27a,#ffd23f)', '#000']];
+let C = null;
+const _gen3 = window.generate;
+window.generate = async function (action, page) {
+  if (action !== 'flashcards') return _gen3(action, page);
+  if (!currentUser) return checkAuth();
+  window.currentActiveView = 'cards'; const c = $('result-container');
+  c.innerHTML = `<div class="py-12"><div class="w-10 h-10 border-4 border-[#c8ff2e] border-t-transparent rounded-full animate-spin mx-auto mb-3"></div><p class="mono">${esc(L3().fcLoad)}</p></div>`;
+  const fd = new FormData(); fd.append('doc_id', currentDocId || 'default'); fd.append('lang', selectedLang); fd.append('title', $('topic-input').value || 'Lesson');
+  const res = await fetch('/api/flashcards', { method: 'POST', body: fd }).catch(() => null); const data = res ? await res.json().catch(() => ({})) : {};
+  if (!res || !res.ok) { c.innerHTML = errorBox(data.error || 'Error'); return; }
+  setTokens(data.tokens_left);
+  const cards = (data.cards || []).map(x => ({ q: String(x.q || x.question || ''), a: String(x.a || x.answer || '') })).filter(x => x.q && x.a);
+  if (cards.length < 3) { c.innerHTML = errorBox('AI format error'); return; }
+  C = { all: cards, deck: cards.slice(), i: 0, known: 0, hard: [], total: cards.length }; renderCard();
+};
+function renderCard() {
+  const l = L3(), card = C.deck[C.i], n = C.deck.length, g = GR[C.i % GR.length];
+  $('result-container').innerHTML = `
+    <div class="w-full max-w-xl mx-auto text-left">
+      <div class="flex items-center justify-between mb-3"><span class="mono">${l.card} ${C.i + 1}/${n}</span><span class="mono" style="color:var(--accent)">✓ ${C.known}</span></div>
+      <div class="qbar"><i style="width:${C.i / n * 100}%"></i></div>
+      <div class="deck mt-5"><div class="fc-wrap" id="fc-wrap">
+        <div class="fc" id="fc" onclick="flipCard()">
+          <div class="fc-face" style="background:${g[0]};color:${g[1]}"><span class="mono" style="color:${g[1]};opacity:.6">${l.qL}</span><h3 class="display text-2xl font-bold mt-3 leading-tight">${esc(card.q)}</h3><span class="fc-hint">${l.tap}</span></div>
+          <div class="fc-face fc-back"><span class="mono" style="color:var(--accent)">${l.aL}</span><div class="md mt-3 text-base">${md(card.a)}</div></div>
+        </div></div></div>
+      <div class="flex gap-2.5 mt-5">
+        <button class="kbtn" style="background:rgba(255,93,115,.15);color:#ff8fa0;border:1px solid rgba(255,93,115,.4)" onclick="markCard(false)">${l.again}</button>
+        <button class="kbtn" style="background:#1a1a1a;color:#ddd;border:1px solid var(--line)" onclick="flipCard()">${l.flip}</button>
+        <button class="kbtn" style="background:var(--accent);color:#000" onclick="markCard(true)">${l.know}</button>
+      </div></div>`;
+  renderMath($('result-container'));
+}
+window.flipCard = () => { const f = $('fc'); if (f) f.classList.toggle('flip'); };
+window.markCard = known => {
+  const w = $('fc-wrap'); if (!w || w.classList.contains('out')) return;
+  if (known) C.known++; else C.hard.push(C.deck[C.i]);
+  w.classList.add('out'); if (!known) w.classList.add('again');
+  setTimeout(() => { C.i++; if (C.i < C.deck.length) renderCard(); else cardsDone(); }, 280);
+};
+function cardsDone() {
+  const l = L3(), hard = C.hard.length, pct = Math.round(C.known / C.deck.length * 100);
+  $('result-container').innerHTML = `
+    <div class="w-full max-w-md mx-auto text-center space-y-5 quiz-slide-enter">
+      <div class="display text-7xl font-bold" style="background:linear-gradient(135deg,#c8ff2e,#3de0ff,#8b5cf6);-webkit-background-clip:text;background-clip:text;color:transparent">${pct}%</div>
+      <h3 class="display text-2xl font-bold text-white">${hard ? l.done : l.allDone}</h3><p class="mono">${C.known}/${C.deck.length} ${l.known}</p>
+      <div class="flex flex-col gap-2.5">
+        ${hard ? `<button class="btn-accent py-3.5 text-sm" onclick="repeatHard()">${l.repeat} (${hard})</button>` : ''}
+        <button class="btn-ghost py-3.5 text-sm" onclick="generate('flashcards',1)">${l.redo}</button></div></div>`;
+  if (!hard) confetti(90);
+}
+window.repeatHard = () => { C = { all: C.all, deck: C.hard.slice(), i: 0, known: 0, hard: [], total: C.total }; renderCard(); };
+document.addEventListener('keydown', e => {
+  if (!C || !$('fc') || /INPUT|TEXTAREA/.test((e.target || {}).tagName || '')) return;
+  if (e.code === 'Space') { e.preventDefault(); flipCard(); } else if (e.key === 'ArrowRight') markCard(true); else if (e.key === 'ArrowLeft') markCard(false);
+});
+
+// ---------- Humanizer ----------
+const AI_RE = /важно отметить|таким образом|в заключение|несомненно|ключев\w+ аспект|стоит упомянуть|погрузи\w+ в|экосистем\w+|инновацион\w+|трансформаци\w+|в современном мире|играет (?:ключевую|важную) роль|in conclusion|furthermore|moreover|delve|tapestry|it is important to note|қорытындылай келе|атап өткен жөн/gi;
+function stats(t) {
+  const s = t.split(/(?<=[.!?…])\s+/).map(x => x.trim()).filter(Boolean), len = s.map(x => x.split(/\s+/).length), n = len.length || 1;
+  const avg = len.reduce((a, b) => a + b, 0) / n, sd = Math.sqrt(len.reduce((a, b) => a + (b - avg) ** 2, 0) / n);
+  return { sd, short: len.filter(x => x <= 3).length, ai: (t.match(AI_RE) || []).length, avg };
+}
+const ring = (id, col) => `<div class="gauge"><svg viewBox="0 0 100 100"><circle cx="50" cy="50" r="44" fill="none" stroke="rgba(255,255,255,.08)" stroke-width="9"/><circle id="${id}" class="g-fg" cx="50" cy="50" r="44" fill="none" stroke="${col}" stroke-width="9" stroke-linecap="round" stroke-dasharray="276.5" stroke-dashoffset="276.5"/></svg><div class="g-n"><span id="${id}-n" class="display text-3xl font-bold text-white">0%</span></div></div>`;
+function animRing(id, pct) {
+  requestAnimationFrame(() => requestAnimationFrame(() => { const r = $(id); if (r) r.style.strokeDashoffset = 276.5 * (1 - pct / 100); }));
+  let cur = 0; const step = () => { cur = Math.min(pct, cur + Math.max(1, pct / 45)); const e = $(id + '-n'); if (e) e.textContent = Math.round(cur) + '%'; if (cur < pct) requestAnimationFrame(step); }; step();
+}
+let HZ = { text: '', res: null };
+window.openHumanizerView = function () {
+  window.currentActiveView = 'human'; const l = L3();
+  $('result-container').innerHTML = `
+    <div class="w-full space-y-4 text-left quiz-slide-enter">
+      <div class="banner"><h3 class="display text-2xl font-bold text-white">${l.hzTitle}</h3><p class="text-xs text-neutral-400 mt-1">${l.hzDesc}</p></div>
+      <div class="tile p-5 space-y-3">
+        <textarea id="hz-text" rows="9" maxlength="6000" placeholder="${l.hzPh}" class="field" oninput="document.getElementById('hz-cnt').textContent=this.value.length" style="min-height:11rem">${esc(HZ.text)}</textarea>
+        <div class="flex items-center justify-between"><span class="mono"><span id="hz-cnt">${HZ.text.length}</span> / 6000</span></div>
+        <button onclick="runHumanize()" class="btn-accent w-full py-3.5 text-sm">${l.hzBtn}</button>
+        <p class="text-[11px] text-neutral-500">${l.hzNote}</p>
+      </div><div id="hz-out"></div></div>`;
+};
+let hzTimer = null;
+window.runHumanize = async function () {
+  if (!currentUser) return checkAuth();
+  const l = L3(), text = $('hz-text').value.trim(); HZ.text = text;
+  const out = $('hz-out'); if (text.length < 80) { out.innerHTML = errorBox(l.short + ' (80+)'); return; }
+  const steps = [l.hz1, l.hz2, l.hz3]; let k = 0;
+  out.innerHTML = `<div class="tile scan p-8 text-center"><p id="hz-step" class="mono" style="color:var(--accent)">${steps[0]}</p><div class="dots mt-4"><i></i><i></i><i></i></div></div>`;
+  clearInterval(hzTimer); hzTimer = setInterval(() => { k = (k + 1) % 3; const e = $('hz-step'); if (e) e.textContent = steps[k]; }, 1700);
+  const fd = new FormData(); fd.append('text', text); fd.append('lang', selectedLang);
+  const res = await fetch('/api/humanize', { method: 'POST', body: fd }).catch(() => null); const data = res ? await res.json().catch(() => ({})) : {};
+  clearInterval(hzTimer);
+  if (!res || !res.ok) { out.innerHTML = errorBox(data.error || 'Error'); return; }
+  setTokens(data.tokens_left); HZ.res = data.result; renderHuman();
+};
+function renderHuman() {
+  const l = L3(), r = HZ.res, out = $('hz-out'); if (!out) return;
+  const ai = Math.max(0, Math.min(100, +r.ai_score || 0)), hu = Math.max(0, Math.min(100, +r.human_score || 0));
+  const a = stats(HZ.text), b = stats(r.human_text), words = r.human_text.trim().split(/\s+/).length;
+  const metric = (label, x, y, fmt) => { const m = Math.max(x, y, 1); return `<div class="space-y-1.5"><div class="flex justify-between text-xs"><span class="text-neutral-300">${label}</span><span class="mono">${fmt(x)} → <b style="color:var(--accent)">${fmt(y)}</b></span></div>
+    <div class="mbar"><i data-w="${x / m * 100}" style="background:#ff5d73"></i></div><div class="mbar"><i data-w="${y / m * 100}" style="background:var(--accent)"></i></div></div>`; };
+  const f1 = v => v.toFixed(1), f0 = v => String(Math.round(v));
+  out.innerHTML = `<div class="space-y-4 quiz-slide-enter">
+    <div class="tile p-5"><div class="flex items-center justify-around gap-2">
+      <div class="text-center">${ring('hz-r1', '#ff5d73')}<p class="mono mt-2">${l.was} · ${l.aiLike}</p></div>
+      <span class="display text-3xl text-neutral-600">→</span>
+      <div class="text-center">${ring('hz-r2', '#c8ff2e')}<p class="mono mt-2">${l.now} · ${l.aiLike}</p></div></div>
+      ${r.verdict ? `<p class="text-xs text-neutral-300 text-center mt-4">${esc(r.verdict)}</p>` : ''}</div>
+    ${(r.markers || []).length ? `<div class="tile p-5 space-y-3"><h4 class="mono" style="color:var(--coral)">${l.markers}</h4><div class="flex flex-wrap gap-2">${r.markers.slice(0, 6).map((m, i) => `<span class="chip" style="animation-delay:${i * 90}ms" title="${esc(m.why || '')}">“${esc(m.phrase || '')}”</span>`).join('')}</div>
+      <ul class="text-[11px] text-neutral-400 space-y-1">${r.markers.slice(0, 6).map(m => `<li>• <b class="text-neutral-200">${esc(m.phrase || '')}</b> — ${esc(m.why || '')}</li>`).join('')}</ul></div>` : ''}
+    <div class="tile p-5 space-y-4"><h4 class="mono" style="color:var(--cyan)">${l.metrics}</h4>
+      ${metric(l.m1, a.sd, b.sd, f1)}${metric(l.m2, a.short, b.short, f0)}${metric(l.m3, a.ai, b.ai, f0)}${metric(l.m4, a.avg, b.avg, f1)}</div>
+    <div class="tile p-5 space-y-3"><div class="flex items-center justify-between gap-2"><div class="flex gap-2"><button class="hz-tab on" id="hz-t1" onclick="hzTab(1)">${l.result}</button><button class="hz-tab" id="hz-t2" onclick="hzTab(2)">${l.changes}</button></div>
+      <button class="btn-ghost px-4 py-2 text-[11px]" onclick="hzCopy(this)">${l.copy}</button></div>
+      <div id="hz-p1"><div id="hz-res" class="text-sm leading-relaxed text-neutral-100 whitespace-pre-wrap max-h-[50vh] overflow-y-auto"></div><p class="mono mt-3">${words} ${l.words}</p></div>
+      <div id="hz-p2" class="hidden space-y-3 max-h-[50vh] overflow-y-auto">${(r.changes || []).map(c => `<div class="p-3 rounded-2xl bg-[#0d0d0d] border border-white/10 text-xs space-y-2"><p><span class="del">${esc(c.before || '')}</span></p><p><span class="ins">${esc(c.after || '')}</span></p></div>`).join('')}</div></div>
+    <div class="flex flex-col sm:flex-row gap-2.5"><button class="btn-accent flex-1 py-3.5 text-sm" onclick="runHumanize()">${l.again2}</button><button class="btn-ghost flex-1 py-3.5 text-sm" onclick="HZreset()">${l.newT}</button></div></div>`;
+  animRing('hz-r1', ai); animRing('hz-r2', hu);
+  setTimeout(() => out.querySelectorAll('.mbar i').forEach(e => e.style.width = e.dataset.w + '%'), 150);
+  const box = $('hz-res'); const ws = r.human_text.split(/(\s+)/);
+  if (ws.length < 700) box.innerHTML = ws.map((w, i) => /^\s+$/.test(w) ? w : `<span class="w-in" style="animation-delay:${Math.min(i * 14, 1600)}ms">${esc(w)}</span>`).join(''); else box.textContent = r.human_text;
+}
+window.hzTab = n => { $('hz-p1').classList.toggle('hidden', n !== 1); $('hz-p2').classList.toggle('hidden', n !== 2); $('hz-t1').classList.toggle('on', n === 1); $('hz-t2').classList.toggle('on', n === 2); };
+window.hzCopy = btn => { navigator.clipboard.writeText(HZ.res.human_text).catch(() => {}); const o = btn.textContent; btn.textContent = L3().copied; setTimeout(() => btn.textContent = o, 1500); };
+window.HZreset = () => { HZ = { text: '', res: null }; openHumanizerView(); };
+
+// ---------- ИИ-планер только для подписчиков ----------
+const subscribed = () => !!(currentUser && currentUser.is_subscribed);
+const _op = window.openPlannerView;
+window.openPlannerView = function () {
+  _op(); if (subscribed()) return;
+  const q = $('ai-planner-query'), l = L3(); const banner = q && q.closest('.banner'); if (!banner) return;
+  banner.innerHTML = `<div class="flex flex-col sm:flex-row items-center gap-4 text-center sm:text-left"><div class="w-12 h-12 shrink-0 rounded-2xl flex items-center justify-center text-2xl" style="background:linear-gradient(135deg,var(--violet),var(--coral))">🔒</div>
+    <div class="flex-grow"><p class="font-extrabold text-white text-sm">${l.lockT}</p><p class="text-xs text-neutral-400 mt-1">${l.lockD}</p></div>
+    <button class="btn-accent px-6 py-3 text-xs shrink-0" onclick="scrollToSection('pricing')">${l.lockB}</button></div>`;
+};
+const _ap = window.askAIPlanner;
+window.askAIPlanner = function () { if (!subscribed()) return scrollToSection('pricing'); return _ap(); };
+
+// ---------- пункт меню, подписи, история ----------
+function modeLabels() { const e = $('btn-mode-human'); if (e) e.textContent = L3().hzMode; }
+const _cl3 = window.changeLanguage;
+window.changeLanguage = function () { _cl3(); modeLabels(); };
+const _rd3 = window.readableContent;
+window.readableContent = it => {
+  if (it.type === 'flashcards') {
+    const p = parseAIJson(it.content);
+    if (p && Array.isArray(p.cards)) return p.cards.map((x, i) => `${i + 1}. ${x.q}\n→ ${x.a}`).join('\n\n');
+  }
+  return _rd3(it);
+};
+modeLabels();
 })();
 </script>
 </body>
