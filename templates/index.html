@@ -2301,7 +2301,7 @@ function renderHuman() {
       ${metric(l.m1, a.sd, b.sd, f1)}${metric(l.m2, a.short, b.short, f0)}${metric(l.m3, a.ai, b.ai, f0)}${metric(l.m4, a.avg, b.avg, f1)}</div>
     <div class="tile p-5 space-y-3"><div class="flex items-center justify-between gap-2"><div class="flex gap-2"><button class="hz-tab on" id="hz-t1" onclick="hzTab(1)">${l.result}</button><button class="hz-tab" id="hz-t2" onclick="hzTab(2)">${l.changes}</button></div>
       <button class="btn-ghost px-4 py-2 text-[11px]" onclick="hzCopy(this)">${l.copy}</button></div>
-      <div id="hz-p1"><div id="hz-res" class="text-sm leading-relaxed text-neutral-100 whitespace-pre-wrap max-h-[50vh] overflow-y-auto"></div><p class="mono mt-3">${words} ${l.words}</p></div>
+      <div id="hz-p1"><div id="hz-res" class="text-sm leading-relaxed text-neutral-100 whitespace-pre-wrap max-h-[50vh] overflow-y-auto"></div><p class="mono mt-3">${words} ${l.words}${r.changed_pct != null ? " · " + ({ru:"изменено",kz:"өзгерді",en:"changed"}[selectedLang] || "изменено") + " " + r.changed_pct + "%" : ""}</p></div>
       <div id="hz-p2" class="hidden space-y-3 max-h-[50vh] overflow-y-auto">${(r.changes || []).map(c => `<div class="p-3 rounded-2xl bg-[#0d0d0d] border border-white/10 text-xs space-y-2"><p><span class="del">${esc(c.before || '')}</span></p><p><span class="ins">${esc(c.after || '')}</span></p></div>`).join('')}</div></div>
     <div class="flex flex-col sm:flex-row gap-2.5"><button class="btn-accent flex-1 py-3.5 text-sm" onclick="runHumanize()">${l.again2}</button><button class="btn-ghost flex-1 py-3.5 text-sm" onclick="HZreset()">${l.newT}</button></div></div>`;
   animRing('hz-r1', ai); animRing('hz-r2', hu);
