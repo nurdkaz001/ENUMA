@@ -6,7 +6,8 @@
     <title>StudyAI Hub — ИИ Наставник</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Inter+Tight:wght@500;600;700;800&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;800&family=Space+Grotesk:wght@500;700&family=Montserrat:wght@500;700;800&family=Manrope:wght@500;700;800&family=Unbounded:wght@500;700&family=Lora:ital,wght@0,500;1,500&family=Oswald:wght@500;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Inter+Tight:wght@500;600;700;800&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
 
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.css">
     <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.js"></script>
@@ -314,6 +315,54 @@
         @keyframes pwBob { 50% { transform: translateY(-6px) rotate(-4deg); } }
         .pw-li { display:flex; gap:.75rem; align-items:flex-start; font-size:.85rem; color:#e4e4de; animation: mdIn .5s backwards; }
         .pw-li i { font-style:normal; flex:none; width:2rem; height:2rem; border-radius:.7rem; display:grid; place-items:center; color:#000; }
+        /* ===== v6: презентации ===== */
+        .slw { container-type: inline-size; position: relative; width: 100%; aspect-ratio: 16/9; border-radius: 1.1rem; overflow: hidden; box-shadow: 0 30px 60px -30px rgba(0,0,0,.9); -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+        .sl { position: absolute; inset: 0; background: linear-gradient(135deg, var(--bg), var(--bg2)); color: var(--tx); font-family: var(--fb); }
+        .sl-deco { position: absolute; inset: 0; pointer-events: none; overflow: hidden; }
+        .sl[data-deco="orbs"] .sl-deco::before { content: ''; position: absolute; width: 38cqw; height: 38cqw; right: -9cqw; top: -14cqw; border-radius: 50%; background: var(--ac); opacity: .28; filter: blur(7cqw); }
+        .sl[data-deco="orbs"] .sl-deco::after { content: ''; position: absolute; width: 30cqw; height: 30cqw; left: -8cqw; bottom: -14cqw; border-radius: 50%; background: var(--ac2); opacity: .3; filter: blur(7cqw); }
+        .sl[data-deco="grid"] .sl-deco { background-image: linear-gradient(var(--mut) 1px, transparent 1px), linear-gradient(90deg, var(--mut) 1px, transparent 1px); background-size: 5cqw 5cqw; opacity: .08; }
+        .sl[data-deco="waves"] .sl-deco::before { content: ''; position: absolute; left: -10cqw; right: -10cqw; bottom: -22cqw; height: 40cqw; border-radius: 50%; background: var(--ac); opacity: .16; }
+        .sl[data-deco="waves"] .sl-deco::after { content: ''; position: absolute; left: 20cqw; right: -25cqw; bottom: -26cqw; height: 40cqw; border-radius: 50%; background: var(--ac2); opacity: .16; }
+        .sl[data-deco="lines"] .sl-deco { background: repeating-linear-gradient(115deg, transparent 0 3cqw, var(--ac) 3cqw 3.12cqw); opacity: .12; mask-image: linear-gradient(90deg, transparent 45%, #000); -webkit-mask-image: linear-gradient(90deg, transparent 45%, #000); }
+        .sl-bar { position: absolute; left: 0; top: 0; bottom: 0; width: 1.1cqw; background: linear-gradient(var(--ac), var(--ac2)); }
+        .sl-n { position: absolute; right: 3cqw; bottom: 2cqw; font-size: 1.1cqw; color: var(--mut); letter-spacing: .15em; }
+        .sl-c { position: absolute; inset: 0; padding: 5.5cqw 7cqw 5cqw 8cqw; display: flex; flex-direction: column; justify-content: center; gap: 1.8cqw; }
+        .sl [contenteditable]:focus { outline: .2cqw dashed var(--ac); outline-offset: .5cqw; border-radius: .4cqw; }
+        .sl-h { font-family: var(--fh); font-weight: 800; font-size: 3.7cqw; line-height: 1.1; letter-spacing: -.01em; }
+        .sl-hl { width: 7cqw; height: .55cqw; border-radius: 1cqw; background: linear-gradient(90deg, var(--ac), var(--ac2)); }
+        .sl-title, .sl-closing, .sl-section { justify-content: center; }
+        .sl-title .sl-h, .sl-closing .sl-h { font-size: 6.4cqw; max-width: 80%; } .sl-section .sl-h { font-size: 7.4cqw; max-width: 85%; }
+        .sl-ic { font-size: 7cqw; line-height: 1; } .sl-sub { font-size: 2.2cqw; color: var(--mut); max-width: 70%; line-height: 1.35; }
+        .sl-title .sl-h, .sl-closing .sl-h, .sl-section .sl-h { background: linear-gradient(100deg, var(--tx) 40%, var(--ac)); -webkit-background-clip: text; background-clip: text; color: transparent; }
+        .sl-ul { display: flex; flex-direction: column; gap: 1.5cqw; margin-top: .8cqw; }
+        .sl-li { position: relative; padding-left: 3cqw; font-size: 2.3cqw; line-height: 1.3; }
+        .sl-li::before { content: ''; position: absolute; left: 0; top: .75cqw; width: 1.2cqw; height: 1.2cqw; border-radius: 50%; background: linear-gradient(135deg, var(--ac), var(--ac2)); }
+        .sl-cols { display: grid; grid-template-columns: 1fr 1fr; gap: 2.4cqw; margin-top: .6cqw; }
+        .sl-card { background: color-mix(in srgb, var(--tx) 7%, transparent); border: .1cqw solid color-mix(in srgb, var(--tx) 14%, transparent); border-radius: 1.6cqw; padding: 2.2cqw; display: flex; flex-direction: column; gap: 1.1cqw; }
+        .sl-card .ch { font-family: var(--fh); font-weight: 800; font-size: 2.3cqw; color: var(--ac); } .sl-card .sl-li { font-size: 1.9cqw; padding-left: 2.4cqw; } .sl-card .sl-li::before { width: .9cqw; height: .9cqw; top: .6cqw; }
+        .sl-card.r .ch { color: var(--ac2); }
+        .sl-sg { display: grid; gap: 2.2cqw; margin-top: .8cqw; } .sl-stat { text-align: center; padding: 3cqw 1.5cqw; }
+        .sl-stat .v { font-family: var(--fh); font-weight: 800; font-size: 6cqw; line-height: 1; color: var(--ac); } .sl-stat:nth-child(even) .v { color: var(--ac2); } .sl-stat .l { font-size: 1.8cqw; margin-top: 1.2cqw; color: var(--tx); }
+        .sl-quote .q { font-family: var(--fh); font-size: 3.5cqw; font-style: italic; line-height: 1.25; max-width: 85%; } .sl-quote .qm { font-size: 9cqw; line-height: .6; color: var(--ac); font-family: Georgia, serif; } .sl-quote .au { font-size: 2cqw; color: var(--ac); }
+        .sl-tl { display: grid; gap: 1.6cqw; margin-top: 1.5cqw; position: relative; } .sl-st { position: relative; padding-top: 5cqw; }
+        .sl-st::before { content: ''; position: absolute; left: 0; right: -1.6cqw; top: 2cqw; height: .25cqw; background: color-mix(in srgb, var(--tx) 25%, transparent); } .sl-st:last-child::before { right: 0; opacity: .0; }
+        .sl-st .nb { position: absolute; left: 0; top: 0; width: 4.2cqw; height: 4.2cqw; border-radius: 50%; background: var(--ac); color: var(--bg); font-weight: 800; font-size: 1.9cqw; display: grid; place-items: center; font-family: var(--fh); }
+        .sl-st:nth-child(even) .nb { background: var(--ac2); } .sl-st .sh { font-family: var(--fh); font-weight: 800; font-size: 2.2cqw; margin-top: .6cqw; } .sl-st .stx { font-size: 1.7cqw; color: var(--mut); margin-top: .5cqw; line-height: 1.35; }
+        .slw.go .a { animation: slIn .75s cubic-bezier(.2,.8,.2,1) backwards; animation-delay: calc(var(--d, 0) * 90ms); }
+        @keyframes slIn { from { opacity: 0; transform: translateY(2.2cqw) scale(.98); } }
+        .thumb { flex: none; width: 9.5rem; cursor: pointer; border-radius: 1.1rem; padding: 3px; border: 2px solid transparent; transition: all .2s; } .thumb .slw { pointer-events: none; border-radius: .7rem; box-shadow: none; }
+        .thumb.on { border-color: var(--accent); transform: translateY(-3px); } .thumb:hover { border-color: rgba(200,255,46,.5); }
+        .stl { cursor: pointer; border-radius: 1.3rem; padding: 4px; border: 2px solid var(--line); transition: all .25s; } .stl:hover { transform: translateY(-4px); border-color: var(--violet); } .stl.on { border-color: var(--accent); box-shadow: 0 0 0 4px rgba(200,255,46,.18); }
+        .mode-card { cursor: pointer; border-radius: 1.4rem; padding: 1.1rem; border: 1.5px solid var(--line); background: #141414; text-align: left; transition: all .25s; } .mode-card.on { border-color: var(--accent); background: rgba(200,255,46,.07); } .mode-card:hover { transform: translateY(-3px); }
+        .skel { aspect-ratio: 16/9; border-radius: .9rem; background: linear-gradient(110deg, #181818 30%, #262626 50%, #181818 70%); background-size: 200% 100%; animation: skel 1.4s infinite linear, mdIn .5s backwards; } @keyframes skel { to { background-position: -200% 0; } }
+        #pres { position: fixed; inset: 0; z-index: 100; background: #000; display: flex; align-items: center; justify-content: center; } #pres .slw { width: min(100vw, 177.78vh); border-radius: 0; }
+        #print-deck { display: none; }
+        @media print {
+            @page { size: 297mm 167mm; margin: 0; }
+            body > *:not(#print-deck) { display: none !important; }
+            #print-deck { display: block !important; } #print-deck .slw { width: 297mm; height: 167mm; border-radius: 0; box-shadow: none; page-break-after: always; break-after: page; }
+        }
     </style>
 </head>
 <body class="min-h-screen flex flex-col">
@@ -462,6 +511,7 @@
                         <button onclick="openPlannerView()" class="mode-row"><span class="num">08</span><span id="btn-mode-planner">📅 Күнтізбе & ЖИ-Планер</span><span class="arrow">→</span></button>
                         <button onclick="openHumanizerView()" class="mode-row accent"><span class="num">09</span><span id="btn-mode-human">✍️ Мәтінді адамдандыру</span><span class="arrow">NEW</span></button>
                         <button onclick="openCareerView()" class="mode-row accent"><span class="num">10</span><span id="btn-mode-career">🎓 11 сынып: түсу кеңесі</span><span class="arrow">NEW</span></button>
+                        <button onclick="openSlidesView()" class="mode-row accent"><span class="num">11</span><span id="btn-mode-slides">🎞️ ЖИ-презентациялар</span><span class="arrow">NEW</span></button>
                     </div>
                 </div>
 
@@ -2495,6 +2545,180 @@ function careerResult(d) {
 const LBL = { ru: '🎓 Поступление после 11 класса', kz: '🎓 11 сынып: түсу кеңесі', en: '🎓 After 11th grade' };
 const lab = () => { const e = $('btn-mode-career'); if (e) e.textContent = LBL[selectedLang] || LBL.ru; };
 const _cl5 = window.changeLanguage; window.changeLanguage = function () { _cl5(); lab(); };
+lab();
+})();
+</script>
+<script>
+(function () {
+const $ = id => document.getElementById(id), esc = escapeHtml;
+const T = {
+  ru: { mode: '🎞️ Презентации с ИИ', t: '🎞️ Презентации с ИИ', d: 'Опиши тему или вставь свой текст — ИИ соберёт красивые слайды. Один слайд — 1 токен.', ph: 'О чём презентация? Например: «Как работает искусственный интеллект» для 9 класса, с примерами из жизни. Или вставьте готовый текст.',
+    cnt: 'Слайдов', cost: 'Стоимость', tok: 'токенов', have: 'у вас', style: 'Свой стиль (необязательно)', stylePh: 'Например: минимализм как у Apple, чёрно-белый, много воздуха', next: 'Создать презентацию',
+    q: 'У вас готовый текст. Что с ним сделать?', shorten: '✂️ Сократить до тезисов', shortenD: 'ИИ оставит главное: короткие пункты, все факты и порядок мыслей.', verb: '📄 Оставить как есть', verbD: 'Слова не меняются: ИИ только разложит текст по слайдам.',
+    pick: 'Выберите стиль', pickD: 'ИИ подобрал оформления под вашу тему. Нажмите на понравившийся.', picking: 'ИИ подбирает стили…', auto: '🎲 Пусть ИИ выберет сам', useIt: 'Создать · {n} токенов', back: 'Назад',
+    g1: 'Продумываю структуру…', g2: 'Пишу заголовки-выводы…', g3: 'Подбираю раскладки…', g4: 'Оформляю слайды…', slide: 'Слайд', edit: 'Нажмите на текст, чтобы поправить', present: '▶ Показ', pptx: '⬇ PowerPoint', pdf: '🖨 PDF', newP: 'Новая', last: 'Открыть последнюю презентацию', notes: 'Заметки докладчика',
+    few: 'Не хватает токенов', fewD: 'Выберите меньше слайдов или откройте Premium.', short: 'Опишите тему подробнее (хотя бы пара слов).', saved: 'Скачиваю…', needText: 'Для режима «как есть» вставьте готовый текст.' },
+  kz: { mode: '🎞️ ЖИ-презентациялар', t: '🎞️ ЖИ-презентациялар', d: 'Тақырыпты сипатта немесе өз мәтініңді қой — ЖИ әдемі слайдтар жасайды. Бір слайд — 1 токен.', ph: 'Презентация не туралы? Мысалы: «Жасанды интеллект қалай жұмыс істейді», 9 сынып үшін. Немесе дайын мәтінді қойыңыз.',
+    cnt: 'Слайд саны', cost: 'Құны', tok: 'токен', have: 'сізде', style: 'Өз стилің (міндетті емес)', stylePh: 'Мысалы: Apple сияқты минимализм, ақ-қара', next: 'Презентация жасау',
+    q: 'Дайын мәтін бар. Не істейміз?', shorten: '✂️ Тезиске дейін қысқарту', shortenD: 'ЖИ маңыздысын қалдырады: қысқа тармақтар.', verb: '📄 Сол күйінде қалдыру', verbD: 'Сөздер өзгермейді: ЖИ мәтінді тек слайдқа бөледі.',
+    pick: 'Стильді таңда', pickD: 'ЖИ тақырыбыңа сай безендіру таңдады. Ұнағанын бас.', picking: 'ЖИ стиль таңдауда…', auto: '🎲 ЖИ өзі таңдасын', useIt: 'Жасау · {n} токен', back: 'Артқа',
+    g1: 'Құрылымды ойластырудамын…', g2: 'Тақырыптарды жазудамын…', g3: 'Орналасуды таңдаудамын…', g4: 'Слайдтарды безендіруде…', slide: 'Слайд', edit: 'Мәтінді түзету үшін басыңыз', present: '▶ Көрсету', pptx: '⬇ PowerPoint', pdf: '🖨 PDF', newP: 'Жаңа', last: 'Соңғы презентацияны ашу', notes: 'Баяндамашы жазбалары',
+    few: 'Токен жетпейді', fewD: 'Слайдты азайтыңыз немесе Premium ашыңыз.', short: 'Тақырыпты толығырақ сипаттаңыз.', saved: 'Жүктелуде…', needText: '«Сол күйінде» режимі үшін дайын мәтінді қойыңыз.' },
+  en: { mode: '🎞️ AI Presentations', t: '🎞️ AI Presentations', d: 'Describe a topic or paste your text — the AI builds beautiful slides. One slide costs 1 token.', ph: 'What is it about? e.g. “How AI works” for 9th graders, with everyday examples. Or paste your finished text.',
+    cnt: 'Slides', cost: 'Cost', tok: 'tokens', have: 'you have', style: 'Your own style (optional)', stylePh: 'e.g. Apple-like minimalism, black and white, lots of air', next: 'Create presentation',
+    q: 'You pasted a finished text. What should we do with it?', shorten: '✂️ Shorten to key points', shortenD: 'The AI keeps the essentials: short bullets, every fact, same order.', verb: '📄 Keep as is', verbD: 'Words stay untouched: the AI only splits the text into slides.',
+    pick: 'Pick a style', pickD: 'The AI chose designs that fit your topic. Tap your favorite.', picking: 'The AI is picking styles…', auto: '🎲 Let the AI choose', useIt: 'Create · {n} tokens', back: 'Back',
+    g1: 'Planning the structure…', g2: 'Writing headline takeaways…', g3: 'Choosing layouts…', g4: 'Designing slides…', slide: 'Slide', edit: 'Click any text to edit it', present: '▶ Present', pptx: '⬇ PowerPoint', pdf: '🖨 PDF', newP: 'New', last: 'Open last presentation', notes: 'Speaker notes',
+    few: 'Not enough tokens', fewD: 'Choose fewer slides or open Premium.', short: 'Describe the topic in more detail.', saved: 'Downloading…', needText: 'For “keep as is” paste your finished text.' }
+};
+const L = () => T[selectedLang] || T.ru;
+let F = { prompt: '', count: 8, mode: 'write', styleText: '' }, D = null, EDIT = false;
+const subscribed = () => !!(currentUser && currentUser.is_subscribed);
+
+// ---------- рендер слайда ----------
+function slideHtml(s, th, i, n, edit) {
+  const E = (p, txt, cls, d) => txt ? `<div class="a ${cls || ''}" style="--d:${d || 0}" data-p="${p}" ${edit ? 'contenteditable="true" spellcheck="false"' : ''}>${esc(txt)}</div>` : '';
+  const li = (p, arr, d0) => arr.map((t, k) => E(`${p}.${k}`, t, 'sl-li', d0 + k)).join('');
+  const lay = s.layout; let h = '';
+  if (lay === 'title' || lay === 'closing' || lay === 'section') {
+    h = `${lay === 'section' ? '<div class="a sl-hl" style="--d:0"></div>' : `<div class="a sl-ic" style="--d:0">${esc(s.icon || '✨')}</div>`}${E('title', s.title, 'sl-h', 1)}${E('subtitle', s.subtitle, 'sl-sub', 2)}
+      ${lay === 'closing' && s.bullets.length ? `<div class="sl-ul" style="margin-top:1cqw">${li('bullets', s.bullets.slice(0, 3), 3)}</div>` : ''}`;
+  } else {
+    h = `${E('title', s.title, 'sl-h', 0)}<div class="a sl-hl" style="--d:1"></div>`;
+    if (lay === 'two_col' || lay === 'compare') h += `<div class="sl-cols">${['left', 'right'].map((sd, j) => `<div class="a sl-card ${j ? 'r' : ''}" style="--d:${2 + j}">${E(sd + '.h', s[sd].h, 'ch', 0)}${li(sd + '.items', s[sd].items, 0)}</div>`).join('')}</div>`;
+    else if (lay === 'stats') h += `<div class="sl-sg" style="grid-template-columns:repeat(${Math.max(1, s.stats.length)},1fr)">${s.stats.map((x, k) => `<div class="a sl-card sl-stat" style="--d:${2 + k}">${E(`stats.${k}.v`, x.v, 'v', 0)}${E(`stats.${k}.l`, x.l, 'l', 0)}</div>`).join('')}</div>`;
+    else if (lay === 'quote') h += `<div class="sl-quote"><div class="a qm" style="--d:2">“</div>${E('quote', s.quote, 'q', 3)}${E('author', s.author, 'au', 4)}</div>`;
+    else if (lay === 'timeline') h += `<div class="sl-tl" style="grid-template-columns:repeat(${Math.max(1, s.steps.length)},1fr)">${s.steps.map((x, k) => `<div class="a sl-st" style="--d:${2 + k}"><span class="nb">${k + 1}</span>${E(`steps.${k}.h`, x.h, 'sh', 0)}${E(`steps.${k}.t`, x.t, 'stx', 0)}</div>`).join('')}</div>`;
+    else h += `<div class="sl-ul">${li('bullets', s.bullets, 2)}</div>`;
+  }
+  const st = `--bg:${th.bg};--bg2:${th.bg2};--tx:${th.tx};--mut:${th.mut};--ac:${th.ac};--ac2:${th.ac2};--fh:'${th.fh}',sans-serif;--fb:'${th.fb}',sans-serif`;
+  return `<div class="sl" style="${st}" data-deco="${th.deco}"><div class="sl-deco"></div><div class="sl-bar"></div><div class="sl-c sl-${lay}">${h}</div><span class="sl-n">${i + 1} / ${n}</span></div>`;
+}
+const setPath = (s, path, val) => { const k = path.split('.'); let o = s; for (let i = 0; i < k.length - 1; i++) o = o[k[i]]; o[k[k.length - 1]] = val; };
+
+// ---------- форма ----------
+window.openSlidesView = function () {
+  window.currentActiveView = 'slides'; const l = L();
+  let last = null; try { last = JSON.parse(localStorage.getItem('lastDeck') || 'null'); } catch (e) {}
+  $('result-container').innerHTML = `<div class="w-full space-y-4 text-left quiz-slide-enter">
+    <div class="banner"><h3 class="display text-2xl font-bold text-white">${l.t}</h3><p class="text-xs text-neutral-400 mt-1">${l.d}</p></div>
+    <div class="tile p-5 space-y-4">
+      <textarea id="sl-prompt" rows="6" class="field" placeholder="${l.ph}" oninput="slInput(this)" style="min-height:9rem">${esc(F.prompt)}</textarea>
+      <div id="sl-mode" class="${F.prompt.length >= 300 ? '' : 'hidden'} space-y-2 quiz-slide-enter"><p class="mono" style="color:var(--accent)">${l.q}</p>
+        <div class="grid sm:grid-cols-2 gap-2.5"><button class="mode-card ${F.mode !== 'verbatim' ? 'on' : ''}" data-m="shorten" onclick="slMode('shorten')"><p class="font-extrabold text-white text-sm">${l.shorten}</p><p class="text-xs text-neutral-400 mt-1">${l.shortenD}</p></button>
+        <button class="mode-card ${F.mode === 'verbatim' ? 'on' : ''}" data-m="verbatim" onclick="slMode('verbatim')"><p class="font-extrabold text-white text-sm">${l.verb}</p><p class="text-xs text-neutral-400 mt-1">${l.verbD}</p></button></div></div>
+      <div class="space-y-2"><div class="flex items-center justify-between"><span class="mono">${l.cnt}: <b id="sl-n" class="text-white">${F.count}</b></span><span id="sl-cost" class="mono"></span></div>
+        <input type="range" min="3" max="12" value="${F.count}" class="w-full" style="accent-color:#c8ff2e" oninput="slCount(this.value)"></div>
+      <div class="space-y-2"><p class="mono">${l.style}</p><input id="sl-style" class="field" placeholder="${l.stylePh}" value="${esc(F.styleText)}" oninput="F_style(this.value)"></div>
+      <button onclick="slNext()" class="btn-accent w-full py-3.5 text-sm">${l.next}</button>
+      ${last ? `<button onclick="slOpenLast()" class="btn-ghost w-full py-3 text-xs">${l.last}</button>` : ''}</div></div>`;
+  slCost();
+};
+window.F_style = v => { F.styleText = v; };
+window.slInput = el => { F.prompt = el.value; const m = $('sl-mode'); if (m) { m.classList.toggle('hidden', el.value.length < 300); if (el.value.length >= 300 && F.mode === 'write') F.mode = 'shorten'; if (el.value.length < 300) F.mode = 'write'; } };
+window.slMode = m => { F.mode = m; document.querySelectorAll('[data-m]').forEach(b => b.classList.toggle('on', b.dataset.m === m)); };
+window.slCount = v => { F.count = +v; $('sl-n').textContent = v; slCost(); };
+function slCost() {
+  const e = $('sl-cost'); if (!e) return; const l = L(), have = currentUser ? currentUser.tokens : 0, short = F.count > have;
+  e.innerHTML = `${l.cost}: <b style="color:${short ? 'var(--coral)' : 'var(--accent)'}">${F.count} ${l.tok}</b> · ${l.have} ${have}`;
+}
+window.slOpenLast = () => { try { D = { deck: JSON.parse(localStorage.getItem('lastDeck')), i: 0 }; viewDeck(); } catch (e) {} };
+
+// ---------- шаг 2: стили ----------
+window.slNext = async function () {
+  const l = L(); if (!currentUser) return checkAuth();
+  F.prompt = $('sl-prompt').value.trim(); F.styleText = $('sl-style').value.trim();
+  if (F.prompt.length < 3) { alert(l.short); return; }
+  if (F.mode === 'verbatim' && F.prompt.length < 300) { alert(l.needText); return; }
+  if (F.count > currentUser.tokens) { if (!subscribed()) showPaywall(); else alert(l.few + '. ' + l.fewD); return; }
+  if (F.styleText) return slGenerate(null);
+  const c = $('result-container');
+  c.innerHTML = `<div class="tile scan p-10 text-center w-full max-w-xl mx-auto"><div class="text-5xl mb-3" style="animation:pwBob 1.6s ease-in-out infinite">🎨</div><p class="mono" style="color:var(--accent)">${l.picking}</p><div class="dots mt-4"><i></i><i></i><i></i></div></div>`;
+  const fd = new FormData(); fd.append('topic', F.prompt.slice(0, 400)); fd.append('lang', selectedLang);
+  const res = await fetch('/api/slides/styles', { method: 'POST', body: fd }).catch(() => null); const data = res ? await res.json().catch(() => ({})) : {};
+  if (!res || !res.ok) { c.innerHTML = errorBox(data.error || 'Error') + `<button class="btn-ghost px-5 py-2.5 text-xs mt-3" onclick="openSlidesView()">${l.back}</button>`; return; }
+  window.__styles = data.styles; renderStyles();
+};
+function renderStyles(sel) {
+  const l = L(), st = window.__styles || [];
+  $('result-container').innerHTML = `<div class="w-full max-w-4xl mx-auto text-left space-y-4 quiz-slide-enter">
+    <div class="flex items-center justify-between"><div><h3 class="display text-2xl font-bold text-white">${l.pick}</h3><p class="text-xs text-neutral-400 mt-1">${l.pickD}</p></div><button class="mono hover:text-white" onclick="openSlidesView()">← ${l.back}</button></div>
+    <div class="grid sm:grid-cols-2 gap-3 max-h-[58vh] overflow-y-auto pr-1">${st.map((t, i) => `<div class="stl ${sel === i ? 'on' : ''}" style="animation:mdIn .5s ${i * 90}ms backwards" onclick="slPick(${i})"><div class="slw go" style="pointer-events:none">${slideHtml({ layout: 'bullets', title: t.name, bullets: [t.desc || ''], icon: '✨', left: { h: '', items: [] }, right: { h: '', items: [] }, stats: [], steps: [] }, t, i, st.length, false)}</div><p class="font-extrabold text-white text-sm px-2 pt-2">${esc(t.name)}</p><p class="text-[11px] text-neutral-400 px-2 pb-2">${esc(t.fh)} · ${esc(t.fb)}</p></div>`).join('')}</div>
+    <div class="flex flex-col sm:flex-row gap-2.5"><button id="sl-go" class="btn-accent flex-1 py-3.5 text-sm ${sel == null ? 'opacity-40 pointer-events-none' : ''}" onclick="slGenerate(window.__styles[${sel == null ? 0 : sel}])">${l.useIt.replace('{n}', F.count)}</button><button class="btn-ghost flex-1 py-3.5 text-sm" onclick="slGenerate(null)">${l.auto}</button></div></div>`;
+}
+window.slPick = i => renderStyles(i);
+
+// ---------- генерация ----------
+window.slGenerate = async function (theme) {
+  const l = L(), c = $('result-container'); const steps = [l.g1, l.g2, l.g3, l.g4]; let k = 0;
+  c.innerHTML = `<div class="w-full max-w-3xl mx-auto space-y-5 text-center"><div class="grid grid-cols-3 gap-3">${Array.from({ length: 6 }, (_, i) => `<div class="skel" style="animation-delay:${i * 0.15}s"></div>`).join('')}</div><p id="sl-step" class="mono" style="color:var(--accent)">${steps[0]}</p><div class="dots"><i></i><i></i><i></i></div></div>`;
+  const t = setInterval(() => { k = (k + 1) % steps.length; const e = $('sl-step'); if (e) e.textContent = steps[k]; }, 2600);
+  const r = await api('/api/slides', 'POST', { prompt: F.prompt, count: F.count, mode: F.mode, style_text: F.styleText, theme: theme || null, lang: selectedLang });
+  clearInterval(t);
+  if (!r.ok) { c.innerHTML = errorBox(r.data.error || 'Error') + `<button class="btn-ghost px-5 py-2.5 text-xs mt-3" onclick="openSlidesView()">${l.back}</button>`; return; }
+  setTokens(r.data.tokens_left); D = { deck: r.data.deck, i: 0 };
+  try { localStorage.setItem('lastDeck', JSON.stringify(D.deck)); } catch (e) {}
+  viewDeck(); confetti(40);
+};
+
+// ---------- просмотр / редактирование ----------
+function viewDeck() {
+  window.currentActiveView = 'slides-view'; const l = L(), dk = D.deck;
+  $('result-container').innerHTML = `<div class="w-full max-w-4xl mx-auto text-left space-y-4 quiz-slide-enter">
+    <div class="flex items-center justify-between gap-2 flex-wrap"><h3 class="display text-xl font-bold text-white truncate">${esc(dk.title)}</h3><span class="mono">${l.edit}</span></div>
+    <div id="sl-stage"></div>
+    <div class="flex items-center justify-between gap-2"><button class="btn-ghost px-5 py-2.5 text-sm" onclick="slGo(-1)">←</button><span id="sl-pos" class="mono"></span><button class="btn-ghost px-5 py-2.5 text-sm" onclick="slGo(1)">→</button></div>
+    <div id="sl-thumbs" class="flex gap-2 overflow-x-auto pb-2"></div>
+    <details class="tile p-4"><summary class="mono cursor-pointer">${l.notes}</summary><p id="sl-notes" class="text-sm text-neutral-300 mt-3 leading-relaxed"></p></details>
+    <div class="grid grid-cols-2 sm:grid-cols-4 gap-2"><button class="btn-accent py-3 text-xs" onclick="slPresent()">${l.present}</button><button class="btn-ghost py-3 text-xs" onclick="slPptx()">${l.pptx}</button><button class="btn-ghost py-3 text-xs" onclick="slPdf()">${l.pdf}</button><button class="btn-ghost py-3 text-xs" onclick="openSlidesView()">${l.newP}</button></div></div>`;
+  drawStage(); drawThumbs();
+}
+function drawStage() {
+  const dk = D.deck, s = dk.slides[D.i]; $('sl-stage').innerHTML = `<div class="slw go" id="sl-main">${slideHtml(s, dk.theme, D.i, dk.slides.length, true)}</div>`;
+  $('sl-pos').textContent = `${L().slide} ${D.i + 1} / ${dk.slides.length}`; $('sl-notes').textContent = s.notes || '—';
+  document.querySelectorAll('.thumb').forEach((t, k) => t.classList.toggle('on', k === D.i));
+  $('sl-main').addEventListener('focusout', e => { const p = e.target.dataset && e.target.dataset.p; if (p) { setPath(s, p, e.target.innerText.trim()); persist(); drawThumbs(); } });
+}
+function drawThumbs() {
+  const dk = D.deck; $('sl-thumbs').innerHTML = dk.slides.map((s, k) => `<div class="thumb ${k === D.i ? 'on' : ''}" onclick="slSet(${k})"><div class="slw">${slideHtml(s, dk.theme, k, dk.slides.length, false)}</div></div>`).join('');
+}
+const persist = () => { try { localStorage.setItem('lastDeck', JSON.stringify(D.deck)); } catch (e) {} };
+window.slSet = k => { D.i = k; drawStage(); };
+window.slGo = d => { D.i = Math.max(0, Math.min(D.deck.slides.length - 1, D.i + d)); drawStage(); };
+
+// ---------- показ, PPTX, PDF ----------
+let presOn = false;
+window.slPresent = function () {
+  const dk = D.deck, o = document.createElement('div'); o.id = 'pres'; document.body.appendChild(o); presOn = true;
+  const draw = () => { o.innerHTML = `<div class="slw go">${slideHtml(dk.slides[D.i], dk.theme, D.i, dk.slides.length, false)}</div>`; };
+  draw(); o.onclick = e => { if (e.clientX < innerWidth / 3) step(-1); else step(1); };
+  const step = d => { const n = D.i + d; if (n < 0) return; if (n >= dk.slides.length) return close(); D.i = n; draw(); };
+  const close = () => { presOn = false; o.remove(); document.removeEventListener('keydown', key); if (document.fullscreenElement) document.exitFullscreen().catch(() => {}); drawStage(); };
+  const key = e => { if (e.key === 'Escape') close(); else if (['ArrowRight', ' ', 'PageDown'].includes(e.key)) { e.preventDefault(); step(1); } else if (['ArrowLeft', 'PageUp'].includes(e.key)) step(-1); };
+  document.addEventListener('keydown', key); if (o.requestFullscreen) o.requestFullscreen().catch(() => {});
+};
+document.addEventListener('keydown', e => { if (presOn || window.currentActiveView !== 'slides-view' || !D || /INPUT|TEXTAREA/.test((e.target || {}).tagName || '') || (e.target && e.target.isContentEditable)) return; if (e.key === 'ArrowRight') slGo(1); else if (e.key === 'ArrowLeft') slGo(-1); });
+window.slPptx = async function () {
+  const btn = event && event.currentTarget; const old = btn && btn.textContent; if (btn) btn.textContent = L().saved;
+  try {
+    const res = await fetch('/api/slides/export', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(D.deck) });
+    if (!res.ok) { const d = await res.json().catch(() => ({})); alert(d.error || 'Error'); return; }
+    const a = document.createElement('a'); a.href = URL.createObjectURL(await res.blob()); a.download = (D.deck.title || 'presentation').replace(/[^\w\u0400-\u04FF-]+/g, '_').slice(0, 40) + '.pptx'; document.body.appendChild(a); a.click(); a.remove();
+  } finally { if (btn) btn.textContent = old; }
+};
+window.slPdf = function () {
+  const dk = D.deck; let p = $('print-deck'); if (!p) { p = document.createElement('div'); p.id = 'print-deck'; document.body.appendChild(p); }
+  p.innerHTML = dk.slides.map((s, k) => `<div class="slw">${slideHtml(s, dk.theme, k, dk.slides.length, false)}</div>`).join(''); setTimeout(() => print(), 250);
+};
+
+// ---------- история и меню ----------
+const _rd6 = window.readableContent;
+window.readableContent = it => {
+  if (it.type === 'slides') { const p = parseAIJson(it.content); if (p && Array.isArray(p.slides)) return p.slides.map((x, i) => `${i + 1}. ${x.title}\n${[...(x.bullets || []), x.subtitle || ''].filter(Boolean).map(b => '• ' + b).join('\n')}`).join('\n\n'); }
+  return _rd6(it);
+};
+const lab = () => { const e = $('btn-mode-slides'); if (e) e.textContent = L().mode; };
+const _cl6 = window.changeLanguage; window.changeLanguage = function () { _cl6(); lab(); };
 lab();
 })();
 </script>
