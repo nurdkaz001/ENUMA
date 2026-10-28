@@ -881,17 +881,26 @@ def career(body: CareerIn, user: dict = Depends(current_user)):
 
 
 # ==================== ПРЕЗЕНТАЦИИ (как Gamma) ====================
-SLIDE_FONTS = ["Inter", "Playfair Display", "Space Grotesk", "Montserrat", "Manrope", "Unbounded", "Lora", "Oswald"]
+SLIDE_FONTS = ["Inter", "Playfair Display", "Space Grotesk", "Montserrat", "Manrope", "Unbounded", "Lora", "Oswald", "Comfortaa", "Rubik"]
 SLIDE_LAYOUTS = {"title", "section", "bullets", "two_col", "stats", "quote", "timeline", "compare", "closing"}
-SLIDE_DECOS = {"orbs", "grid", "waves", "lines", "none"}
+SLIDE_DECOS = {"orbs", "grid", "waves", "lines", "diag", "blocks", "strips", "gradblock", "outline", "organic", "curve", "none"}
 HEX_RE = re.compile(r"^#[0-9a-fA-F]{6}$")
 
 
-def _T(name, desc, bg, bg2, tx, mut, ac, ac2, fh, fb, deco):
-    return {"name": name, "desc": desc, "bg": bg, "bg2": bg2, "tx": tx, "mut": mut, "ac": ac, "ac2": ac2, "fh": fh, "fb": fb, "deco": deco}
+def _T(name, desc, bg, bg2, tx, mut, ac, ac2, fh, fb, deco, ttl="grad"):
+    return {"name": name, "desc": desc, "bg": bg, "bg2": bg2, "tx": tx, "mut": mut, "ac": ac, "ac2": ac2, "fh": fh, "fb": fb, "deco": deco, "ttl": ttl}
 
 
 PRESET_STYLES = [
+    # --- по референсам пользователя ---
+    _T("Жёлтый контраст", "Солнечно-жёлтый фон, чёрные диагонали и крупные цифры — энергично, как у музыкальных сервисов", "#ffcc00", "#ffcc00", "#0a0a0a", "#4a4630", "#0a0a0a", "#0057d9", "Montserrat", "Montserrat", "diag", "solid"),
+    _T("Электро-синий", "Белый и лавандовый с яркими синими блоками — смело и по-деловому, для бизнес-планов", "#ffffff", "#eceaff", "#0a0a23", "#55557a", "#0000ff", "#8c8cff", "Montserrat", "Inter", "blocks", "solid"),
+    _T("Корпоративный бирюзовый", "Белый фон, косые голубые полосы — строгий стиль для отчётов и услуг", "#ffffff", "#eaf6fb", "#0b2a3a", "#4f6b7a", "#16a6d9", "#0b5d8a", "Montserrat", "Inter", "strips", "solid"),
+    _T("Бирюзовый градиент", "Обложки с плавным градиентом бирюзовый → синий и чистые белые слайды", "#ffffff", "#f1f8f8", "#0f2a2a", "#52706f", "#0e9f8e", "#1b5fb5", "Montserrat", "Inter", "gradblock", "solid"),
+    _T("Кофейный контур", "Тёплая бумага, терракота и мята, огромные буквы-контуры — дружелюбно и игриво", "#f3ece4", "#e7d6c4", "#3b2a20", "#7a6455", "#b9704a", "#3fae9f", "Comfortaa", "Manrope", "outline", "solid"),
+    _T("Персиковый flat", "Мягкие органические формы: персик, апельсин и зелень — как рисованная иллюстрация", "#fbe3d0", "#f6cdb0", "#4a2418", "#8a5a45", "#e8663d", "#7a9a3a", "Rubik", "Manrope", "organic", "solid"),
+    _T("Красно-чёрный модерн", "Белый, чёрный и красный с плавными изгибами — стильно и современно", "#ffffff", "#f3f3f3", "#111111", "#666666", "#d90429", "#111111", "Montserrat", "Inter", "curve", "solid"),
+    # --- классика ---
     _T("Neon Night", "Тёмный фон, неоновый лайм и фиолетовый — дерзко и современно", "#0b0b12", "#1a1a2e", "#f5f5f0", "#9a9aa8", "#c8ff2e", "#8b5cf6", "Space Grotesk", "Inter", "orbs"),
     _T("Clean Light", "Светлый минимализм, синий акцент — чисто и серьёзно", "#ffffff", "#eef2f7", "#0f172a", "#64748b", "#2563eb", "#06b6d4", "Manrope", "Inter", "lines"),
     _T("Editorial", "Тёплая бумага и засечки — как страница журнала", "#faf5ee", "#f0e4d3", "#1c1917", "#78716c", "#b45309", "#7c2d12", "Playfair Display", "Lora", "none"),
@@ -908,13 +917,14 @@ def clean_theme(t, fb=None) -> dict:
     out["fh"] = t.get("fh") if t.get("fh") in SLIDE_FONTS else fb["fh"]
     out["fb"] = t.get("fb") if t.get("fb") in SLIDE_FONTS else fb["fb"]
     out["deco"] = t.get("deco") if t.get("deco") in SLIDE_DECOS else fb["deco"]
+    out["ttl"] = t.get("ttl") if t.get("ttl") in ("solid", "grad") else fb.get("ttl", "grad")
     out["name"] = str(t.get("name") or fb["name"])[:40]
     out["desc"] = str(t.get("desc") or "")[:160]
     return out
 
 
 THEME_SCHEMA = ('{"name":"...","desc":"1 фраза о настроении","bg":"#hex","bg2":"#hex","tx":"#hex","mut":"#hex","ac":"#hex","ac2":"#hex",'
-                '"fh":"шрифт заголовков","fb":"шрифт текста","deco":"orbs|grid|waves|lines|none"}')
+                '"fh":"шрифт заголовков","fb":"шрифт текста","deco":"orbs|grid|waves|lines|diag|blocks|strips|gradblock|outline|organic|curve|none","ttl":"solid|grad"}')
 THEME_RULES = ("Правила темы: цвета только HEX из 6 символов; tx на bg и на bg2 с контрастом не ниже 4.5:1; mut — приглушённый текст, "
                "тоже читаемый; ac и ac2 — яркие акценты; шрифты ТОЛЬКО из списка: " + ", ".join(SLIDE_FONTS) + ".")
 
@@ -936,7 +946,7 @@ def slides_styles(topic: str = Form(""), lang: str = Form("ru"), user: dict = De
     except Exception:
         log.exception("slides_styles failed")
         styles = []
-    return {"styles": styles or PRESET_STYLES, "ai": bool(styles)}
+    return {"styles": styles, "presets": PRESET_STYLES, "ai": bool(styles)}
 
 
 class SlidesIn(BaseModel):
@@ -966,7 +976,8 @@ def paid_n(user: dict, n: int, fn):
 
 
 def _str(v, n=300) -> str:
-    return str(v if v is not None else "").strip()[:n]
+    t = str(v if v is not None else "").encode("utf-8", "ignore").decode("utf-8", "ignore")
+    return re.sub(r"[\x00-\x08\x0b\x0c\x0e-\x1f\ufffe\uffff]", "", t).strip()[:n]
 
 
 def _list(v, n, m=200):
@@ -1064,10 +1075,13 @@ def build_pptx(deck: dict) -> bytes:
     from pptx.util import Inches, Pt
 
     th = clean_theme(deck.get("theme"))
+    deco = th["deco"]
     rgb = lambda h: RGBColor.from_string(h[1:].upper())
     prs = Presentation()
     prs.slide_width, prs.slide_height = Inches(13.333), Inches(7.5)
     blank = prs.slide_layouts[6]
+    res = {"diag": 2.9, "blocks": 1.4, "curve": 2.7}.get(deco, 0)      # место справа под декор
+    AW = 11.6 - res
 
     def box(sl, x, y, w, h, text, size, color, bold=False, font=None, align=PP_ALIGN.LEFT, anchor=MSO_ANCHOR.TOP, italic=False):
         tf = sl.shapes.add_textbox(Inches(x), Inches(y), Inches(w), Inches(h)).text_frame
@@ -1092,54 +1106,92 @@ def build_pptx(deck: dict) -> bytes:
         sh.line.fill.background()
         return sh
 
+    def decorate(sl, big):
+        R, O, P = MSO_SHAPE.RECTANGLE, MSO_SHAPE.OVAL, MSO_SHAPE.PARALLELOGRAM
+        if deco == "diag":
+            shape(sl, P, 10.6 if big else 11.6, -0.1, 3.4 if big else 2.4, 7.7, th["ac"])
+            shape(sl, MSO_SHAPE.RIGHT_TRIANGLE, 12.2, 5.9, 1.2, 1.7, th["ac2"])
+        elif deco == "blocks":
+            shape(sl, R, 0, 0, 0.55, 7.5, th["ac2"])
+            shape(sl, R, 10.6 if big else 12.2, 0, 2.73 if big else 1.13, 7.5 if big else 1.13, th["ac"])
+        elif deco == "strips":
+            shape(sl, P, -0.5, 0, 1.6, 7.5, th["ac"])
+            shape(sl, MSO_SHAPE.RIGHT_TRIANGLE, 11.0, 5.0, 2.33, 2.5, th["ac2"])
+        elif deco == "gradblock":
+            shape(sl, R, 0, 0, 0.4, 7.5, th["ac"])
+            if not big:
+                shape(sl, O, 12.0, -0.8, 2.2, 2.2, th["ac2"])
+        elif deco == "outline":
+            shape(sl, O, 12.0, 0.6, 0.5, 0.5, th["ac2"])
+            shape(sl, O, 12.7, 1.1, 0.25, 0.25, th["ac"])
+        elif deco == "organic":
+            shape(sl, O, 11.0, -1.2, 3.4, 2.7, th["ac"])
+            shape(sl, O, -1.0, 6.2, 3.6, 2.6, th["ac2"])
+        elif deco == "curve":
+            shape(sl, O, 11.3, -0.9, 4.0, 9.3, th["ac"])
+            shape(sl, O, 12.3, -0.7, 1.8, 1.8, th["ac2"])
+        else:
+            shape(sl, R, 0, 0, 0.22, 7.5, th["ac"])
+            if big:
+                shape(sl, O, 9.6, -1.4, 5.2, 5.2, th["bg2"])
+                shape(sl, O, 10.9, 4.6, 3.4, 3.4, th["ac2"])
+
     for idx, d in enumerate(deck.get("slides") or []):
         sl = prs.slides.add_slide(blank)
-        sl.background.fill.solid()
-        sl.background.fill.fore_color.rgb = rgb(th["bg"])
-        shape(sl, MSO_SHAPE.RECTANGLE, 0, 0, 0.22, 7.5, th["ac"])
         lay, title = d.get("layout", "bullets"), d.get("title", "")
-        if lay in ("title", "closing", "section"):
-            shape(sl, MSO_SHAPE.OVAL, 9.6, -1.4, 5.2, 5.2, th["bg2"])
-            shape(sl, MSO_SHAPE.OVAL, 10.9, 4.6, 3.4, 3.4, th["ac2"])
-            box(sl, 1.0, 2.0, 9.0, 0.9, d.get("icon", ""), 44, th["ac"])
-            box(sl, 1.0, 2.9, 9.4, 2.0, title, 46 if lay != "section" else 52, th["tx"], True, th["fh"], anchor=MSO_ANCHOR.TOP)
+        big = lay in ("title", "closing", "section")
+        flip = deco == "gradblock" and big          # обложка с градиентным фоном
+        bg, tx, mut = (th["ac"], "#ffffff", "#e8f4ff") if flip else (th["bg"], th["tx"], th["mut"])
+        sl.background.fill.solid()
+        sl.background.fill.fore_color.rgb = rgb(bg)
+        decorate(sl, big)
+        left = 1.0 if deco not in ("blocks", "strips") else 1.4
+        if big:
+            tw = min(9.4, AW - 1.0) if res else 9.4
+            box(sl, left, 2.0, 9.0, 0.9, d.get("icon", ""), 44, th["ac"] if not flip else "#ffffff")
+            fs = 44 if len(title) <= 28 else 36
+            lines_n = max(1, -(-int(len(title) * 1.2) // max(1, int(tw * 72 / (fs * 0.78)))))
+            box(sl, left, 2.9, tw, 0.4 + lines_n * fs * 1.35 / 72, title, fs, tx, True, th["fh"])
+            sub_y = min(6.0, 2.9 + lines_n * fs * 1.35 / 72 + 0.3)
             if d.get("subtitle"):
-                box(sl, 1.0, 5.0, 9.0, 1.0, d["subtitle"], 22, th["mut"])
+                box(sl, left, sub_y, min(9.0, tw), 1.0, d["subtitle"], 22, mut)
             if lay == "closing" and d.get("bullets"):
-                box(sl, 1.0, 5.9, 11, 1.2, ["→ " + b for b in d["bullets"][:3]], 16, th["ac"])
+                box(sl, left, min(6.2, sub_y + 0.9), AW - 0.5, 1.0, ["→ " + b for b in d["bullets"][:3]], 16, th["ac"] if not flip else "#ffffff")
         else:
-            box(sl, 0.9, 0.55, 11.6, 1.3, title, 34, th["tx"], True, th["fh"], anchor=MSO_ANCHOR.MIDDLE)
-            shape(sl, MSO_SHAPE.RECTANGLE, 0.95, 1.9, 1.2, 0.07, th["ac"])
+            x0 = 0.9 if deco not in ("blocks", "strips") else 1.3
+            box(sl, x0, 0.55, AW - 0.2, 1.3, title, 34, tx, True, th["fh"], anchor=MSO_ANCHOR.MIDDLE)
+            shape(sl, MSO_SHAPE.RECTANGLE, x0 + 0.05, 1.9, 1.2, 0.07, th["ac"])
             if lay in ("two_col", "compare"):
+                w = (AW - 0.5) / 2
                 for j, side in enumerate(("left", "right")):
                     sd = d.get(side) or {}
-                    x = 0.9 + j * 6.0
-                    shape(sl, MSO_SHAPE.ROUNDED_RECTANGLE, x, 2.3, 5.6, 4.5, th["bg2"])
-                    box(sl, x + 0.3, 2.45, 5.0, 0.7, sd.get("h", ""), 22, th["ac"] if j == 0 else th["ac2"], True, th["fh"])
-                    box(sl, x + 0.3, 3.2, 5.0, 3.4, ["• " + t for t in sd.get("items", [])], 17, th["tx"])
+                    x = x0 + j * (w + 0.4)
+                    shape(sl, MSO_SHAPE.ROUNDED_RECTANGLE, x, 2.3, w, 4.5, th["bg2"])
+                    box(sl, x + 0.3, 2.45, w - 0.6, 0.7, sd.get("h", ""), 22, th["ac"] if j == 0 else th["ac2"], True, th["fh"])
+                    box(sl, x + 0.3, 3.2, w - 0.6, 3.4, ["• " + t for t in sd.get("items", [])], 17, tx)
             elif lay == "stats":
                 st = d.get("stats") or []
-                w = 11.4 / max(1, len(st))
+                w = (AW - 0.2) / max(1, len(st))
                 for j, it in enumerate(st):
-                    x = 0.9 + j * w
+                    x = x0 + j * w
                     shape(sl, MSO_SHAPE.ROUNDED_RECTANGLE, x, 2.5, w - 0.25, 3.6, th["bg2"])
                     box(sl, x + 0.1, 2.9, w - 0.45, 1.6, it["v"], 54, th["ac"] if j % 2 == 0 else th["ac2"], True, th["fh"], PP_ALIGN.CENTER)
-                    box(sl, x + 0.2, 4.6, w - 0.65, 1.3, it["l"], 16, th["tx"], align=PP_ALIGN.CENTER)
+                    box(sl, x + 0.2, 4.6, w - 0.65, 1.3, it["l"], 16, tx, align=PP_ALIGN.CENTER)
             elif lay == "quote":
-                box(sl, 1.2, 2.3, 10.8, 3.2, "“" + d.get("quote", "") + "”", 30, th["tx"], False, th["fh"], italic=True, anchor=MSO_ANCHOR.MIDDLE)
-                box(sl, 1.2, 5.7, 10.8, 0.8, "— " + d.get("author", ""), 18, th["ac"])
+                box(sl, x0 + 0.3, 2.3, AW - 0.8, 3.2, "“" + d.get("quote", "") + "”", 30, tx, False, th["fh"], italic=True, anchor=MSO_ANCHOR.MIDDLE)
+                box(sl, x0 + 0.3, 5.7, AW - 0.8, 0.8, "— " + d.get("author", ""), 18, th["ac"])
             elif lay == "timeline":
                 stp = d.get("steps") or []
-                w = 11.6 / max(1, len(stp))
-                shape(sl, MSO_SHAPE.RECTANGLE, 0.9, 3.05, 11.6, 0.05, th["mut"])
+                w = AW / max(1, len(stp))
+                shape(sl, MSO_SHAPE.RECTANGLE, x0, 3.05, AW - 0.2, 0.05, th["mut"])
                 for j, it in enumerate(stp):
-                    x = 0.9 + j * w
-                    dot = shape(sl, MSO_SHAPE.OVAL, x, 2.75, 0.65, 0.65, th["ac"] if j % 2 == 0 else th["ac2"])
+                    x = x0 + j * w
+                    shape(sl, MSO_SHAPE.OVAL, x, 2.75, 0.65, 0.65, th["ac"] if j % 2 == 0 else th["ac2"])
                     box(sl, x, 2.78, 0.65, 0.6, str(j + 1), 18, th["bg"], True, th["fh"], PP_ALIGN.CENTER, MSO_ANCHOR.MIDDLE)
-                    box(sl, x, 3.65, w - 0.2, 0.8, it["h"], 20, th["tx"], True, th["fh"])
-                    box(sl, x, 4.45, w - 0.25, 2.2, it["t"], 14, th["mut"])
+                    box(sl, x, 3.65, w - 0.2, 0.8, it["h"], 20, tx, True, th["fh"])
+                    box(sl, x, 4.45, w - 0.25, 2.2, it["t"], 14, mut)
             else:
-                box(sl, 0.95, 2.35, 11.4, 4.6, ["▸  " + b for b in d.get("bullets", [])], 22, th["tx"])
+                box(sl, x0 + 0.05, 2.35, AW - 0.4, 4.6, ["▸  " + b for b in d.get("bullets", [])], 22, tx)
         if d.get("notes"):
             sl.notes_slide.notes_text_frame.text = d["notes"]
     buf = io.BytesIO()
@@ -1149,13 +1201,23 @@ def build_pptx(deck: dict) -> bytes:
 
 @app.post("/api/slides/export")
 def slides_export(deck: dict = Body(...), user: dict = Depends(current_user)):
+    from urllib.parse import quote
     slides = [x for x in (clean_slide(sl) for sl in (deck.get("slides") or [])[:14]) if x]
     if not slides:
         raise HTTPException(400, "Пустая презентация.")
-    data = build_pptx({"theme": deck.get("theme"), "slides": slides})
-    name = re.sub(r"[^\w\-]+", "_", str(deck.get("title") or "presentation"))[:40] or "presentation"
-    return Response(data, media_type="application/vnd.openxmlformats-officedocument.presentationml.presentation",
-                    headers={"Content-Disposition": f'attachment; filename="{name}.pptx"'})
+    try:
+        data = build_pptx({"theme": deck.get("theme"), "slides": slides})
+    except ImportError:
+        log.exception("python-pptx is not installed")
+        raise HTTPException(500, "На сервере не установлен python-pptx. Добавьте его в requirements.txt и сделайте новый деплой.")
+    except Exception as e:
+        log.exception("pptx export failed")
+        raise HTTPException(500, f"Не удалось собрать PPTX ({type(e).__name__}).")
+    title = re.sub(r"[^\w\-]+", "_", str(deck.get("title") or "presentation")).strip("_")[:40] or "presentation"
+    ascii_name = re.sub(r"[^A-Za-z0-9_\-]+", "_", title).strip("_") or "presentation"
+    return Response(
+        data, media_type="application/vnd.openxmlformats-officedocument.presentationml.presentation",
+        headers={"Content-Disposition": f"attachment; filename=\"{ascii_name}.pptx\"; filename*=UTF-8''{quote(title)}.pptx"})
 
 
 # ==================== АДМИН-ПАНЕЛЬ (подписки) ====================
