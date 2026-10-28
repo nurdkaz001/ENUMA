@@ -7,3 +7,4 @@ PyJWT>=2.8
 httpx
 python-docx
 openpyxl
+python-pptx
