@@ -461,6 +461,7 @@
                         <button onclick="openTicketsView()" class="mode-row"><span class="num">07</span><span id="btn-mode-tickets">🎟️ 2. Билеттер (Ойын викторина)</span><span class="arrow">→</span></button>
                         <button onclick="openPlannerView()" class="mode-row"><span class="num">08</span><span id="btn-mode-planner">📅 Күнтізбе & ЖИ-Планер</span><span class="arrow">→</span></button>
                         <button onclick="openHumanizerView()" class="mode-row accent"><span class="num">09</span><span id="btn-mode-human">✍️ Мәтінді адамдандыру</span><span class="arrow">NEW</span></button>
+                        <button onclick="openCareerView()" class="mode-row accent"><span class="num">10</span><span id="btn-mode-career">🎓 11 сынып: түсу кеңесі</span><span class="arrow">NEW</span></button>
                     </div>
                 </div>
 
@@ -2386,6 +2387,115 @@ window.fetch = async (...a) => { const r = await _f(...a); if (r.status === 402)
 // последний токен потрачен — мягко показываем рекламу после результата
 let shownZero = false; const _st = window.setTokens;
 window.setTokens = function (n) { _st(n); if (n === 0 && !isSub() && !shownZero) { shownZero = true; setTimeout(showPaywall, 3000); } };
+})();
+</script>
+<script>
+(function () {
+const $ = id => document.getElementById(id), esc = escapeHtml;
+const Q = {
+  ru: { t: '🎓 Поступление после 11 класса', d: 'Ответь на 4 коротких вопроса и укажи балл ЕНТ — ИИ подберёт профессии и покажет, в какие вузы Казахстана у тебя больше шансов на грант.', start: 'Начать · 1 токен', hello: 'Привет! Я помогу выбрать профессию и вуз. Начнём?',
+    qs: [['Чем бы ты с удовольствием занимался в свободное время?', [['💻', 'Разбираться с компьютерами и кодом'], ['🎨', 'Рисовать, снимать, придумывать'], ['🧪', 'Ставить опыты, изучать природу'], ['🤝', 'Помогать людям, общаться'], ['📊', 'Считать, организовывать, руководить']]],
+      ['Какие предметы даются легче всего?', [['🔢', 'Математика и физика'], ['🧬', 'Биология и химия'], ['📚', 'Языки, история, литература'], ['🌍', 'География, право, общество'], ['⌨️', 'Информатика']]],
+      ['Где ты видишь себя на работе?', [['🖥️', 'За компьютером, в том числе удалённо'], ['🏥', 'С людьми: больница, школа, суд'], ['🏭', 'Лаборатория, стройка, производство'], ['🏢', 'Офис, бизнес, банки'], ['✈️', 'В поездках и за границей']]],
+      ['Что для тебя важнее всего?', [['💰', 'Высокий доход'], ['🔥', 'Интересное дело'], ['🛡️', 'Стабильность, госслужба'], ['🌐', 'Работа за рубежом'], ['🚀', 'Своё дело']]]],
+    sc: 'Твой балл ЕНТ', scD: 'Не сдавал? Укажи тот, на который рассчитываешь.', rural: 'Я из села (сельская квота)', lang: 'Язык обучения', go: 'Узнать шансы ✨', step: 'Вопрос', of: 'из',
+    l1: 'Анализирую твои ответы…', l2: 'Сверяю с проходными баллами…', l3: 'Подбираю вузы и профессии…', prof: 'Твой профиль', jobs: 'Подходящие профессии', unis: 'Куда поступать', tips: 'Советы по поступлению', retry: 'Пройти заново',
+    high: 'Высокие шансы', mid: 'Средние шансы', low: 'Сложно', below: 'Ниже порога', ver: '✓ Данные грантов', thr: 'Порог вуза', est: 'Ориентир ИИ', need: 'порог для участия', pass: 'проходной', yours: 'твой балл',
+    disc: 'Проходные баллы меняются каждый год и зависят от конкурса. Проверенные цифры — итоги конкурса грантов за', disc2: 'год, «ориентир ИИ» — оценка, её надо уточнить. Минимум для участия в конкурсе: 65 баллов — национальные вузы, 50 — остальные, 75 — педагогика и право, 70 — здравоохранение. В 2026 году пороги ряда вузов выросли.', src: 'Актуальные баллы: univision.kz' },
+  kz: { t: '🎓 11 сыныптан кейінгі түсу', d: '4 қысқа сұраққа жауап беріп, ЕНТ балыңды көрсет — ЖИ мамандықтарды таңдап, қай ЖОО-ға грантқа түсу мүмкіндігің жоғары екенін көрсетеді.', start: 'Бастау · 1 токен', hello: 'Сәлем! Мамандық пен ЖОО таңдауға көмектесемін. Бастаймыз ба?',
+    qs: [['Бос уақытта нені қуана істер едің?', [['💻', 'Компьютер мен кодты зерттеу'], ['🎨', 'Сурет салу, түсіру, ойлап табу'], ['🧪', 'Тәжірибе жасау, табиғатты зерттеу'], ['🤝', 'Адамдарға көмектесу, сөйлесу'], ['📊', 'Санау, ұйымдастыру, басқару']]],
+      ['Қай пәндер оңай беріледі?', [['🔢', 'Математика және физика'], ['🧬', 'Биология және химия'], ['📚', 'Тілдер, тарих, әдебиет'], ['🌍', 'География, құқық, қоғам'], ['⌨️', 'Информатика']]],
+      ['Жұмыста өзіңді қайда көресің?', [['🖥️', 'Компьютер алдында, қашықтан да'], ['🏥', 'Адамдармен: аурухана, мектеп, сот'], ['🏭', 'Зертхана, құрылыс, өндіріс'], ['🏢', 'Кеңсе, бизнес, банк'], ['✈️', 'Сапарларда, шетелде']]],
+      ['Сен үшін ең маңыздысы не?', [['💰', 'Жоғары табыс'], ['🔥', 'Қызықты іс'], ['🛡️', 'Тұрақтылық, мемлекеттік қызмет'], ['🌐', 'Шетелде жұмыс'], ['🚀', 'Өз ісім']]]],
+    sc: 'ЕНТ балың', scD: 'Тапсырмадың ба? Күтіп жүрген балыңды көрсет.', rural: 'Мен ауылданмын (ауыл квотасы)', lang: 'Оқыту тілі', go: 'Мүмкіндікті білу ✨', step: 'Сұрақ', of: '/',
+    l1: 'Жауаптарыңды талдаудамын…', l2: 'Өту баллдарымен салыстырудамын…', l3: 'ЖОО мен мамандық таңдаудамын…', prof: 'Сенің профилің', jobs: 'Сәйкес мамандықтар', unis: 'Қайда түсуге болады', tips: 'Түсу бойынша кеңестер', retry: 'Қайта өту',
+    high: 'Мүмкіндік жоғары', mid: 'Орташа мүмкіндік', low: 'Қиын', below: 'Шектен төмен', ver: '✓ Грант деректері', thr: 'ЖОО шегі', est: 'ЖИ бағасы', need: 'қатысу шегі', pass: 'өту балы', yours: 'сенің балың',
+    disc: 'Өту баллдары жыл сайын өзгереді. Расталған сандар — грант конкурсының нәтижелері,', disc2: 'жыл. «ЖИ бағасы» — болжам, оны нақтылау керек. Конкурсқа қатысу минимумы: ұлттық ЖОО — 65, қалғаны — 50, педагогика және құқық — 75, денсаулық сақтау — 70. 2026 жылы бірнеше ЖОО шегі өсті.', src: 'Өзекті баллдар: univision.kz' },
+  en: { t: '🎓 After 11th grade', d: 'Answer 4 short questions and enter your ENT score — the AI will suggest careers and show which Kazakhstan universities give you the best shot at a grant.', start: 'Start · 1 token', hello: 'Hi! I will help you choose a career and a university. Ready?',
+    qs: [['What would you happily do in your free time?', [['💻', 'Tinker with computers and code'], ['🎨', 'Draw, film, invent things'], ['🧪', 'Run experiments, study nature'], ['🤝', 'Help and talk to people'], ['📊', 'Count, organize, lead']]],
+      ['Which subjects come easiest?', [['🔢', 'Math and physics'], ['🧬', 'Biology and chemistry'], ['📚', 'Languages, history, literature'], ['🌍', 'Geography, law, social studies'], ['⌨️', 'Computer science']]],
+      ['Where do you see yourself at work?', [['🖥️', 'At a computer, maybe remote'], ['🏥', 'With people: hospital, school, court'], ['🏭', 'Lab, construction, factory'], ['🏢', 'Office, business, banks'], ['✈️', 'Travelling and abroad']]],
+      ['What matters most to you?', [['💰', 'High income'], ['🔥', 'Interesting work'], ['🛡️', 'Stability, public service'], ['🌐', 'Working abroad'], ['🚀', 'My own business']]]],
+    sc: 'Your ENT score', scD: 'Have not taken it yet? Enter the score you aim for.', rural: 'I am from a village (rural quota)', lang: 'Language of study', go: 'Find my chances ✨', step: 'Question', of: 'of',
+    l1: 'Analyzing your answers…', l2: 'Checking passing scores…', l3: 'Picking universities and careers…', prof: 'Your profile', jobs: 'Careers that fit', unis: 'Where to apply', tips: 'Admission tips', retry: 'Start over',
+    high: 'High chance', mid: 'Medium chance', low: 'Tough', below: 'Below threshold', ver: '✓ Grant data', thr: 'University threshold', est: 'AI estimate', need: 'entry threshold', pass: 'passing', yours: 'your score',
+    disc: 'Passing scores change every year. Verified numbers are grant competition results for', disc2: '; “AI estimate” is a rough guess you must double-check. Minimum to enter the grant competition: 65 — national universities, 50 — others, 75 — pedagogy and law, 70 — health. Several universities raised their thresholds in 2026.', src: 'Current scores: univision.kz' }
+};
+const L = () => Q[selectedLang] || Q.ru;
+const CRC = { high: '#c8ff2e', mid: '#ffd23f', low: '#ff5d73', below: '#8a8a85' };
+let S = null;
+
+window.openCareerView = function () {
+  window.currentActiveView = 'career'; S = { i: 0, ans: [], score: 90, rural: false, sl: 'kz' }; const l = L();
+  $('result-container').innerHTML = `<div class="w-full space-y-5 text-left quiz-slide-enter">
+    <div class="banner relative overflow-hidden"><h3 class="display text-2xl font-bold text-white">${l.t}</h3><p class="text-xs text-neutral-400 mt-1.5 max-w-xl">${l.d}</p></div>
+    <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">${[['140', 'max ЕНТ', '#c8ff2e'], ['65', 'national', '#8b5cf6'], ['50', 'other', '#3de0ff'], ['30%', 'rural quota', '#ff5d73']].map((x, i) => `<div class="tile p-4 text-center" style="animation:mdIn .5s ${i * 90}ms backwards"><p class="display text-3xl font-bold" style="color:${x[2]}">${x[0]}</p><p class="mono mt-1">${x[1]}</p></div>`).join('')}</div>
+    <button onclick="careerAsk()" class="btn-accent w-full py-4 text-sm">${l.start}</button></div>`;
+};
+window.careerAsk = function () {
+  if (!currentUser) return checkAuth(); const l = L();
+  if (S.i >= l.qs.length) return careerFinal();
+  const [q, opts] = l.qs[S.i];
+  $('result-container').innerHTML = `<div class="w-full max-w-2xl mx-auto text-left space-y-4">
+    <div class="flex items-center justify-between"><span class="mono">${l.step} ${S.i + 1} ${l.of} ${l.qs.length}</span><div class="flex gap-1.5">${l.qs.map((_, k) => `<i class="w-6 h-1.5 rounded-full ${k <= S.i ? 'bg-[#c8ff2e]' : 'bg-white/10'}"></i>`).join('')}</div></div>
+    <div class="ai-row" id="cq"><div class="ai-av">🎓</div><div class="ai-bubble"><span class="dots"><i></i><i></i><i></i></span></div></div>
+    <div id="copts" class="grid gap-2.5"></div></div>`;
+  setTimeout(() => {
+    const b = $('cq'); if (!b) return; b.querySelector('.ai-bubble').innerHTML = `<p class="font-bold text-white text-sm md-p">${esc(q)}</p>`;
+    $('copts').innerHTML = opts.map((o, k) => `<button class="qopt" style="animation:mdIn .45s ${k * 80}ms backwards" onclick="careerPick(${k})"><b style="font-size:1.1rem">${o[0]}</b><span>${esc(o[1])}</span></button>`).join('');
+  }, 650);
+};
+window.careerPick = k => { const l = L(), [q, o] = l.qs[S.i]; S.ans.push({ q, a: o[k][1] }); S.i++; careerAsk(); };
+function careerFinal() {
+  const l = L();
+  $('result-container').innerHTML = `<div class="w-full max-w-xl mx-auto text-left space-y-5 quiz-slide-enter">
+    <div class="ai-row"><div class="ai-av">🎓</div><div class="ai-bubble"><p class="font-bold text-white text-sm md-p">${l.sc}</p><p class="text-xs text-neutral-400">${l.scD}</p></div></div>
+    <div class="tile p-6 text-center space-y-4"><p id="sc-n" class="display text-7xl font-bold" style="background:linear-gradient(135deg,#c8ff2e,#3de0ff,#8b5cf6);-webkit-background-clip:text;background-clip:text;color:transparent">${S.score}</p>
+      <input id="sc-r" type="range" min="0" max="140" value="${S.score}" class="w-full" style="accent-color:#c8ff2e" oninput="careerScore(this.value)">
+      <div class="flex justify-between mono"><span>0</span><span>50</span><span>65</span><span>75</span><span>140</span></div></div>
+    <label class="tile p-4 flex items-center gap-3 cursor-pointer"><input type="checkbox" id="c-rural" style="accent-color:#c8ff2e;width:1.2rem;height:1.2rem" ${S.rural ? 'checked' : ''}><span class="text-sm text-white font-semibold">${l.rural}</span></label>
+    <div class="tile p-4 space-y-2"><p class="mono">${l.lang}</p><div class="flex gap-2">${['kz', 'ru', 'en'].map(x => `<button class="hz-tab ${S.sl === x ? 'on' : ''}" data-sl="${x}" onclick="careerLang('${x}')">${x.toUpperCase()}</button>`).join('')}</div></div>
+    <button onclick="careerRun()" class="btn-accent w-full py-4 text-sm">${l.go}</button></div>`;
+}
+window.careerScore = v => { S.score = +v; $('sc-n').textContent = v; };
+window.careerLang = x => { S.sl = x; document.querySelectorAll('[data-sl]').forEach(b => b.classList.toggle('on', b.dataset.sl === x)); };
+window.careerRun = async function () {
+  const l = L(); S.rural = $('c-rural').checked; const steps = [l.l1, l.l2, l.l3]; let k = 0;
+  $('result-container').innerHTML = `<div class="tile scan p-10 text-center w-full max-w-xl mx-auto"><div class="text-5xl mb-3" style="animation:pwBob 1.6s ease-in-out infinite">🎓</div><p id="cl-s" class="mono" style="color:var(--accent)">${steps[0]}</p><div class="dots mt-4"><i></i><i></i><i></i></div></div>`;
+  const t = setInterval(() => { k = (k + 1) % 3; const e = $('cl-s'); if (e) e.textContent = steps[k]; }, 1800);
+  const r = await api('/api/career', 'POST', { answers: S.ans, score: S.score, rural: S.rural, study_lang: S.sl, lang: selectedLang });
+  clearInterval(t);
+  if (!r.ok) { $('result-container').innerHTML = errorBox(r.data.error || 'Error') + `<button onclick="careerFinal2()" class="btn-ghost px-5 py-2.5 text-xs mt-3">←</button>`; return; }
+  setTokens(r.data.tokens_left); careerResult(r.data);
+};
+window.careerFinal2 = careerFinal;
+function careerResult(d) {
+  const l = L(), p = d.profile || {}, sc = d.score;
+  const tick = (v, c) => `<span class="absolute top-0 h-full" style="left:${v / 140 * 100}%;border-left:2px solid ${c}"><em class="absolute -top-5 -translate-x-1/2 mono not-italic" style="font-size:.6rem">${v}</em></span>`;
+  const badge = o => `<span class="chip" style="background:${CRC[o.chance]}22;border-color:${CRC[o.chance]}88;color:${CRC[o.chance]}">${({ high: '🟢', mid: '🟡', low: '🔴', below: '⚪' })[o.chance]} ${l[o.chance]}</span>`;
+  const src = o => o.verified ? (o.kind === 'threshold' ? l.thr : l.ver + ' ' + d.year) : l.est;
+  $('result-container').innerHTML = `<div class="w-full max-w-3xl mx-auto text-left space-y-5 quiz-slide-enter max-h-[75vh] overflow-y-auto pr-1">
+    <div class="price-card space-y-3"><div class="flex items-center gap-3"><span class="text-4xl" style="animation:pwBob 2s ease-in-out infinite">${esc(p.emoji || '🎓')}</span><div><p class="mono">${l.prof}</p><h3 class="display text-2xl font-bold text-white">${esc(p.title || '')}</h3></div></div>
+      <p class="text-sm text-neutral-300">${esc(p.summary || '')}</p><div class="flex flex-wrap gap-2">${(p.strengths || []).slice(0, 5).map((x, i) => `<span class="chip" style="background:rgba(139,92,246,.15);border-color:rgba(139,92,246,.5);color:#d9ccff;animation-delay:${i * 80}ms">${esc(x)}</span>`).join('')}</div></div>
+    <div class="tile p-5 pt-8"><div class="relative h-3 rounded-full" style="background:linear-gradient(90deg,#ff5d73,#ffd23f 45%,#c8ff2e)">${tick(50, '#fff6')}${tick(65, '#fff6')}${tick(75, '#fff6')}
+      <span id="pt" class="absolute -top-2 w-7 h-7 rounded-full flex items-center justify-center text-[10px] font-extrabold text-black" style="left:0;background:#fff;box-shadow:0 0 0 4px rgba(200,255,46,.4);transition:left 1.4s cubic-bezier(.2,.8,.2,1);transform:translateX(-50%)">${sc}</span></div></div>
+    <div><h4 class="mono mb-3" style="color:var(--cyan)">${l.jobs}</h4><div class="grid sm:grid-cols-2 gap-3">${(d.professions || []).map((x, i) => `<div class="tile p-4 space-y-1.5" style="animation:mdIn .5s ${i * 90}ms backwards"><p class="font-extrabold text-white text-sm">${esc(x.emoji || '💼')} ${esc(x.name || '')}</p><p class="text-xs text-neutral-400">${esc(x.what || '')}</p><p class="mono" style="color:var(--violet)">${esc(x.field || '')}</p></div>`).join('')}</div></div>
+    <div><h4 class="mono mb-3" style="color:var(--accent)">${l.unis}</h4><div class="space-y-3">${d.options.map((o, i) => `<div class="tile p-4 space-y-3" style="animation:mdIn .5s ${i * 80}ms backwards;border-color:${CRC[o.chance]}55">
+      <div class="flex items-start justify-between gap-2"><div class="min-w-0"><p class="font-extrabold text-white text-sm">${esc(o.uni)}</p><p class="text-xs text-neutral-400">${esc(o.program)}</p></div>${badge(o)}</div>
+      <div class="relative h-2 rounded-full bg-white/10"><i class="ub block h-full rounded-full" data-w="${Math.min(100, sc / 140 * 100)}" style="width:0;background:${CRC[o.chance]};transition:width 1.2s ${i * 80}ms cubic-bezier(.2,.8,.2,1)"></i><span class="absolute -top-1 h-4" style="left:${Math.min(100, o.ref_num / 140 * 100)}%;border-left:2px solid #fff"></span></div>
+      <div class="flex flex-wrap items-center gap-x-4 gap-y-1 mono"><span>${l.pass}: <b class="text-white">${o.ref}</b></span><span>${l.yours}: <b style="color:var(--accent)">${sc}</b></span><span>${l.need}: ${o.need}</span><span style="color:${o.verified ? 'var(--accent)' : '#ffb347'}">${src(o)}</span></div>
+      ${o.why ? `<p class="text-xs text-neutral-300">${esc(o.why)}</p>` : ''}</div>`).join('')}</div></div>
+    <div class="banner space-y-2"><h4 class="mono" style="color:var(--gold)">${l.tips}</h4><ul class="space-y-1.5 text-sm text-neutral-200 list-disc pl-5">${(d.tips || []).map(x => `<li>${esc(x)}</li>`).join('')}</ul>${d.note ? `<p class="text-xs text-neutral-400">${esc(d.note)}</p>` : ''}</div>
+    <p class="text-[11px] text-neutral-500 leading-relaxed">${l.disc} ${d.year} ${l.disc2}</p>
+    <div class="flex flex-col sm:flex-row gap-2.5"><a href="https://univision.kz" target="_blank" rel="noopener" class="btn-accent flex-1 py-3.5 text-sm text-center">${l.src}</a><button class="btn-ghost flex-1 py-3.5 text-sm" onclick="openCareerView()">${l.retry}</button></div></div>`;
+  requestAnimationFrame(() => requestAnimationFrame(() => { const e = $('pt'); if (e) e.style.left = sc / 140 * 100 + '%'; document.querySelectorAll('.ub').forEach(b => b.style.width = b.dataset.w + '%'); }));
+  if (d.options.some(o => o.chance === 'high')) confetti(50);
+}
+
+const LBL = { ru: '🎓 Поступление после 11 класса', kz: '🎓 11 сынып: түсу кеңесі', en: '🎓 After 11th grade' };
+const lab = () => { const e = $('btn-mode-career'); if (e) e.textContent = LBL[selectedLang] || LBL.ru; };
+const _cl5 = window.changeLanguage; window.changeLanguage = function () { _cl5(); lab(); };
+lab();
 })();
 </script>
 </body>
