@@ -18,7 +18,7 @@ import httpx
 import jwt
 from fastapi import Body, Depends, FastAPI, File, Form, Header, HTTPException, Request, UploadFile
 from fastapi.exceptions import RequestValidationError
-from fastapi.responses import HTMLResponse, JSONResponse
+from fastapi.responses import HTMLResponse, JSONResponse, Response
 from pydantic import BaseModel, Field
 import openpyxl
 from docx import Document
@@ -250,7 +250,7 @@ def telegram_reminder(task_title: str = Form(...), task_date: str = Form(""), us
 
 
 # ==================== ПОМОЩНИКИ ====================
-def ask_ai(prompt: str, json_mode: bool = False, max_tokens: int = 4000, temperature: float = 0.7) -> str:
+def ask_ai(prompt: str, json_mode: bool = False, max_tokens: int = 4000, temperature: float = 0.7, timeout: float = 90.0) -> str:
     """DeepSeek (OpenAI-совместимый API). В json_mode модель обязана вернуть JSON-ОБЪЕКТ."""
     payload = {
         "model": DEEPSEEK_MODEL,
@@ -264,7 +264,7 @@ def ask_ai(prompt: str, json_mode: bool = False, max_tokens: int = 4000, tempera
         r = httpx.post(
             f"{DEEPSEEK_BASE_URL}/chat/completions",
             headers={"Authorization": f"Bearer {DEEPSEEK_API_KEY}"},
-            json=payload, timeout=httpx.Timeout(90.0, connect=10.0),
+            json=payload, timeout=httpx.Timeout(timeout, connect=10.0),
         )
         if r.status_code == 402:
             log.error("DeepSeek: недостаточно средств на балансе")
@@ -878,6 +878,284 @@ def career(body: CareerIn, user: dict = Depends(current_user)):
         "options": options, "tips": (d.get("tips") or [])[:6], "note": str(d.get("note", ""))[:400],
         "year": KB_YEAR, "score": body.score, "tokens_left": left,
     }
+
+
+# ==================== ПРЕЗЕНТАЦИИ (как Gamma) ====================
+SLIDE_FONTS = ["Inter", "Playfair Display", "Space Grotesk", "Montserrat", "Manrope", "Unbounded", "Lora", "Oswald"]
+SLIDE_LAYOUTS = {"title", "section", "bullets", "two_col", "stats", "quote", "timeline", "compare", "closing"}
+SLIDE_DECOS = {"orbs", "grid", "waves", "lines", "none"}
+HEX_RE = re.compile(r"^#[0-9a-fA-F]{6}$")
+
+
+def _T(name, desc, bg, bg2, tx, mut, ac, ac2, fh, fb, deco):
+    return {"name": name, "desc": desc, "bg": bg, "bg2": bg2, "tx": tx, "mut": mut, "ac": ac, "ac2": ac2, "fh": fh, "fb": fb, "deco": deco}
+
+
+PRESET_STYLES = [
+    _T("Neon Night", "Тёмный фон, неоновый лайм и фиолетовый — дерзко и современно", "#0b0b12", "#1a1a2e", "#f5f5f0", "#9a9aa8", "#c8ff2e", "#8b5cf6", "Space Grotesk", "Inter", "orbs"),
+    _T("Clean Light", "Светлый минимализм, синий акцент — чисто и серьёзно", "#ffffff", "#eef2f7", "#0f172a", "#64748b", "#2563eb", "#06b6d4", "Manrope", "Inter", "lines"),
+    _T("Editorial", "Тёплая бумага и засечки — как страница журнала", "#faf5ee", "#f0e4d3", "#1c1917", "#78716c", "#b45309", "#7c2d12", "Playfair Display", "Lora", "none"),
+    _T("Aurora", "Глубокий бирюзовый и северное сияние — спокойно и дорого", "#042f2e", "#134e4a", "#ecfeff", "#99c6c3", "#5eead4", "#a78bfa", "Montserrat", "Inter", "waves"),
+    _T("Sunset Pop", "Сливовый закат с розовым и золотым — ярко и смело", "#1f1235", "#4a1942", "#fff7ed", "#c9b3c9", "#fb7185", "#fbbf24", "Unbounded", "Manrope", "orbs"),
+    _T("Corporate Navy", "Тёмно-синий и голубой — для бизнеса и защиты проектов", "#0f172a", "#1e3a8a", "#f8fafc", "#a5b4cf", "#38bdf8", "#f59e0b", "Montserrat", "Inter", "grid"),
+]
+
+
+def clean_theme(t, fb=None) -> dict:
+    fb = fb or PRESET_STYLES[0]
+    t = t if isinstance(t, dict) else {}
+    out = {k: (t.get(k) if HEX_RE.match(str(t.get(k, ""))) else fb[k]) for k in ("bg", "bg2", "tx", "mut", "ac", "ac2")}
+    out["fh"] = t.get("fh") if t.get("fh") in SLIDE_FONTS else fb["fh"]
+    out["fb"] = t.get("fb") if t.get("fb") in SLIDE_FONTS else fb["fb"]
+    out["deco"] = t.get("deco") if t.get("deco") in SLIDE_DECOS else fb["deco"]
+    out["name"] = str(t.get("name") or fb["name"])[:40]
+    out["desc"] = str(t.get("desc") or "")[:160]
+    return out
+
+
+THEME_SCHEMA = ('{"name":"...","desc":"1 фраза о настроении","bg":"#hex","bg2":"#hex","tx":"#hex","mut":"#hex","ac":"#hex","ac2":"#hex",'
+                '"fh":"шрифт заголовков","fb":"шрифт текста","deco":"orbs|grid|waves|lines|none"}')
+THEME_RULES = ("Правила темы: цвета только HEX из 6 символов; tx на bg и на bg2 с контрастом не ниже 4.5:1; mut — приглушённый текст, "
+               "тоже читаемый; ac и ac2 — яркие акценты; шрифты ТОЛЬКО из списка: " + ", ".join(SLIDE_FONTS) + ".")
+
+
+@app.post("/api/slides/styles")
+def slides_styles(topic: str = Form(""), lang: str = Form("ru"), user: dict = Depends(current_user)):
+    """Предлагает варианты оформления под тему. Бесплатно, с ограничением частоты."""
+    rate_limit(f"styles:{user['id']}", 8, 600)
+    prompt = (
+        "Ты — арт-директор презентаций уровня Gamma и Pitch. Предложи 5 РАЗНЫХ красивых стилей оформления для презентации на тему: "
+        f"«{topic.strip()[:400] or 'общая тема'}». Стили должны отличаться настроением (тёмный/светлый, строгий/дерзкий/тёплый) "
+        "и подходить теме и аудитории. " + THEME_RULES + " Названия коротко и красиво (1–3 слова). " + lang_line(lang) +
+        ' Верни ТОЛЬКО JSON: {"styles":[' + THEME_SCHEMA + "]}"
+    )
+    try:
+        data = parse_json(ask_ai(prompt, json_mode=True, max_tokens=2000, temperature=1.0))
+        items = data.get("styles") if isinstance(data, dict) else None
+        styles = [clean_theme(x, PRESET_STYLES[i % len(PRESET_STYLES)]) for i, x in enumerate((items or [])[:5]) if isinstance(x, dict)]
+    except Exception:
+        log.exception("slides_styles failed")
+        styles = []
+    return {"styles": styles or PRESET_STYLES, "ai": bool(styles)}
+
+
+class SlidesIn(BaseModel):
+    prompt: str = Field(min_length=3, max_length=12000)
+    count: int = Field(ge=3, le=12)
+    mode: str = "write"            # write | shorten | verbatim
+    style_text: str = Field(default="", max_length=400)
+    theme: Optional[dict] = None
+    lang: str = "ru"
+
+
+def paid_n(user: dict, n: int, fn):
+    """Списывает n токенов (по одному за слайд). При ошибке всё возвращается."""
+    if int(user.get("tokens", 0)) < n:
+        raise HTTPException(402, f"Нужно {n} токенов, у вас {int(user.get('tokens', 0))}. Выберите меньше слайдов или откройте Premium.")
+    spent, left = 0, 0
+    try:
+        for _ in range(n):
+            left = spend_token(user["id"])
+            spent += 1
+        result = fn()
+    except Exception:
+        for _ in range(spent):
+            refund_token(user["id"])
+        raise
+    return result, left, spent
+
+
+def _str(v, n=300) -> str:
+    return str(v if v is not None else "").strip()[:n]
+
+
+def _list(v, n, m=200):
+    return [_str(x, m) for x in (v if isinstance(v, list) else [])[:n] if _str(x, m)]
+
+
+def clean_slide(sl: dict) -> Optional[dict]:
+    if not isinstance(sl, dict):
+        return None
+    layout = sl.get("layout") if sl.get("layout") in SLIDE_LAYOUTS else "bullets"
+    out = {"layout": layout, "title": _str(sl.get("title"), 140), "subtitle": _str(sl.get("subtitle"), 220), "icon": _str(sl.get("icon"), 8) or "✨",
+           "notes": _str(sl.get("notes"), 900), "bullets": _list(sl.get("bullets"), 6, 260)}
+    for side in ("left", "right"):
+        b = sl.get(side) if isinstance(sl.get(side), dict) else {}
+        out[side] = {"h": _str(b.get("h"), 80), "items": _list(b.get("items"), 5, 220)}
+    out["stats"] = [{"v": _str(x.get("v"), 14), "l": _str(x.get("l"), 90)} for x in (sl.get("stats") or [])[:4] if isinstance(x, dict) and _str(x.get("v"), 14)]
+    out["steps"] = [{"h": _str(x.get("h"), 60), "t": _str(x.get("t"), 160)} for x in (sl.get("steps") or [])[:5] if isinstance(x, dict) and _str(x.get("h"), 60)]
+    out["quote"], out["author"] = _str(sl.get("quote"), 400), _str(sl.get("author"), 80)
+    # слайд без содержимого под свой layout → безопасный bullets
+    need = {"stats": out["stats"], "timeline": out["steps"], "quote": out["quote"], "two_col": out["left"]["items"] or out["right"]["items"],
+            "compare": out["left"]["items"] or out["right"]["items"]}
+    if layout in need and not need[layout]:
+        out["layout"] = "bullets"
+    return out
+
+
+MODE_RULES = {
+    "write": "РЕЖИМ ТЕКСТА: пользователь дал идею или тему — ты сам пишешь весь контент: точно, конкретно, без воды.",
+    "shorten": ("РЕЖИМ ТЕКСТА: пользователь дал готовый текст — СОКРАТИ его до тезисов. Сохрани все ключевые факты, числа, имена и порядок "
+                "мыслей, убери повторы и воду. Пункт — до 12 слов."),
+    "verbatim": ("РЕЖИМ ТЕКСТА: пользователь дал готовый текст — ОСТАВЬ ЕГО КАК ЕСТЬ. Запрещено перефразировать, сокращать, "
+                 "исправлять или добавлять слова. Раздели текст на слайды по смыслу и копируй предложения и абзацы ДОСЛОВНО в bullets/items; "
+                 "ты придумываешь только заголовок слайда, подзаголовок и layout. Если текст длиннее слайда — переноси остаток на следующий слайд."),
+}
+
+
+@app.post("/api/slides")
+def slides_generate(body: SlidesIn, user: dict = Depends(current_user)):
+    n = body.count
+    mode = body.mode if body.mode in MODE_RULES else "write"
+    preset = clean_theme(body.theme) if isinstance(body.theme, dict) else None
+    theme_rule = ("ТЕМА ОФОРМЛЕНИЯ уже выбрана пользователем — НЕ придумывай её, в поле theme верни пустой объект {}."
+                  if preset else
+                  "ТЕМА ОФОРМЛЕНИЯ: придумай её сам" + (f" по описанию стиля пользователя: «{body.style_text.strip()}»" if body.style_text.strip()
+                                                       else ", подобрав под тему и аудиторию") + ". " + THEME_RULES + " Формат theme: " + THEME_SCHEMA)
+    prompt = (
+        "Ты — главный дизайнер презентаций и сторителлер уровня TED, Apple и Gamma. Создай презентацию РОВНО из "
+        f"{n} слайдов (ни больше, ни меньше).\n\n"
+        f"ЗАПРОС ПОЛЬЗОВАТЕЛЯ:\n<<<\n{body.prompt.strip()}\n>>>\n\n{MODE_RULES[mode]}\n\n"
+        "ДРАМАТУРГИЯ:\n"
+        "• Слайд 1 — layout title: цепляющее название (до 8 слов) и подзаголовок: для кого и зачем.\n"
+        f"• Слайд {n} — layout closing: сильный вывод или конкретный призыв к действию. Не «Спасибо за внимание».\n"
+        "• Остальные: одна мысль — один слайд. Заголовок — это ВЫВОД, а не тема («Выручка выросла на 40% за год», а не «Выручка»), до 9 слов.\n"
+        "• Логика: проблема → решение → доказательства → шаги, либо хронология. Без повторов между слайдами. "
+        "Для длинных презентаций вставляй section для смены главы.\n\n"
+        "LAYOUT (подбирай под смысл, чередуй, не ставь один и тот же больше двух раз подряд):\n"
+        "title (обложка) · section (разделитель глав: только title и subtitle) · bullets (3–5 пунктов в bullets) · "
+        "two_col (две колонки left и right: h — заголовок, items — 2–4 пункта) · stats (2–4 крупных факта в stats: v — короткое значение "
+        "вроде «85%» или «3×», l — подпись) · quote (цитата в quote и author) · timeline (3–5 шагов в steps: h — короткая метка, t — пояснение) · "
+        "compare (сравнение «до/после» или «A/B»: left и right) · closing (финал: title, subtitle, можно bullets из 2–3 шагов).\n\n"
+        "КАЧЕСТВО ТЕКСТА:\n"
+        "• Конкретика вместо общих слов: примеры, имена, механика. НИКОГДА не выдумывай цифры, даты и цитаты: если данных нет — "
+        "формулируй качественно, а stats и quote используй только когда они действительно есть в запросе или общеизвестны.\n"
+        "• Пункты начинай с сильного глагола или факта, без вводных слов и штампов («важно отметить», «в современном мире», «таким образом»).\n"
+        "• Параллельная структура пунктов, без точек в конце. Не более 5 пунктов на слайд.\n"
+        "• icon — один эмодзи, точно отражающий смысл слайда. notes — 2–3 предложения того, что докладчик говорит вслух "
+        "(в режиме «как есть» notes содержат только пояснение для докладчика, а не изменённый текст слайда).\n\n"
+        f"{theme_rule}\n{lang_line(body.lang)}\n\n"
+        'Верни ТОЛЬКО JSON: {"title":"название презентации","theme":{...},"slides":[{"layout":"bullets","title":"...","subtitle":"","icon":"🚀",'
+        '"bullets":["..."],"left":{"h":"","items":[]},"right":{"h":"","items":[]},"stats":[{"v":"","l":""}],'
+        '"steps":[{"h":"","t":""}],"quote":"","author":"","notes":"..."}]}'
+    )
+
+    def run():
+        raw = parse_json(ask_ai(prompt, json_mode=True, max_tokens=8000, temperature=0.8, timeout=170.0))
+        slides = [x for x in (clean_slide(sl) for sl in (raw.get("slides") if isinstance(raw, dict) else None) or []) if x]
+        if len(slides) < max(3, n - 1):
+            raise HTTPException(502, "ИИ вернул неполную презентацию. Попробуйте ещё раз — токены вернутся.")
+        theme = preset or clean_theme((raw or {}).get("theme"))
+        return {"title": _str(raw.get("title"), 120) or slides[0]["title"], "theme": theme, "slides": slides[:n]}
+
+    deck, left, spent = paid_n(user, n, run)
+    extra = spent - len(deck["slides"])      # ИИ дал меньше слайдов — возвращаем разницу
+    for _ in range(max(0, extra)):
+        refund_token(user["id"]); left += 1
+    save_generation(user["id"], "slides", deck["title"], json.dumps(deck, ensure_ascii=False))
+    return {"deck": deck, "tokens_left": left, "charged": len(deck["slides"])}
+
+
+def build_pptx(deck: dict) -> bytes:
+    from pptx import Presentation
+    from pptx.dml.color import RGBColor
+    from pptx.enum.shapes import MSO_SHAPE
+    from pptx.enum.text import MSO_ANCHOR, PP_ALIGN
+    from pptx.util import Inches, Pt
+
+    th = clean_theme(deck.get("theme"))
+    rgb = lambda h: RGBColor.from_string(h[1:].upper())
+    prs = Presentation()
+    prs.slide_width, prs.slide_height = Inches(13.333), Inches(7.5)
+    blank = prs.slide_layouts[6]
+
+    def box(sl, x, y, w, h, text, size, color, bold=False, font=None, align=PP_ALIGN.LEFT, anchor=MSO_ANCHOR.TOP, italic=False):
+        tf = sl.shapes.add_textbox(Inches(x), Inches(y), Inches(w), Inches(h)).text_frame
+        tf.word_wrap = True
+        tf.vertical_anchor = anchor
+        lines = text if isinstance(text, list) else [text]
+        for i, line in enumerate(lines):
+            para = tf.paragraphs[0] if i == 0 else tf.add_paragraph()
+            para.alignment = align
+            para.space_after = Pt(8)
+            run = para.add_run()
+            run.text = line
+            run.font.size, run.font.bold, run.font.italic = Pt(size), bold, italic
+            run.font.color.rgb = rgb(color)
+            run.font.name = font or th["fb"]
+        return tf
+
+    def shape(sl, kind, x, y, w, h, color):
+        sh = sl.shapes.add_shape(kind, Inches(x), Inches(y), Inches(w), Inches(h))
+        sh.fill.solid()
+        sh.fill.fore_color.rgb = rgb(color)
+        sh.line.fill.background()
+        return sh
+
+    for idx, d in enumerate(deck.get("slides") or []):
+        sl = prs.slides.add_slide(blank)
+        sl.background.fill.solid()
+        sl.background.fill.fore_color.rgb = rgb(th["bg"])
+        shape(sl, MSO_SHAPE.RECTANGLE, 0, 0, 0.22, 7.5, th["ac"])
+        lay, title = d.get("layout", "bullets"), d.get("title", "")
+        if lay in ("title", "closing", "section"):
+            shape(sl, MSO_SHAPE.OVAL, 9.6, -1.4, 5.2, 5.2, th["bg2"])
+            shape(sl, MSO_SHAPE.OVAL, 10.9, 4.6, 3.4, 3.4, th["ac2"])
+            box(sl, 1.0, 2.0, 9.0, 0.9, d.get("icon", ""), 44, th["ac"])
+            box(sl, 1.0, 2.9, 9.4, 2.0, title, 46 if lay != "section" else 52, th["tx"], True, th["fh"], anchor=MSO_ANCHOR.TOP)
+            if d.get("subtitle"):
+                box(sl, 1.0, 5.0, 9.0, 1.0, d["subtitle"], 22, th["mut"])
+            if lay == "closing" and d.get("bullets"):
+                box(sl, 1.0, 5.9, 11, 1.2, ["→ " + b for b in d["bullets"][:3]], 16, th["ac"])
+        else:
+            box(sl, 0.9, 0.55, 11.6, 1.3, title, 34, th["tx"], True, th["fh"], anchor=MSO_ANCHOR.MIDDLE)
+            shape(sl, MSO_SHAPE.RECTANGLE, 0.95, 1.9, 1.2, 0.07, th["ac"])
+            if lay in ("two_col", "compare"):
+                for j, side in enumerate(("left", "right")):
+                    sd = d.get(side) or {}
+                    x = 0.9 + j * 6.0
+                    shape(sl, MSO_SHAPE.ROUNDED_RECTANGLE, x, 2.3, 5.6, 4.5, th["bg2"])
+                    box(sl, x + 0.3, 2.45, 5.0, 0.7, sd.get("h", ""), 22, th["ac"] if j == 0 else th["ac2"], True, th["fh"])
+                    box(sl, x + 0.3, 3.2, 5.0, 3.4, ["• " + t for t in sd.get("items", [])], 17, th["tx"])
+            elif lay == "stats":
+                st = d.get("stats") or []
+                w = 11.4 / max(1, len(st))
+                for j, it in enumerate(st):
+                    x = 0.9 + j * w
+                    shape(sl, MSO_SHAPE.ROUNDED_RECTANGLE, x, 2.5, w - 0.25, 3.6, th["bg2"])
+                    box(sl, x + 0.1, 2.9, w - 0.45, 1.6, it["v"], 54, th["ac"] if j % 2 == 0 else th["ac2"], True, th["fh"], PP_ALIGN.CENTER)
+                    box(sl, x + 0.2, 4.6, w - 0.65, 1.3, it["l"], 16, th["tx"], align=PP_ALIGN.CENTER)
+            elif lay == "quote":
+                box(sl, 1.2, 2.3, 10.8, 3.2, "“" + d.get("quote", "") + "”", 30, th["tx"], False, th["fh"], italic=True, anchor=MSO_ANCHOR.MIDDLE)
+                box(sl, 1.2, 5.7, 10.8, 0.8, "— " + d.get("author", ""), 18, th["ac"])
+            elif lay == "timeline":
+                stp = d.get("steps") or []
+                w = 11.6 / max(1, len(stp))
+                shape(sl, MSO_SHAPE.RECTANGLE, 0.9, 3.05, 11.6, 0.05, th["mut"])
+                for j, it in enumerate(stp):
+                    x = 0.9 + j * w
+                    dot = shape(sl, MSO_SHAPE.OVAL, x, 2.75, 0.65, 0.65, th["ac"] if j % 2 == 0 else th["ac2"])
+                    box(sl, x, 2.78, 0.65, 0.6, str(j + 1), 18, th["bg"], True, th["fh"], PP_ALIGN.CENTER, MSO_ANCHOR.MIDDLE)
+                    box(sl, x, 3.65, w - 0.2, 0.8, it["h"], 20, th["tx"], True, th["fh"])
+                    box(sl, x, 4.45, w - 0.25, 2.2, it["t"], 14, th["mut"])
+            else:
+                box(sl, 0.95, 2.35, 11.4, 4.6, ["▸  " + b for b in d.get("bullets", [])], 22, th["tx"])
+        if d.get("notes"):
+            sl.notes_slide.notes_text_frame.text = d["notes"]
+    buf = io.BytesIO()
+    prs.save(buf)
+    return buf.getvalue()
+
+
+@app.post("/api/slides/export")
+def slides_export(deck: dict = Body(...), user: dict = Depends(current_user)):
+    slides = [x for x in (clean_slide(sl) for sl in (deck.get("slides") or [])[:14]) if x]
+    if not slides:
+        raise HTTPException(400, "Пустая презентация.")
+    data = build_pptx({"theme": deck.get("theme"), "slides": slides})
+    name = re.sub(r"[^\w\-]+", "_", str(deck.get("title") or "presentation"))[:40] or "presentation"
+    return Response(data, media_type="application/vnd.openxmlformats-officedocument.presentationml.presentation",
+                    headers={"Content-Disposition": f'attachment; filename="{name}.pptx"'})
 
 
 # ==================== АДМИН-ПАНЕЛЬ (подписки) ====================
