@@ -747,6 +747,139 @@ def humanize(text: str = Form(...), lang: str = Form("ru"), user: dict = Depends
     return {"result": d, "tokens_left": left}
 
 
+# ==================== ПОСТУПЛЕНИЕ ПОСЛЕ 11 КЛАССА ====================
+# Проверенные данные: общий конкурс на грант 2025 (минимальный балл получивших грант) по univision.kz,
+# официальный сайт КБТУ и заявление МНВО. kind: grant — проходной на грант; threshold — порог вуза (реальный проходной обычно выше).
+# Обновляйте раз в год после публикации итогов конкурса грантов.
+KB_YEAR = 2025
+KB = {
+    "kbtu_it": ("КБТУ", "Информационные технологии", 110, "grant", "other", True),
+    "kaznu_it": ("КазНУ им. аль-Фараби", "Информационные технологии (порог вуза)", 90, "threshold", "other", True),
+    "satbayev_it": ("Satbayev University", "Информационные технологии (порог вуза)", 85, "threshold", "other", True),
+    "narxoz_it": ("Университет Нархоз", "Информационные технологии (порог вуза)", 105, "threshold", "other", False),
+    "satbayev_it_rural": ("Satbayev University", "Информационные технологии, сельская квота", 75, "grant", "other", True),
+    "astana_med": ("Медицинский университет Астана", "Общая медицина", 128, "grant", "health", True),
+    "astana_ped": ("Медицинский университет Астана", "Педиатрия", 122, "grant", "health", True),
+    "astana_pharm": ("Медицинский университет Астана", "Фармация", 126, "grant", "health", True),
+    "kaznmu_med": ("КазНМУ им. Асфендиярова", "Общая медицина", 124, "grant", "health", True),
+    "kaznmu_ped": ("КазНМУ им. Асфендиярова", "Педиатрия", 113, "grant", "health", True),
+    "kaznmu_pharm": ("КазНМУ им. Асфендиярова", "Фармация", 112, "grant", "health", True),
+    "kaznmu_tfp": ("КазНМУ им. Асфендиярова", "Технология фармацевтического производства", 75, "grant", "health", True),
+    "semey_med": ("Медицинский университет Семей", "Общая медицина", 112, "grant", "health", True),
+    "semey_ped": ("Медицинский университет Семей", "Педиатрия", 105, "grant", "health", True),
+    "semey_pharm": ("Медицинский университет Семей", "Фармация", 107, "grant", "health", True),
+    "zkmu_med": ("ЗКМУ им. Оспанова (Актобе)", "Общая медицина", 112, "grant", "health", True),
+    "zkmu_ped": ("ЗКМУ им. Оспанова (Актобе)", "Педиатрия", 106, "grant", "health", True),
+    "krmu_med": ("Казахстанско-Российский медицинский университет", "Общая медицина", 112, "grant", "health", False),
+    "skma_med": ("Южно-Казахстанская медицинская академия (Шымкент)", "Общая медицина", 113, "grant", "health", True),
+    "skma_ped": ("Южно-Казахстанская медицинская академия (Шымкент)", "Педиатрия", 105, "grant", "health", True),
+    "skma_tfp": ("Южно-Казахстанская медицинская академия (Шымкент)", "Технология фармацевтического производства", 89, "grant", "health", True),
+    "kaznu_journ": ("КазНУ им. аль-Фараби", "Журналистика", 115, "grant", "other", True),
+    "kaznu_philo": ("КазНУ им. аль-Фараби", "Филология", 118, "grant", "other", True),
+    "kaznu_transl": ("КазНУ им. аль-Фараби", "Переводческое дело", 111, "grant", "other", True),
+    "kaznu_media": ("КазНУ им. аль-Фараби", "Аудиовизуальные средства и медиа", 122, "grant", "other", True),
+    "kaznu_psy": ("КазНУ им. аль-Фараби", "Психология", 100, "grant", "other", True),
+    "kaznu_law": ("КазНУ им. аль-Фараби", "Право", 90, "grant", "law", True),
+    "kaznu_fin": ("КазНУ им. аль-Фараби", "Финансы, экономика, банковское дело", 98, "grant", "other", True),
+    "kaznu_mgmt": ("КазНУ им. аль-Фараби", "Менеджмент и управление", 114, "grant", "other", True),
+    "kaznu_mkt": ("КазНУ им. аль-Фараби", "Маркетинг и реклама", 89, "grant", "other", True),
+    "kaznu_math": ("КазНУ им. аль-Фараби", "Математика и статистика", 95, "grant", "other", True),
+    "kaznu_bio": ("КазНУ им. аль-Фараби", "Биологические науки", 81, "grant", "other", True),
+    "kaznu_chem": ("КазНУ им. аль-Фараби", "Химия", 80, "grant", "other", True),
+    "kaznu_phys": ("КазНУ им. аль-Фараби", "Физика", 70, "grant", "other", True),
+    "kaznu_pol": ("КазНУ им. аль-Фараби", "Политология", 86, "grant", "other", True),
+    "kaznu_hist": ("КазНУ им. аль-Фараби", "История", 93, "grant", "other", True),
+    "ped_math": ("Педагогические вузы РК", "Учитель математики (данные МНВО)", 124, "grant", "pedagogy", True),
+}
+KB_PROMPT = "\n".join(f"{k} | {v[0]} | {v[1]} | {v[2]} ({'проходной на грант' if v[3] == 'grant' else 'порог вуза'})" for k, v in KB.items())
+
+
+def min_threshold(field: str, national: bool) -> int:
+    return max(65 if national else 50, {"pedagogy": 75, "law": 75, "health": 70}.get(field, 0))
+
+
+def chance_level(score: int, ref: float, kind: str) -> str:
+    hi, lo = {"grant": (6, -5), "threshold": (12, 0), "estimate": (10, -8)}[kind]
+    d = score - ref
+    return "high" if d >= hi else ("low" if d < lo else "mid")
+
+
+class CareerIn(BaseModel):
+    answers: list[dict] = Field(max_length=8)
+    score: int = Field(ge=0, le=140)
+    rural: bool = False
+    study_lang: str = "kz"
+    lang: str = "ru"
+
+
+@app.post("/api/career")
+def career(body: CareerIn, user: dict = Depends(current_user)):
+    ans = "\n".join(f"- {str(a.get('q', ''))[:200]} → {str(a.get('a', ''))[:200]}" for a in body.answers)
+    prompt = (
+        "Ты — школьный профориентолог и консультант по поступлению в вузы Казахстана. Ученик 11 класса прошёл мини-опрос.\n"
+        f"ОТВЕТЫ:\n{ans}\nБалл ЕНТ (макс. 140): {body.score}. Сельская квота: {'да' if body.rural else 'нет'}. "
+        f"Язык обучения: {body.study_lang}.\n\n"
+        f"ПРОВЕРЕННАЯ БАЗА (данные {KB_YEAR}): id | вуз | программа | балл\n{KB_PROMPT}\n\n"
+        "ЗАДАЧА: определи профиль ученика и предложи 8–9 вариантов поступления: частично из БАЗЫ (укажи kb_id), частично другие реальные "
+        "вузы и программы Казахстана (kb_id = null). Включи варианты разной сложности: амбициозные, подходящие и запасные "
+        "относительно балла ученика. Правила:\n"
+        "• Если указан kb_id — числа НЕ пиши, сервер подставит их сам.\n"
+        "• Если kb_id = null — дай est_low и est_high: честный ориентир проходного балла на грант (разброс не более 15 баллов). "
+        "Не уверен в вузе или программе — не включай их. Не выдумывай точные цифры.\n"
+        "• Для kb_id = null укажи field: pedagogy (педагогические науки), law, health (здравоохранение) или other, и national: true, "
+        "если вуз национальный (КазНУ, ЕНУ, Satbayev, КазНПУ Абая, КазНМУ, КазНЖПУ и т. п.).\n"
+        "• Учитывай сельскую квоту (около 30% грантов, баллы по ней обычно ниже) и язык обучения.\n"
+        "• Профессии: 5 штук, что делает специалист и в каком направлении (ГОП) учиться. Без цифр зарплат.\n"
+        "• tips: 4–5 коротких практических советов по подготовке к ЕНТ и подаче заявления. note: 1–2 предложения о конкурсе на грант.\n"
+        + lang_line(body.lang) + "\n"
+        'Верни ТОЛЬКО JSON: {"profile":{"title":"...","emoji":"🧠","summary":"2–3 предложения","strengths":["..."]},'
+        '"professions":[{"name":"...","emoji":"💼","what":"...","field":"..."}],'
+        '"options":[{"kb_id":null,"uni":"...","program":"...","field":"other","national":true,"est_low":0,"est_high":0,"why":"1 фраза"}],'
+        '"tips":["..."],"note":"..."}'
+    )
+
+    def run():
+        d = parse_json(ask_ai(prompt, json_mode=True, max_tokens=5000, temperature=0.6))
+        if not isinstance(d, dict) or not isinstance(d.get("options"), list) or not d["options"]:
+            raise HTTPException(502, "ИИ вернул неверный формат. Попробуйте ещё раз.")
+        return d
+
+    d, left = paid(user, run)
+    order = {"high": 0, "mid": 1, "low": 2, "below": 3}
+    options, seen = [], set()
+    for o in d["options"][:12]:
+        if not isinstance(o, dict):
+            continue
+        kb = KB.get(o.get("kb_id"))
+        if kb:
+            uni, prog, ref, kind, field, nat = kb
+            ref_txt, verified = str(ref), True
+        else:
+            try:
+                lo, hi = int(o.get("est_low")), int(o.get("est_high"))
+            except (TypeError, ValueError):
+                continue
+            if not (40 <= lo <= hi <= 140) or hi - lo > 25 or not o.get("uni") or not o.get("program"):
+                continue
+            uni, prog = str(o["uni"])[:90], str(o["program"])[:120]
+            field = o.get("field") if o.get("field") in ("pedagogy", "law", "health") else "other"
+            nat, kind, ref, verified = bool(o.get("national")), "estimate", (lo + hi) / 2, False
+            ref_txt = f"{lo}–{hi}"
+        if (uni, prog) in seen:
+            continue
+        seen.add((uni, prog))
+        need = min_threshold(field, nat)
+        level = "below" if body.score < need else chance_level(body.score, ref, kind)
+        options.append({"uni": uni, "program": prog, "ref": ref_txt, "ref_num": ref, "kind": kind, "verified": verified,
+                        "chance": level, "need": need, "why": str(o.get("why", ""))[:200]})
+    options.sort(key=lambda x: (order[x["chance"]], -x["ref_num"]))
+    return {
+        "profile": d.get("profile") or {}, "professions": (d.get("professions") or [])[:6],
+        "options": options, "tips": (d.get("tips") or [])[:6], "note": str(d.get("note", ""))[:400],
+        "year": KB_YEAR, "score": body.score, "tokens_left": left,
+    }
+
+
 # ==================== АДМИН-ПАНЕЛЬ (подписки) ====================
 def admin_user(user: dict = Depends(current_user)) -> dict:
     if user.get("telegram_id") not in ADMIN_IDS:
