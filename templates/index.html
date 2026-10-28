@@ -6,7 +6,7 @@
     <title>StudyAI Hub — ИИ Наставник</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;800&family=Space+Grotesk:wght@500;700&family=Montserrat:wght@500;700;800&family=Manrope:wght@500;700;800&family=Unbounded:wght@500;700&family=Lora:ital,wght@0,500;1,500&family=Oswald:wght@500;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;800&family=Space+Grotesk:wght@500;700&family=Montserrat:wght@500;700;800&family=Manrope:wght@500;700;800&family=Unbounded:wght@500;700&family=Lora:ital,wght@0,500;1,500&family=Oswald:wght@500;700&family=Comfortaa:wght@500;700&family=Rubik:wght@500;700;800&display=swap" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Inter+Tight:wght@500;600;700;800&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
 
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.css">
@@ -363,6 +363,51 @@
             body > *:not(#print-deck) { display: none !important; }
             #print-deck { display: block !important; } #print-deck .slw { width: 297mm; height: 167mm; border-radius: 0; box-shadow: none; page-break-after: always; break-after: page; }
         }
+        /* ===== v7: новые стили слайдов ===== */
+        .sl[data-ttl="solid"] .sl-title .sl-h, .sl[data-ttl="solid"] .sl-closing .sl-h, .sl[data-ttl="solid"] .sl-section .sl-h { background: none; -webkit-background-clip: initial; background-clip: initial; color: var(--tx); }
+        .sl[data-deco="diag"] .sl-bar, .sl[data-deco="blocks"] .sl-bar, .sl[data-deco="strips"] .sl-bar, .sl[data-deco="gradblock"] .sl-bar, .sl[data-deco="outline"] .sl-bar, .sl[data-deco="organic"] .sl-bar, .sl[data-deco="curve"] .sl-bar { display: none; }
+        .sl[data-deco="diag"] .sl-n, .sl[data-deco="blocks"] .sl-n, .sl[data-deco="strips"] .sl-n, .sl[data-deco="curve"] .sl-n, .sl[data-deco="gradblock"] .sl-n { right: auto; left: 8cqw; }
+        /* diag */
+        .sl[data-deco="diag"] .sl-deco::before { content: ''; position: absolute; top: 0; bottom: 0; right: 0; width: 22cqw; background: var(--ac); clip-path: polygon(45% 0, 100% 0, 100% 100%, 0 100%); }
+        .sl[data-deco="diag"] .sl-deco::after { content: ''; position: absolute; right: 0; bottom: 0; width: 9cqw; height: 12cqw; background: var(--ac2); clip-path: polygon(100% 0, 100% 100%, 0 100%); }
+        .sl[data-deco="diag"] .sl-c { padding-right: 25cqw; }
+        .sl[data-deco="diag"][data-lay="title"] .sl-deco::before, .sl[data-deco="diag"][data-lay="closing"] .sl-deco::before, .sl[data-deco="diag"][data-lay="section"] .sl-deco::before { width: 40cqw; }
+        .sl[data-deco="diag"][data-lay="title"] .sl-c, .sl[data-deco="diag"][data-lay="closing"] .sl-c, .sl[data-deco="diag"][data-lay="section"] .sl-c { padding-right: 42cqw; }
+        .sl[data-deco="diag"] .sl-ic { color: var(--ac); }
+        /* blocks */
+        .sl[data-deco="blocks"] .sl-deco::before { content: ''; position: absolute; left: 0; top: 0; bottom: 0; width: 4.2cqw; background: var(--ac2); opacity: .75; }
+        .sl[data-deco="blocks"] .sl-deco::after { content: ''; position: absolute; right: 0; top: 0; width: 8cqw; height: 8cqw; background: var(--ac); }
+        .sl[data-deco="blocks"][data-lay="title"] .sl-deco::after, .sl[data-deco="blocks"][data-lay="closing"] .sl-deco::after, .sl[data-deco="blocks"][data-lay="section"] .sl-deco::after { width: 24cqw; height: 100%; }
+        .sl[data-deco="blocks"] .sl-c { padding-left: 10cqw; } .sl[data-deco="blocks"][data-lay="title"] .sl-c, .sl[data-deco="blocks"][data-lay="closing"] .sl-c, .sl[data-deco="blocks"][data-lay="section"] .sl-c { padding-right: 28cqw; }
+        /* strips */
+        .sl[data-deco="strips"] .sl-deco::before { content: ''; position: absolute; left: 0; top: 0; bottom: 0; width: 14cqw; background: linear-gradient(180deg, var(--ac), var(--ac2)); clip-path: polygon(0 0, 70% 0, 28% 100%, 0 100%); }
+        .sl[data-deco="strips"] .sl-deco::after { content: ''; position: absolute; right: 0; bottom: 0; width: 26cqw; height: 30cqw; background: var(--ac); opacity: .88; clip-path: polygon(100% 0, 100% 100%, 0 100%); }
+        .sl[data-deco="strips"] .sl-c { padding-left: 12cqw; }
+        /* gradblock */
+        .sl[data-deco="gradblock"] .sl-deco::before { content: ''; position: absolute; left: 0; top: 0; bottom: 0; width: 3.2cqw; background: linear-gradient(180deg, var(--ac), var(--ac2)); }
+        .sl[data-deco="gradblock"] .sl-deco::after { content: ''; position: absolute; right: -6cqw; top: -6cqw; width: 20cqw; height: 20cqw; border-radius: 50%; background: linear-gradient(135deg, var(--ac), var(--ac2)); }
+        .sl[data-deco="gradblock"][data-lay="title"], .sl[data-deco="gradblock"][data-lay="closing"], .sl[data-deco="gradblock"][data-lay="section"] { background: linear-gradient(135deg, var(--ac), var(--ac2)); color: #fff; }
+        .sl[data-deco="gradblock"][data-lay="title"] .sl-h, .sl[data-deco="gradblock"][data-lay="closing"] .sl-h, .sl[data-deco="gradblock"][data-lay="section"] .sl-h, .sl[data-deco="gradblock"][data-lay="title"] .sl-li, .sl[data-deco="gradblock"][data-lay="closing"] .sl-li { color: #fff; }
+        .sl[data-deco="gradblock"][data-lay="title"] .sl-sub, .sl[data-deco="gradblock"][data-lay="closing"] .sl-sub, .sl[data-deco="gradblock"][data-lay="section"] .sl-sub, .sl[data-deco="gradblock"] [data-lay] .sl-n { color: rgba(255,255,255,.88); }
+        .sl[data-deco="gradblock"][data-lay="title"] .sl-deco::after, .sl[data-deco="gradblock"][data-lay="closing"] .sl-deco::after, .sl[data-deco="gradblock"][data-lay="section"] .sl-deco::after { background: rgba(255,255,255,.14); width: 34cqw; height: 34cqw; }
+        .sl[data-deco="gradblock"][data-lay="title"] .sl-deco::before, .sl[data-deco="gradblock"][data-lay="closing"] .sl-deco::before, .sl[data-deco="gradblock"][data-lay="section"] .sl-deco::before { background: rgba(255,255,255,.5); }
+        .sl[data-deco="gradblock"][data-lay="title"] .sl-ic, .sl[data-deco="gradblock"][data-lay="closing"] .sl-ic { filter: drop-shadow(0 .4cqw .8cqw rgba(0,0,0,.25)); }
+        .sl[data-deco="gradblock"][data-lay="title"] .sl-li::before, .sl[data-deco="gradblock"][data-lay="closing"] .sl-li::before { background: #fff; }
+        /* outline */
+        .sl-ghost { position: absolute; left: 5cqw; right: 0; bottom: 1cqw; font-family: var(--fh); font-weight: 700; line-height: 1; color: transparent; -webkit-text-stroke: .2cqw var(--ac); opacity: .6; white-space: nowrap; overflow: hidden; text-transform: uppercase; pointer-events: none; }
+        .sl[data-deco="outline"] .sl-deco::before { content: ''; position: absolute; right: 7cqw; top: 6cqw; width: 5cqw; height: 5cqw; border-radius: 50%; background: var(--ac2); }
+        .sl[data-deco="outline"] .sl-deco::after { content: ''; position: absolute; right: 14cqw; top: 11cqw; width: 2.4cqw; height: 2.4cqw; border-radius: 50%; background: var(--ac); }
+        .sl[data-deco="outline"] .sl-h { font-weight: 700; }
+        .sl[data-deco="outline"][data-lay="title"] .sl-c, .sl[data-deco="outline"][data-lay="section"] .sl-c, .sl[data-deco="outline"][data-lay="closing"] .sl-c { padding-bottom: 14cqw; }
+        /* organic */
+        .sl[data-deco="organic"] .sl-deco::before { content: ''; position: absolute; right: -7cqw; top: -9cqw; width: 26cqw; height: 21cqw; background: var(--ac); border-radius: 55% 45% 60% 40% / 50% 55% 45% 50%; }
+        .sl[data-deco="organic"] .sl-deco::after { content: ''; position: absolute; left: -8cqw; bottom: -11cqw; width: 28cqw; height: 20cqw; background: var(--ac2); border-radius: 45% 55% 40% 60% / 55% 45% 55% 45%; }
+        .sl[data-deco="organic"] .sl-card { border-radius: 3cqw; background: rgba(255,255,255,.45); }
+        /* curve */
+        .sl[data-deco="curve"] .sl-deco::before { content: ''; position: absolute; right: -12cqw; top: -10%; width: 32cqw; height: 120%; background: var(--ac); border-radius: 50% 0 0 50% / 50% 0 0 50%; }
+        .sl[data-deco="curve"] .sl-deco::after { content: ''; position: absolute; right: -3cqw; top: -7cqw; width: 14cqw; height: 14cqw; border-radius: 50%; background: var(--ac2); }
+        .sl[data-deco="curve"] .sl-c { padding-right: 25cqw; } .sl[data-deco="curve"][data-lay="title"] .sl-c, .sl[data-deco="curve"][data-lay="closing"] .sl-c, .sl[data-deco="curve"][data-lay="section"] .sl-c { padding-right: 34cqw; }
+        .stl-sec { grid-column: 1 / -1; }
     </style>
 </head>
 <body class="min-h-screen flex flex-col">
@@ -2555,19 +2600,19 @@ const T = {
   ru: { mode: '🎞️ Презентации с ИИ', t: '🎞️ Презентации с ИИ', d: 'Опиши тему или вставь свой текст — ИИ соберёт красивые слайды. Один слайд — 1 токен.', ph: 'О чём презентация? Например: «Как работает искусственный интеллект» для 9 класса, с примерами из жизни. Или вставьте готовый текст.',
     cnt: 'Слайдов', cost: 'Стоимость', tok: 'токенов', have: 'у вас', style: 'Свой стиль (необязательно)', stylePh: 'Например: минимализм как у Apple, чёрно-белый, много воздуха', next: 'Создать презентацию',
     q: 'У вас готовый текст. Что с ним сделать?', shorten: '✂️ Сократить до тезисов', shortenD: 'ИИ оставит главное: короткие пункты, все факты и порядок мыслей.', verb: '📄 Оставить как есть', verbD: 'Слова не меняются: ИИ только разложит текст по слайдам.',
-    pick: 'Выберите стиль', pickD: 'ИИ подобрал оформления под вашу тему. Нажмите на понравившийся.', picking: 'ИИ подбирает стили…', auto: '🎲 Пусть ИИ выберет сам', useIt: 'Создать · {n} токенов', back: 'Назад',
+    pick: 'Выберите стиль', pickD: 'ИИ подобрал оформления под вашу тему. Нажмите на понравившийся.', picking: 'ИИ подбирает стили…', auto: '🎲 Пусть ИИ выберет сам', aiSet: '✨ Подобрано ИИ под вашу тему', ready: '🎨 Готовые стили', useIt: 'Создать · {n} токенов', back: 'Назад',
     g1: 'Продумываю структуру…', g2: 'Пишу заголовки-выводы…', g3: 'Подбираю раскладки…', g4: 'Оформляю слайды…', slide: 'Слайд', edit: 'Нажмите на текст, чтобы поправить', present: '▶ Показ', pptx: '⬇ PowerPoint', pdf: '🖨 PDF', newP: 'Новая', last: 'Открыть последнюю презентацию', notes: 'Заметки докладчика',
     few: 'Не хватает токенов', fewD: 'Выберите меньше слайдов или откройте Premium.', short: 'Опишите тему подробнее (хотя бы пара слов).', saved: 'Скачиваю…', needText: 'Для режима «как есть» вставьте готовый текст.' },
   kz: { mode: '🎞️ ЖИ-презентациялар', t: '🎞️ ЖИ-презентациялар', d: 'Тақырыпты сипатта немесе өз мәтініңді қой — ЖИ әдемі слайдтар жасайды. Бір слайд — 1 токен.', ph: 'Презентация не туралы? Мысалы: «Жасанды интеллект қалай жұмыс істейді», 9 сынып үшін. Немесе дайын мәтінді қойыңыз.',
     cnt: 'Слайд саны', cost: 'Құны', tok: 'токен', have: 'сізде', style: 'Өз стилің (міндетті емес)', stylePh: 'Мысалы: Apple сияқты минимализм, ақ-қара', next: 'Презентация жасау',
     q: 'Дайын мәтін бар. Не істейміз?', shorten: '✂️ Тезиске дейін қысқарту', shortenD: 'ЖИ маңыздысын қалдырады: қысқа тармақтар.', verb: '📄 Сол күйінде қалдыру', verbD: 'Сөздер өзгермейді: ЖИ мәтінді тек слайдқа бөледі.',
-    pick: 'Стильді таңда', pickD: 'ЖИ тақырыбыңа сай безендіру таңдады. Ұнағанын бас.', picking: 'ЖИ стиль таңдауда…', auto: '🎲 ЖИ өзі таңдасын', useIt: 'Жасау · {n} токен', back: 'Артқа',
+    pick: 'Стильді таңда', pickD: 'ЖИ тақырыбыңа сай безендіру таңдады. Ұнағанын бас.', picking: 'ЖИ стиль таңдауда…', auto: '🎲 ЖИ өзі таңдасын', aiSet: '✨ ЖИ тақырыпқа сай таңдады', ready: '🎨 Дайын стильдер', useIt: 'Жасау · {n} токен', back: 'Артқа',
     g1: 'Құрылымды ойластырудамын…', g2: 'Тақырыптарды жазудамын…', g3: 'Орналасуды таңдаудамын…', g4: 'Слайдтарды безендіруде…', slide: 'Слайд', edit: 'Мәтінді түзету үшін басыңыз', present: '▶ Көрсету', pptx: '⬇ PowerPoint', pdf: '🖨 PDF', newP: 'Жаңа', last: 'Соңғы презентацияны ашу', notes: 'Баяндамашы жазбалары',
     few: 'Токен жетпейді', fewD: 'Слайдты азайтыңыз немесе Premium ашыңыз.', short: 'Тақырыпты толығырақ сипаттаңыз.', saved: 'Жүктелуде…', needText: '«Сол күйінде» режимі үшін дайын мәтінді қойыңыз.' },
   en: { mode: '🎞️ AI Presentations', t: '🎞️ AI Presentations', d: 'Describe a topic or paste your text — the AI builds beautiful slides. One slide costs 1 token.', ph: 'What is it about? e.g. “How AI works” for 9th graders, with everyday examples. Or paste your finished text.',
     cnt: 'Slides', cost: 'Cost', tok: 'tokens', have: 'you have', style: 'Your own style (optional)', stylePh: 'e.g. Apple-like minimalism, black and white, lots of air', next: 'Create presentation',
     q: 'You pasted a finished text. What should we do with it?', shorten: '✂️ Shorten to key points', shortenD: 'The AI keeps the essentials: short bullets, every fact, same order.', verb: '📄 Keep as is', verbD: 'Words stay untouched: the AI only splits the text into slides.',
-    pick: 'Pick a style', pickD: 'The AI chose designs that fit your topic. Tap your favorite.', picking: 'The AI is picking styles…', auto: '🎲 Let the AI choose', useIt: 'Create · {n} tokens', back: 'Back',
+    pick: 'Pick a style', pickD: 'The AI chose designs that fit your topic. Tap your favorite.', picking: 'The AI is picking styles…', auto: '🎲 Let the AI choose', aiSet: '✨ Picked by the AI for your topic', ready: '🎨 Ready-made styles', useIt: 'Create · {n} tokens', back: 'Back',
     g1: 'Planning the structure…', g2: 'Writing headline takeaways…', g3: 'Choosing layouts…', g4: 'Designing slides…', slide: 'Slide', edit: 'Click any text to edit it', present: '▶ Present', pptx: '⬇ PowerPoint', pdf: '🖨 PDF', newP: 'New', last: 'Open last presentation', notes: 'Speaker notes',
     few: 'Not enough tokens', fewD: 'Choose fewer slides or open Premium.', short: 'Describe the topic in more detail.', saved: 'Downloading…', needText: 'For “keep as is” paste your finished text.' }
 };
@@ -2592,7 +2637,8 @@ function slideHtml(s, th, i, n, edit) {
     else h += `<div class="sl-ul">${li('bullets', s.bullets, 2)}</div>`;
   }
   const st = `--bg:${th.bg};--bg2:${th.bg2};--tx:${th.tx};--mut:${th.mut};--ac:${th.ac};--ac2:${th.ac2};--fh:'${th.fh}',sans-serif;--fb:'${th.fb}',sans-serif`;
-  return `<div class="sl" style="${st}" data-deco="${th.deco}"><div class="sl-deco"></div><div class="sl-bar"></div><div class="sl-c sl-${lay}">${h}</div><span class="sl-n">${i + 1} / ${n}</span></div>`;
+  const ghost = th.deco === 'outline' && ['title', 'closing', 'section'].includes(lay) ? (() => { const w = (s.title.match(/[\p{L}\p{N}]+/gu) || [s.title]).sort((a, b) => b.length - a.length)[0] || ''; return `<div class="sl-ghost" style="font-size:${Math.min(17, 88 / (0.72 * Math.max(4, w.length))).toFixed(1)}cqw">${esc(w)}</div>`; })() : '';
+  return `<div class="sl" style="${st}" data-deco="${th.deco}" data-lay="${lay}" data-ttl="${th.ttl || 'grad'}"><div class="sl-deco"></div>${ghost}<div class="sl-bar"></div><div class="sl-c sl-${lay}">${h}</div><span class="sl-n">${i + 1} / ${n}</span></div>`;
 }
 const setPath = (s, path, val) => { const k = path.split('.'); let o = s; for (let i = 0; i < k.length - 1; i++) o = o[k[i]]; o[k[k.length - 1]] = val; };
 
@@ -2637,14 +2683,18 @@ window.slNext = async function () {
   const fd = new FormData(); fd.append('topic', F.prompt.slice(0, 400)); fd.append('lang', selectedLang);
   const res = await fetch('/api/slides/styles', { method: 'POST', body: fd }).catch(() => null); const data = res ? await res.json().catch(() => ({})) : {};
   if (!res || !res.ok) { c.innerHTML = errorBox(data.error || 'Error') + `<button class="btn-ghost px-5 py-2.5 text-xs mt-3" onclick="openSlidesView()">${l.back}</button>`; return; }
-  window.__styles = data.styles; renderStyles();
+  window.__styles = data.styles || []; window.__presets = data.presets || []; renderStyles();
 };
 function renderStyles(sel) {
-  const l = L(), st = window.__styles || [];
+  const l = L(), ai = window.__styles || [], pre = window.__presets || [], all = ai.concat(pre);
+  const card = (t, i) => `<div class="stl ${sel === i ? 'on' : ''}" style="animation:mdIn .5s ${Math.min(i, 12) * 70}ms backwards" onclick="slPick(${i})"><div class="slw go" style="pointer-events:none">${slideHtml({ layout: i % 2 ? 'bullets' : 'title', title: t.name, subtitle: t.desc || '', bullets: [t.desc || ''], icon: '✨', left: { h: '', items: [] }, right: { h: '', items: [] }, stats: [], steps: [] }, t, i, all.length, false)}</div><p class="font-extrabold text-white text-sm px-2 pt-2">${esc(t.name)}</p><p class="text-[11px] text-neutral-400 px-2 pb-2">${esc(t.fh)} · ${esc(t.fb)}</p></div>`;
   $('result-container').innerHTML = `<div class="w-full max-w-4xl mx-auto text-left space-y-4 quiz-slide-enter">
     <div class="flex items-center justify-between"><div><h3 class="display text-2xl font-bold text-white">${l.pick}</h3><p class="text-xs text-neutral-400 mt-1">${l.pickD}</p></div><button class="mono hover:text-white" onclick="openSlidesView()">← ${l.back}</button></div>
-    <div class="grid sm:grid-cols-2 gap-3 max-h-[58vh] overflow-y-auto pr-1">${st.map((t, i) => `<div class="stl ${sel === i ? 'on' : ''}" style="animation:mdIn .5s ${i * 90}ms backwards" onclick="slPick(${i})"><div class="slw go" style="pointer-events:none">${slideHtml({ layout: 'bullets', title: t.name, bullets: [t.desc || ''], icon: '✨', left: { h: '', items: [] }, right: { h: '', items: [] }, stats: [], steps: [] }, t, i, st.length, false)}</div><p class="font-extrabold text-white text-sm px-2 pt-2">${esc(t.name)}</p><p class="text-[11px] text-neutral-400 px-2 pb-2">${esc(t.fh)} · ${esc(t.fb)}</p></div>`).join('')}</div>
-    <div class="flex flex-col sm:flex-row gap-2.5"><button id="sl-go" class="btn-accent flex-1 py-3.5 text-sm ${sel == null ? 'opacity-40 pointer-events-none' : ''}" onclick="slGenerate(window.__styles[${sel == null ? 0 : sel}])">${l.useIt.replace('{n}', F.count)}</button><button class="btn-ghost flex-1 py-3.5 text-sm" onclick="slGenerate(null)">${l.auto}</button></div></div>`;
+    <div class="grid sm:grid-cols-2 gap-3 max-h-[58vh] overflow-y-auto pr-1">
+      ${ai.length ? `<p class="mono stl-sec" style="color:var(--accent)">${l.aiSet}</p>${ai.map((t, i) => card(t, i)).join('')}` : ''}
+      <p class="mono stl-sec" style="color:var(--violet)">${l.ready}</p>${pre.map((t, i) => card(t, ai.length + i)).join('')}</div>
+    <div class="flex flex-col sm:flex-row gap-2.5"><button id="sl-go" class="btn-accent flex-1 py-3.5 text-sm ${sel == null ? 'opacity-40 pointer-events-none' : ''}" onclick="slGenerate(${sel == null ? 'null' : `window.__all[${sel}]`})">${l.useIt.replace('{n}', F.count)}</button><button class="btn-ghost flex-1 py-3.5 text-sm" onclick="slGenerate(null)">${l.auto}</button></div></div>`;
+  window.__all = all;
 }
 window.slPick = i => renderStyles(i);
 
