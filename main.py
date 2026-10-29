@@ -115,7 +115,7 @@ def current_user(authorization: Optional[str] = Header(default=None)) -> dict:
         user.update(upd)
     # ежедневное пополнение токенов
     if str(user.get("tokens_refilled_on")) < today_utc().isoformat():
-        refilled = sb.rpc("refill_tokens", {"p_user": user["id"], "p_amount": PRO_TOKENS if user.get("is_subscribed") else DAILY_TOKENS}).execute().data
+        refilled = sb.rpc("refill_tokens", {"p_user": user["id"], "p_amount": DAILY_TOKENS}).execute().data
         if refilled is not None:
             user["tokens"] = refilled
     return user
@@ -442,14 +442,13 @@ def generate_content(
     action: str = Form(...), doc_id: str = Form("default"), lang: str = Form("kz"),
     title: str = Form(""), custom_prompt: str = Form(""), user: dict = Depends(current_user),
 ):
-    # ИИ-планер: только для подписчиков, промпт собирает фронтенд, ответ — JSON {"tasks": [...]}
+    # ИИ-планер: 1 токен за запрос, промпт собирает фронтенд, ответ — JSON {"tasks": [...]}
     if action == "planner":
-        if not user.get("is_subscribed"):
-            raise HTTPException(403, "ИИ-планер доступен по подписке Premium.")
         prompt = custom_prompt.strip()[:1500]
         if not prompt:
             raise HTTPException(400, "Введите запрос для планера.")
-        return {"result": ask_ai(prompt, json_mode=True), "tokens_left": user["tokens"]}
+        result, left = paid(user, lambda: ask_ai(prompt, json_mode=True))
+        return {"result": result, "tokens_left": left}
 
     if action not in PROMPTS:
         raise HTTPException(400, "Неизвестный режим.")
@@ -883,6 +882,8 @@ def career(body: CareerIn, user: dict = Depends(current_user)):
 # ==================== ПРЕЗЕНТАЦИИ (как Gamma) ====================
 SLIDE_FONTS = ["Inter", "Playfair Display", "Space Grotesk", "Montserrat", "Manrope", "Unbounded", "Lora", "Oswald", "Comfortaa", "Rubik"]
 SLIDE_LAYOUTS = {"title", "section", "bullets", "two_col", "stats", "quote", "timeline", "compare", "closing"}
+IMG_LAYS = {"title", "section", "bullets", "quote", "closing"}
+IMG_HOSTS = ("https://image.pollinations.ai/prompt/", "https://loremflickr.com/")
 SLIDE_DECOS = {"orbs", "grid", "waves", "lines", "diag", "blocks", "strips", "gradblock", "outline", "organic", "curve", "none"}
 HEX_RE = re.compile(r"^#[0-9a-fA-F]{6}$")
 
@@ -900,6 +901,16 @@ PRESET_STYLES = [
     _T("Кофейный контур", "Тёплая бумага, терракота и мята, огромные буквы-контуры — дружелюбно и игриво", "#f3ece4", "#e7d6c4", "#3b2a20", "#7a6455", "#b9704a", "#3fae9f", "Comfortaa", "Manrope", "outline", "solid"),
     _T("Персиковый flat", "Мягкие органические формы: персик, апельсин и зелень — как рисованная иллюстрация", "#fbe3d0", "#f6cdb0", "#4a2418", "#8a5a45", "#e8663d", "#7a9a3a", "Rubik", "Manrope", "organic", "solid"),
     _T("Красно-чёрный модерн", "Белый, чёрный и красный с плавными изгибами — стильно и современно", "#ffffff", "#f3f3f3", "#111111", "#666666", "#d90429", "#111111", "Montserrat", "Inter", "curve", "solid"),
+    # --- новые ---
+    _T("Лавандовый туман", "Нежный сиреневый с розовым акцентом — мягко и стильно", "#f6f3ff", "#e9e2ff", "#241b4b", "#6b6490", "#7c5cff", "#ff7ab8", "Manrope", "Inter", "orbs", "solid"),
+    _T("Мятная свежесть", "Светлая мята и тёплый жёлтый, органичные формы — легко и свежо", "#e9fbf3", "#d3f4e4", "#0f3d2e", "#4f7a69", "#1fae7a", "#e0a100", "Rubik", "Manrope", "organic", "solid"),
+    _T("Золото и ночь", "Чёрный и золото, засечные шрифты — премиально и торжественно", "#0e0e10", "#1b1710", "#f7f1e3", "#b5a98a", "#d4af37", "#f5e6a8", "Playfair Display", "Lora", "lines", "solid"),
+    _T("Океан", "Глубокая синева и голубые волны — спокойно и масштабно", "#06283d", "#0b4f6c", "#eaf6ff", "#9cc4d9", "#4cc9f0", "#4895ef", "Montserrat", "Inter", "waves", "solid"),
+    _T("Сакура", "Розовая пудра и тёплый персик — нежно и по-доброму", "#fff0f3", "#ffd9e2", "#4a1a2c", "#8a5468", "#e8457c", "#f08a24", "Comfortaa", "Manrope", "organic", "solid"),
+    _T("Минимал ч/б", "Чёрно-белая строгость и серые блоки — для чистых идей", "#ffffff", "#f2f2f2", "#0a0a0a", "#6b6b6b", "#0a0a0a", "#9a9a9a", "Space Grotesk", "Inter", "blocks", "solid"),
+    _T("Космос", "Тёмный космос с фиолетовым и бирюзовым свечением — для науки и технологий", "#05010f", "#1a0b3d", "#f4eaff", "#a99bc9", "#b388ff", "#00e5ff", "Unbounded", "Manrope", "orbs", "solid"),
+    _T("Спорт-лайм", "Чёрный с кислотным лаймом и оранжевым — динамика и скорость", "#111111", "#111111", "#ffffff", "#a8a8a8", "#b6ff00", "#ff5a1f", "Montserrat", "Inter", "diag", "solid"),
+    _T("Университет", "Строгий синий и золото — для учебных и научных докладов", "#f7f9fc", "#e8eef7", "#14213d", "#5a6b88", "#1e3a8a", "#c9a227", "Playfair Display", "Inter", "strips", "solid"),
     # --- классика ---
     _T("Neon Night", "Тёмный фон, неоновый лайм и фиолетовый — дерзко и современно", "#0b0b12", "#1a1a2e", "#f5f5f0", "#9a9aa8", "#c8ff2e", "#8b5cf6", "Space Grotesk", "Inter", "orbs"),
     _T("Clean Light", "Светлый минимализм, синий акцент — чисто и серьёзно", "#ffffff", "#eef2f7", "#0f172a", "#64748b", "#2563eb", "#06b6d4", "Manrope", "Inter", "lines"),
@@ -908,6 +919,10 @@ PRESET_STYLES = [
     _T("Sunset Pop", "Сливовый закат с розовым и золотым — ярко и смело", "#1f1235", "#4a1942", "#fff7ed", "#c9b3c9", "#fb7185", "#fbbf24", "Unbounded", "Manrope", "orbs"),
     _T("Corporate Navy", "Тёмно-синий и голубой — для бизнеса и защиты проектов", "#0f172a", "#1e3a8a", "#f8fafc", "#a5b4cf", "#38bdf8", "#f59e0b", "Montserrat", "Inter", "grid"),
 ]
+
+
+for _i, _t in enumerate(PRESET_STYLES):
+    _t["g"] = 1 if _i < 7 else (2 if _i < 16 else 3)
 
 
 def clean_theme(t, fb=None) -> dict:
@@ -996,6 +1011,8 @@ def clean_slide(sl: dict) -> Optional[dict]:
     out["stats"] = [{"v": _str(x.get("v"), 14), "l": _str(x.get("l"), 90)} for x in (sl.get("stats") or [])[:4] if isinstance(x, dict) and _str(x.get("v"), 14)]
     out["steps"] = [{"h": _str(x.get("h"), 60), "t": _str(x.get("t"), 160)} for x in (sl.get("steps") or [])[:5] if isinstance(x, dict) and _str(x.get("h"), 60)]
     out["quote"], out["author"] = _str(sl.get("quote"), 400), _str(sl.get("author"), 80)
+    out["vq"] = _str(sl.get("vq"), 220) if layout in IMG_LAYS else ""
+    out["kw"] = _str(sl.get("kw"), 70) if layout in IMG_LAYS else ""
     # слайд без содержимого под свой layout → безопасный bullets
     need = {"stats": out["stats"], "timeline": out["steps"], "quote": out["quote"], "two_col": out["left"]["items"] or out["right"]["items"],
             "compare": out["left"]["items"] or out["right"]["items"]}
@@ -1045,10 +1062,13 @@ def slides_generate(body: SlidesIn, user: dict = Depends(current_user)):
         "• Параллельная структура пунктов, без точек в конце. Не более 5 пунктов на слайд.\n"
         "• icon — один эмодзи, точно отражающий смысл слайда. notes — 2–3 предложения того, что докладчик говорит вслух "
         "(в режиме «как есть» notes содержат только пояснение для докладчика, а не изменённый текст слайда).\n\n"
+        "КАРТИНКИ: для слайдов title, section, bullets, quote и closing задай vq — описание иллюстрации НА АНГЛИЙСКОМ (8–18 слов: "
+        "предмет, действие, обстановка, настроение; без текста, букв, цифр и логотипов) и kw — 2–3 английских слова через запятую для поиска "
+        "стокового фото (конкретные существительные, например \"solar panels,energy\"). Для остальных layout vq и kw оставь пустыми.\n\n"
         f"{theme_rule}\n{lang_line(body.lang)}\n\n"
         'Верни ТОЛЬКО JSON: {"title":"название презентации","theme":{...},"slides":[{"layout":"bullets","title":"...","subtitle":"","icon":"🚀",'
         '"bullets":["..."],"left":{"h":"","items":[]},"right":{"h":"","items":[]},"stats":[{"v":"","l":""}],'
-        '"steps":[{"h":"","t":""}],"quote":"","author":"","notes":"..."}]}'
+        '"steps":[{"h":"","t":""}],"quote":"","author":"","vq":"","kw":"","notes":"..."}]}'
     )
 
     def run():
@@ -1067,7 +1087,7 @@ def slides_generate(body: SlidesIn, user: dict = Depends(current_user)):
     return {"deck": deck, "tokens_left": left, "charged": len(deck["slides"])}
 
 
-def build_pptx(deck: dict) -> bytes:
+def build_pptx(deck: dict, imgs: Optional[dict] = None) -> bytes:
     from pptx import Presentation
     from pptx.dml.color import RGBColor
     from pptx.enum.shapes import MSO_SHAPE
@@ -1081,6 +1101,7 @@ def build_pptx(deck: dict) -> bytes:
     prs.slide_width, prs.slide_height = Inches(13.333), Inches(7.5)
     blank = prs.slide_layouts[6]
     res = {"diag": 2.9, "blocks": 1.4, "curve": 2.7}.get(deco, 0)      # место справа под декор
+    imgs = imgs or {}
     AW = 11.6 - res
 
     def box(sl, x, y, w, h, text, size, color, bold=False, font=None, align=PP_ALIGN.LEFT, anchor=MSO_ANCHOR.TOP, italic=False):
@@ -1146,10 +1167,19 @@ def build_pptx(deck: dict) -> bytes:
         sl.background.fill.fore_color.rgb = rgb(bg)
         decorate(sl, big)
         left = 1.0 if deco not in ("blocks", "strips") else 1.4
+        pic = imgs.get(idx) if lay in IMG_LAYS else None
+        pw = (4.3 if not res else 3.2) if pic else 0
+        if pic:
+            px = 13.333 - 0.7 - res - pw
+            sl.shapes.add_picture(io.BytesIO(pic), Inches(px), Inches(1.6 if not big else 1.5), Inches(pw), Inches(pw))
         if big:
             tw = min(9.4, AW - 1.0) if res else 9.4
+            if pic:
+                tw = min(tw, 13.333 - 0.7 - res - pw - left - 0.4)
             box(sl, left, 2.0, 9.0, 0.9, d.get("icon", ""), 44, th["ac"] if not flip else "#ffffff")
             fs = 44 if len(title) <= 28 else 36
+            if tw < 5.6:
+                fs = min(fs, 30)
             lines_n = max(1, -(-int(len(title) * 1.2) // max(1, int(tw * 72 / (fs * 0.78)))))
             box(sl, left, 2.9, tw, 0.4 + lines_n * fs * 1.35 / 72, title, fs, tx, True, th["fh"])
             sub_y = min(6.0, 2.9 + lines_n * fs * 1.35 / 72 + 0.3)
@@ -1160,6 +1190,7 @@ def build_pptx(deck: dict) -> bytes:
         else:
             x0 = 0.9 if deco not in ("blocks", "strips") else 1.3
             box(sl, x0, 0.55, AW - 0.2, 1.3, title, 34, tx, True, th["fh"], anchor=MSO_ANCHOR.MIDDLE)
+            AWp = AW - (pw + 0.6 if pic else 0)
             shape(sl, MSO_SHAPE.RECTANGLE, x0 + 0.05, 1.9, 1.2, 0.07, th["ac"])
             if lay in ("two_col", "compare"):
                 w = (AW - 0.5) / 2
@@ -1178,8 +1209,8 @@ def build_pptx(deck: dict) -> bytes:
                     box(sl, x + 0.1, 2.9, w - 0.45, 1.6, it["v"], 54, th["ac"] if j % 2 == 0 else th["ac2"], True, th["fh"], PP_ALIGN.CENTER)
                     box(sl, x + 0.2, 4.6, w - 0.65, 1.3, it["l"], 16, tx, align=PP_ALIGN.CENTER)
             elif lay == "quote":
-                box(sl, x0 + 0.3, 2.3, AW - 0.8, 3.2, "“" + d.get("quote", "") + "”", 30, tx, False, th["fh"], italic=True, anchor=MSO_ANCHOR.MIDDLE)
-                box(sl, x0 + 0.3, 5.7, AW - 0.8, 0.8, "— " + d.get("author", ""), 18, th["ac"])
+                box(sl, x0 + 0.3, 2.3, AWp - 0.8, 3.2, "“" + d.get("quote", "") + "”", 30 if not pic else 24, tx, False, th["fh"], italic=True, anchor=MSO_ANCHOR.MIDDLE)
+                box(sl, x0 + 0.3, 5.7, AWp - 0.8, 0.8, "— " + d.get("author", ""), 18, th["ac"])
             elif lay == "timeline":
                 stp = d.get("steps") or []
                 w = AW / max(1, len(stp))
@@ -1191,7 +1222,7 @@ def build_pptx(deck: dict) -> bytes:
                     box(sl, x, 3.65, w - 0.2, 0.8, it["h"], 20, tx, True, th["fh"])
                     box(sl, x, 4.45, w - 0.25, 2.2, it["t"], 14, mut)
             else:
-                box(sl, x0 + 0.05, 2.35, AW - 0.4, 4.6, ["▸  " + b for b in d.get("bullets", [])], 22, tx)
+                box(sl, x0 + 0.05, 2.35, AWp - 0.4, 4.6, ["▸  " + b for b in d.get("bullets", [])], 22 if not pic else 19, tx)
         if d.get("notes"):
             sl.notes_slide.notes_text_frame.text = d["notes"]
     buf = io.BytesIO()
@@ -1199,14 +1230,41 @@ def build_pptx(deck: dict) -> bytes:
     return buf.getvalue()
 
 
+def fetch_images(urls: dict) -> dict:
+    """Скачивает картинки для PPTX параллельно. Только разрешённые хосты; ошибки пропускаем."""
+    if not urls:
+        return {}
+    from concurrent.futures import ThreadPoolExecutor
+
+    def one(item):
+        idx, url = item
+        try:
+            r = httpx.get(url, timeout=httpx.Timeout(28.0, connect=6.0), follow_redirects=True, headers={"User-Agent": "StudyAIHub/1.0"})
+            ok = r.status_code == 200 and r.headers.get("content-type", "").startswith("image/") and len(r.content) < 6_000_000
+            return idx, (r.content if ok else None)
+        except Exception:
+            return idx, None
+
+    with ThreadPoolExecutor(max_workers=6) as ex:
+        return {i: b for i, b in ex.map(one, urls.items()) if b}
+
+
 @app.post("/api/slides/export")
 def slides_export(deck: dict = Body(...), user: dict = Depends(current_user)):
     from urllib.parse import quote
-    slides = [x for x in (clean_slide(sl) for sl in (deck.get("slides") or [])[:14]) if x]
+    slides, urls = [], {}
+    for sl in (deck.get("slides") or [])[:14]:
+        c = clean_slide(sl)
+        if c:
+            u = str(sl.get("img") or "")
+            if u.startswith(IMG_HOSTS) and len(u) < 1500 and c["layout"] in IMG_LAYS:
+                urls[len(slides)] = u
+            slides.append(c)
     if not slides:
         raise HTTPException(400, "Пустая презентация.")
+    imgs = fetch_images(urls)
     try:
-        data = build_pptx({"theme": deck.get("theme"), "slides": slides})
+        data = build_pptx({"theme": deck.get("theme"), "slides": slides}, imgs)
     except ImportError:
         log.exception("python-pptx is not installed")
         raise HTTPException(500, "На сервере не установлен python-pptx. Добавьте его в requirements.txt и сделайте новый деплой.")
@@ -1261,6 +1319,48 @@ def admin_subscription(body: SubIn, _: dict = Depends(admin_user)):
                "tokens_refilled_on": today_utc().isoformat()}
     row = sb.table("profiles").update(upd).eq("id", body.user_id).execute().data[0]
     return {"user": {k: row.get(k) for k in ADMIN_FIELDS}}
+
+
+# ==================== ПОКУПКА ТОКЕНОВ (админ начисляет после оплаты через Kaspi) ====================
+TOKEN_PACKS = {100: 300, 300: 800, 500: 1200}      # токенов -> тенге
+
+
+class CreditIn(BaseModel):
+    user_id: str
+    amount: int          # 100 / 300 / 500 или -100 / -300 / -500 (отмена ошибочного начисления)
+
+
+@app.post("/api/admin/tokens")
+def admin_tokens(body: CreditIn, admin: dict = Depends(admin_user)):
+    pack = abs(body.amount)
+    if pack not in TOKEN_PACKS:
+        raise HTTPException(400, "Допустимые пакеты: 100, 300, 500 токенов.")
+    sign = 1 if body.amount > 0 else -1
+    exists = sb.table("profiles").select("id,tokens").eq("id", body.user_id).limit(1).execute().data
+    if not exists:
+        raise HTTPException(404, "Пользователь не найден.")
+    try:
+        sb.rpc("add_tokens", {"p_user": body.user_id, "p_amount": sign * pack}).execute()
+    except Exception:
+        log.exception("add_tokens rpc failed, fallback to update")
+        sb.table("profiles").update({"tokens": max(0, exists[0]["tokens"] + sign * pack)}).eq("id", body.user_id).execute()
+    try:
+        sb.table("token_purchases").insert({"user_id": body.user_id, "admin_id": admin["id"], "tokens": sign * pack,
+                                            "price": sign * TOKEN_PACKS[pack]}).execute()
+    except Exception:
+        log.exception("token_purchases insert failed")
+    row = sb.table("profiles").select(",".join(ADMIN_FIELDS)).eq("id", body.user_id).limit(1).execute().data[0]
+    return {"user": row, "price": sign * TOKEN_PACKS[pack]}
+
+
+@app.get("/api/admin/stats")
+def admin_stats(_: dict = Depends(admin_user)):
+    since = (datetime.now(timezone.utc) - timedelta(days=30)).isoformat()
+    try:
+        rows = sb.table("token_purchases").select("tokens,price").gte("created_at", since).limit(5000).execute().data
+    except Exception:
+        return {"tokens": 0, "revenue": 0, "count": 0}
+    return {"tokens": sum(r["tokens"] for r in rows), "revenue": sum(r["price"] for r in rows), "count": sum(1 for r in rows if r["tokens"] > 0)}
 
 
 # ==================== ЛИЧНЫЙ КАБИНЕТ ====================
