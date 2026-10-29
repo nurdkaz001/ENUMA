@@ -408,6 +408,18 @@
         .sl[data-deco="curve"] .sl-deco::after { content: ''; position: absolute; right: -3cqw; top: -7cqw; width: 14cqw; height: 14cqw; border-radius: 50%; background: var(--ac2); }
         .sl[data-deco="curve"] .sl-c { padding-right: 25cqw; } .sl[data-deco="curve"][data-lay="title"] .sl-c, .sl[data-deco="curve"][data-lay="closing"] .sl-c, .sl[data-deco="curve"][data-lay="section"] .sl-c { padding-right: 34cqw; }
         .stl-sec { grid-column: 1 / -1; }
+        /* ===== v8: картинки на слайдах, магазин токенов ===== */
+        .sl .sl-c.has-img { padding-right: 46cqw !important; }
+        .sl .sl-c.has-img.sl-title .sl-h, .sl .sl-c.has-img.sl-closing .sl-h, .sl .sl-c.has-img.sl-section .sl-h { font-size: 4.8cqw; max-width: 100%; }
+        .sl .sl-c.has-img .sl-sub { max-width: 100%; } .sl .sl-c.has-img .sl-h { overflow-wrap: break-word; } .sl .sl-c.has-img .sl-quote .q { font-size: 2.8cqw; max-width: 100%; }
+        .sl-img { position: absolute; right: 5cqw; top: 50%; transform: translateY(-50%); width: 34cqw; height: 34cqw; border-radius: 2.6cqw; overflow: hidden; background: linear-gradient(135deg, var(--ac), var(--ac2)); box-shadow: 0 2cqw 5cqw -2cqw rgba(0,0,0,.55); }
+        .sl-img.big { width: 38cqw; height: 38cqw; right: 5cqw; border-radius: 3cqw; }
+        .sl-img img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+        .sl-img .sl-ph { position: absolute; inset: 0; display: grid; place-items: center; font-style: normal; font-size: 8cqw; opacity: .55; animation: hintp 1.6s infinite; }
+        .sl[data-deco="gradblock"][data-lay="title"] .sl-img, .sl[data-deco="gradblock"][data-lay="closing"] .sl-img { box-shadow: 0 0 0 .6cqw rgba(255,255,255,.7); }
+        .pack { position: relative; cursor: pointer; border-radius: 1.8rem; padding: 1.4rem; background: linear-gradient(160deg, #181818, #0e0e0e); border: 1.5px solid var(--line); transition: transform .25s, border-color .25s; text-align: left; }
+        .pack:hover { transform: translateY(-5px); } .pack.on { border-color: var(--accent); box-shadow: 0 0 0 4px rgba(200,255,46,.14); }
+        .pack .tag { position: absolute; top: -.7rem; right: 1rem; padding: .25rem .7rem; border-radius: 999px; font-size: .65rem; font-weight: 900; color: #000; background: linear-gradient(135deg, var(--accent), var(--cyan)); }
     </style>
 </head>
 <body class="min-h-screen flex flex-col">
@@ -430,7 +442,7 @@
             <nav class="hidden md:flex items-center space-x-1 text-sm font-semibold text-neutral-300">
                 <a href="#work" onclick="scrollToSection('workspace-section'); return false;" class="px-4 py-2 rounded-full hover:bg-white/10 hover:text-white transition" id="nav-work">work</a>
                 <a href="#about" onclick="scrollToSection('about'); return false;" class="px-4 py-2 rounded-full hover:bg-white/10 hover:text-white transition" id="nav-about">about</a>
-                <a href="#pricing" onclick="scrollToSection('pricing'); return false;" class="px-4 py-2 rounded-full hover:bg-white/10 hover:text-white transition" id="nav-pricing" style="color:var(--accent)">premium</a>
+                <a href="#pricing" onclick="scrollToSection('pricing'); return false;" class="px-4 py-2 rounded-full hover:bg-white/10 hover:text-white transition" id="nav-pricing" style="color:var(--accent)">⚡ tokens</a>
                 <a href="#contact" onclick="scrollToSection('contact'); return false;" class="px-4 py-2 rounded-full hover:bg-white/10 hover:text-white transition" id="nav-contact">contact</a>
             </nav>
 
@@ -2168,24 +2180,41 @@ window.renderCabinet = function () {
   _rcab();
   if (cab.tab !== 'admin' || cab.view) return;
   const host = document.querySelector('#cab-body section > div.space-y-4'); if (!host) return;
-  host.innerHTML = `<input id="adm-q" class="field" placeholder="${L().admSearch}" oninput="admSearch(this.value)"><div id="adm-list" class="space-y-2"></div>`;
+  host.innerHTML = `<div id="adm-stats" class="tile p-4 text-xs text-neutral-300"></div><input id="adm-q" class="field" placeholder="${L().admSearch}" oninput="admSearch(this.value)"><div id="adm-list" class="space-y-2"></div>`;
   admDraw();
 };
 let admTimer = null;
 window.admSearch = v => { clearTimeout(admTimer); admTimer = setTimeout(() => admLoad(v.trim()), 350); };
-async function admLoad(q) { const r = await api('/api/admin/users?q=' + encodeURIComponent(q)); if (r.ok) { cab.adm = r.data.users; admDraw(); } }
-function admDraw() {
-  const box = $('adm-list'); if (!box) return; const l = L(), users = cab.adm || [];
-  box.innerHTML = users.map(u => `<div class="cab-row" style="cursor:default">
-    <div class="cab-ico" style="${u.is_subscribed ? 'background:var(--accent);color:#000' : ''}">${esc(String(u.display_name || u.username || '?').charAt(0).toUpperCase())}</div>
-    <div class="min-w-0 flex-grow"><p class="text-sm font-bold text-white truncate">${esc(u.display_name || u.username || '—')} ${u.username ? `<span class="text-neutral-500 font-medium">@${esc(u.username)}</span>` : ''}</p>
-      <p class="mono">ID ${esc(u.telegram_id)} · ⚡${u.tokens} · ⭐${u.score} · <span style="color:${u.is_subscribed ? 'var(--accent)' : '#8a8a85'}">${u.is_subscribed ? l.sub + (u.subscription_until ? ' → ' + new Date(u.subscription_until).toLocaleDateString('ru-RU') : '') : l.free}</span></p></div>
-    <button onclick="admToggle('${u.id}', ${!u.is_subscribed})" class="${u.is_subscribed ? 'btn-ghost' : 'btn-accent'} px-4 py-2 text-[11px] shrink-0">${u.is_subscribed ? l.off : l.on}</button></div>`).join('') || `<div class="cab-empty">—</div>`;
+const AT = {
+  ru: { stats: 'За 30 дней', buys: 'покупок', tok: 'токенов', paid: 'Начислено', undo: 'Отменить', tip: 'нажми — токены сразу начислятся' },
+  kz: { stats: '30 күнде', buys: 'сатып алу', tok: 'токен', paid: 'Есептелді', undo: 'Болдырмау', tip: 'бассаң — токен бірден есептеледі' },
+  en: { stats: 'Last 30 days', buys: 'purchases', tok: 'tokens', paid: 'Credited', undo: 'Undo', tip: 'click to credit tokens instantly' }
+};
+const PRICE = { 100: 300, 300: 800, 500: 1200 }, PCOL = { 100: '#3de0ff', 300: '#a78bfa', 500: '#c8ff2e' };
+async function admLoad(q) { const r = await api('/api/admin/users?q=' + encodeURIComponent(q)); if (r.ok) { cab.adm = r.data.users; admDraw(); } admStats(); }
+async function admStats() {
+  const r = await api('/api/admin/stats'), e = $('adm-stats'); if (!r.ok || !e) return; const t = AT[selectedLang] || AT.ru;
+  e.innerHTML = `<span class="mono">${t.stats}:</span> <b class="text-white">${r.data.count}</b> ${t.buys} · <b class="text-white">${r.data.tokens}</b> ${t.tok} · <b style="color:var(--accent)">${r.data.revenue.toLocaleString('ru-RU')} ₸</b>`;
 }
-window.admToggle = async (id, active) => {
-  const r = await api('/api/admin/subscription', 'POST', { user_id: id, active });
+function admDraw() {
+  const box = $('adm-list'); if (!box) return; const t = AT[selectedLang] || AT.ru, users = cab.adm || [];
+  box.innerHTML = users.map(u => `<div class="cab-row" style="cursor:default;flex-wrap:wrap">
+    <div class="cab-ico">${esc(String(u.display_name || u.username || '?').charAt(0).toUpperCase())}</div>
+    <div class="min-w-0 flex-grow"><p class="text-sm font-bold text-white truncate">${esc(u.display_name || u.username || '?')} ${u.username ? `<span class="text-neutral-500 font-medium">@${esc(u.username)}</span>` : ''}</p>
+      <p class="mono">ID ${esc(u.telegram_id)} · <span style="color:var(--accent)">⚡ ${u.tokens}</span> · ⭐ ${u.score}</p></div>
+    <div class="flex gap-1.5 shrink-0" title="${t.tip}">${[100, 300, 500].map(n => `<button onclick="admCredit('${u.id}', ${n})" class="px-3 py-2 rounded-xl text-[12px] font-extrabold text-black leading-tight text-center" style="background:${PCOL[n]}">+${n}<br><span style="font-size:9px;font-weight:700;opacity:.7">${PRICE[n]} ₸</span></button>`).join('')}</div></div>`).join('') || `<div class="cab-empty">—</div>`;
+}
+window.admCredit = async (id, amount) => {
+  const r = await api('/api/admin/tokens', 'POST', { user_id: id, amount });
   if (!r.ok) return alert(r.data.error || 'Error');
-  cab.adm = (cab.adm || []).map(u => u.id === id ? r.data.user : u); admDraw(); showScorePopup(active ? 'Premium ✓' : 'Free');
+  const t = AT[selectedLang] || AT.ru; cab.adm = (cab.adm || []).map(u => u.id === id ? r.data.user : u); admDraw(); admStats();
+  showScorePopup((amount > 0 ? '+' : '') + amount + ' ⚡');
+  if (amount > 0) {
+    const old = document.getElementById('undo-toast'); if (old) old.remove(); const u = r.data.user, el = document.createElement('div'); el.id = 'undo-toast';
+    el.style.cssText = 'position:fixed;left:50%;bottom:1.5rem;transform:translateX(-50%);z-index:90;background:#111;border:1px solid var(--accent);color:#fff;border-radius:999px;padding:.6rem 1rem;display:flex;gap:.8rem;align-items:center;font-size:.8rem;box-shadow:0 20px 40px -10px rgba(0,0,0,.8)';
+    el.innerHTML = `<span>${t.paid} +${amount} ⚡ → <b>${esc(u.display_name || u.username || '?')}</b></span><button style="color:var(--accent);font-weight:800">${t.undo}</button>`;
+    el.querySelector('button').onclick = () => { el.remove(); admCredit(id, -amount); }; document.body.appendChild(el); setTimeout(() => el.remove(), 9000);
+  }
 };
 
 // ---------- сохранённые тесты и билеты в кабинете ----------
@@ -2420,7 +2449,7 @@ window.hzCopy = btn => { navigator.clipboard.writeText(HZ.res.human_text).catch(
 window.HZreset = () => { HZ = { text: '', res: null }; openHumanizerView(); };
 
 // ---------- ИИ-планер только для подписчиков ----------
-const subscribed = () => !!(currentUser && currentUser.is_subscribed);
+const subscribed = () => true;
 const _op = window.openPlannerView;
 window.openPlannerView = function () {
   _op(); if (subscribed()) return;
@@ -2600,28 +2629,56 @@ const T = {
   ru: { mode: '🎞️ Презентации с ИИ', t: '🎞️ Презентации с ИИ', d: 'Опиши тему или вставь свой текст — ИИ соберёт красивые слайды. Один слайд — 1 токен.', ph: 'О чём презентация? Например: «Как работает искусственный интеллект» для 9 класса, с примерами из жизни. Или вставьте готовый текст.',
     cnt: 'Слайдов', cost: 'Стоимость', tok: 'токенов', have: 'у вас', style: 'Свой стиль (необязательно)', stylePh: 'Например: минимализм как у Apple, чёрно-белый, много воздуха', next: 'Создать презентацию',
     q: 'У вас готовый текст. Что с ним сделать?', shorten: '✂️ Сократить до тезисов', shortenD: 'ИИ оставит главное: короткие пункты, все факты и порядок мыслей.', verb: '📄 Оставить как есть', verbD: 'Слова не меняются: ИИ только разложит текст по слайдам.',
-    pick: 'Выберите стиль', pickD: 'ИИ подобрал оформления под вашу тему. Нажмите на понравившийся.', picking: 'ИИ подбирает стили…', auto: '🎲 Пусть ИИ выберет сам', aiSet: '✨ Подобрано ИИ под вашу тему', ready: '🎨 Готовые стили', useIt: 'Создать · {n} токенов', back: 'Назад',
+    pick: 'Выберите стиль', pickD: 'ИИ подобрал оформления под вашу тему. Нажмите на понравившийся.', picking: 'ИИ подбирает стили…', auto: '🎲 Пусть ИИ выберет сам', aiSet: '✨ Подобрано ИИ под вашу тему', ready: '🎨 Готовые стили', imgs: 'Картинки на слайдах', imgNone: '🚫 Без картинок', imgAi: '🎨 ИИ-иллюстрации', imgStock: '📷 Стоковые фото', imgStyle: 'Стиль картинок', imgOther: '🔄 Другое фото', imgHide: '🚫 Убрать здесь', imgShow: '🖼 Вернуть', imgNote: 'Картинки подгружаются из интернета и бесплатны. Их можно включить и сменить стиль прямо после создания.', imgLoad: 'Собираю картинки…', gr1: '⭐ По вашим референсам', gr2: '🆕 Новые', gr3: '🎞 Классика', useIt: 'Создать · {n} токенов', back: 'Назад',
     g1: 'Продумываю структуру…', g2: 'Пишу заголовки-выводы…', g3: 'Подбираю раскладки…', g4: 'Оформляю слайды…', slide: 'Слайд', edit: 'Нажмите на текст, чтобы поправить', present: '▶ Показ', pptx: '⬇ PowerPoint', pdf: '🖨 PDF', newP: 'Новая', last: 'Открыть последнюю презентацию', notes: 'Заметки докладчика',
-    few: 'Не хватает токенов', fewD: 'Выберите меньше слайдов или откройте Premium.', short: 'Опишите тему подробнее (хотя бы пара слов).', saved: 'Скачиваю…', needText: 'Для режима «как есть» вставьте готовый текст.' },
+    few: 'Не хватает токенов', fewD: 'Выберите меньше слайдов или купите токены.', short: 'Опишите тему подробнее (хотя бы пара слов).', saved: 'Скачиваю…', needText: 'Для режима «как есть» вставьте готовый текст.' },
   kz: { mode: '🎞️ ЖИ-презентациялар', t: '🎞️ ЖИ-презентациялар', d: 'Тақырыпты сипатта немесе өз мәтініңді қой — ЖИ әдемі слайдтар жасайды. Бір слайд — 1 токен.', ph: 'Презентация не туралы? Мысалы: «Жасанды интеллект қалай жұмыс істейді», 9 сынып үшін. Немесе дайын мәтінді қойыңыз.',
     cnt: 'Слайд саны', cost: 'Құны', tok: 'токен', have: 'сізде', style: 'Өз стилің (міндетті емес)', stylePh: 'Мысалы: Apple сияқты минимализм, ақ-қара', next: 'Презентация жасау',
     q: 'Дайын мәтін бар. Не істейміз?', shorten: '✂️ Тезиске дейін қысқарту', shortenD: 'ЖИ маңыздысын қалдырады: қысқа тармақтар.', verb: '📄 Сол күйінде қалдыру', verbD: 'Сөздер өзгермейді: ЖИ мәтінді тек слайдқа бөледі.',
-    pick: 'Стильді таңда', pickD: 'ЖИ тақырыбыңа сай безендіру таңдады. Ұнағанын бас.', picking: 'ЖИ стиль таңдауда…', auto: '🎲 ЖИ өзі таңдасын', aiSet: '✨ ЖИ тақырыпқа сай таңдады', ready: '🎨 Дайын стильдер', useIt: 'Жасау · {n} токен', back: 'Артқа',
+    pick: 'Стильді таңда', pickD: 'ЖИ тақырыбыңа сай безендіру таңдады. Ұнағанын бас.', picking: 'ЖИ стиль таңдауда…', auto: '🎲 ЖИ өзі таңдасын', aiSet: '✨ ЖИ тақырыпқа сай таңдады', ready: '🎨 Дайын стильдер', imgs: 'Слайдтардағы суреттер', imgNone: '🚫 Суретсіз', imgAi: '🎨 ЖИ-иллюстрациялар', imgStock: '📷 Сток фото', imgStyle: 'Сурет стилі', imgOther: '🔄 Басқа сурет', imgHide: '🚫 Мұнда алып тастау', imgShow: '🖼 Қайтару', imgNote: 'Суреттер интернеттен жүктеледі және тегін. Оларды жасағаннан кейін де қосып, стилін ауыстыруға болады.', imgLoad: 'Суреттерді жинаудамын…', gr1: '⭐ Сіздің үлгілеріңіз бойынша', gr2: '🆕 Жаңа', gr3: '🎞 Классика', useIt: 'Жасау · {n} токен', back: 'Артқа',
     g1: 'Құрылымды ойластырудамын…', g2: 'Тақырыптарды жазудамын…', g3: 'Орналасуды таңдаудамын…', g4: 'Слайдтарды безендіруде…', slide: 'Слайд', edit: 'Мәтінді түзету үшін басыңыз', present: '▶ Көрсету', pptx: '⬇ PowerPoint', pdf: '🖨 PDF', newP: 'Жаңа', last: 'Соңғы презентацияны ашу', notes: 'Баяндамашы жазбалары',
-    few: 'Токен жетпейді', fewD: 'Слайдты азайтыңыз немесе Premium ашыңыз.', short: 'Тақырыпты толығырақ сипаттаңыз.', saved: 'Жүктелуде…', needText: '«Сол күйінде» режимі үшін дайын мәтінді қойыңыз.' },
+    few: 'Токен жетпейді', fewD: 'Слайдты азайтыңыз немесе токен сатып алыңыз.', short: 'Тақырыпты толығырақ сипаттаңыз.', saved: 'Жүктелуде…', needText: '«Сол күйінде» режимі үшін дайын мәтінді қойыңыз.' },
   en: { mode: '🎞️ AI Presentations', t: '🎞️ AI Presentations', d: 'Describe a topic or paste your text — the AI builds beautiful slides. One slide costs 1 token.', ph: 'What is it about? e.g. “How AI works” for 9th graders, with everyday examples. Or paste your finished text.',
     cnt: 'Slides', cost: 'Cost', tok: 'tokens', have: 'you have', style: 'Your own style (optional)', stylePh: 'e.g. Apple-like minimalism, black and white, lots of air', next: 'Create presentation',
     q: 'You pasted a finished text. What should we do with it?', shorten: '✂️ Shorten to key points', shortenD: 'The AI keeps the essentials: short bullets, every fact, same order.', verb: '📄 Keep as is', verbD: 'Words stay untouched: the AI only splits the text into slides.',
-    pick: 'Pick a style', pickD: 'The AI chose designs that fit your topic. Tap your favorite.', picking: 'The AI is picking styles…', auto: '🎲 Let the AI choose', aiSet: '✨ Picked by the AI for your topic', ready: '🎨 Ready-made styles', useIt: 'Create · {n} tokens', back: 'Back',
+    pick: 'Pick a style', pickD: 'The AI chose designs that fit your topic. Tap your favorite.', picking: 'The AI is picking styles…', auto: '🎲 Let the AI choose', aiSet: '✨ Picked by the AI for your topic', ready: '🎨 Ready-made styles', imgs: 'Slide pictures', imgNone: '🚫 No pictures', imgAi: '🎨 AI illustrations', imgStock: '📷 Stock photos', imgStyle: 'Picture style', imgOther: '🔄 Another picture', imgHide: '🚫 Hide here', imgShow: '🖼 Restore', imgNote: 'Pictures load from the internet and are free. You can switch them on and change the style right after creation.', imgLoad: 'Collecting pictures…', gr1: '⭐ From your references', gr2: '🆕 New', gr3: '🎞 Classic', useIt: 'Create · {n} tokens', back: 'Back',
     g1: 'Planning the structure…', g2: 'Writing headline takeaways…', g3: 'Choosing layouts…', g4: 'Designing slides…', slide: 'Slide', edit: 'Click any text to edit it', present: '▶ Present', pptx: '⬇ PowerPoint', pdf: '🖨 PDF', newP: 'New', last: 'Open last presentation', notes: 'Speaker notes',
-    few: 'Not enough tokens', fewD: 'Choose fewer slides or open Premium.', short: 'Describe the topic in more detail.', saved: 'Downloading…', needText: 'For “keep as is” paste your finished text.' }
+    few: 'Not enough tokens', fewD: 'Choose fewer slides or buy tokens.', short: 'Describe the topic in more detail.', saved: 'Downloading…', needText: 'For “keep as is” paste your finished text.' }
 };
 const L = () => T[selectedLang] || T.ru;
-let F = { prompt: '', count: 8, mode: 'write', styleText: '' }, D = null, EDIT = false;
+let F = { prompt: '', count: 8, mode: 'write', styleText: '', imgMode: 'none', imgStyle: 'cartoon' }, D = null, EDIT = false;
 const subscribed = () => !!(currentUser && currentUser.is_subscribed);
 
+const IMG_LAYS = ['title', 'section', 'bullets', 'quote', 'closing'];
+const IMG_STYLES = [
+  ['cartoon', '🎠', ['Мультяшный', 'Мультфильм', 'Cartoon'], 'cute cartoon illustration, bold outlines, vibrant colors, playful'],
+  ['pixar', '🧸', ['3D-мультфильм', '3D-мультфильм', '3D animated'], '3D animated movie style, Pixar-like, soft lighting, expressive characters, vibrant colors'],
+  ['vivid', '🌈', ['Живой и яркий', 'Жарқын, тірі', 'Vivid & lively'], 'vivid lively illustration, dynamic composition, rich saturated colors, energetic'],
+  ['photo', '📸', ['Реалистичное фото', 'Нақты фото', 'Realistic photo'], 'ultra realistic photograph, natural light, high detail, 35mm lens'],
+  ['cinema', '🎬', ['Кино', 'Кино', 'Cinematic'], 'cinematic still, dramatic lighting, shallow depth of field, film grain'],
+  ['anime', '🌸', ['Аниме', 'Аниме', 'Anime'], 'anime style illustration, detailed, vivid colors, studio quality'],
+  ['water', '🎨', ['Акварель', 'Акварель', 'Watercolor'], 'watercolor painting, soft washes, paper texture, pastel colors'],
+  ['flat', '🔷', ['Плоская иллюстрация', 'Жалпақ иллюстрация', 'Flat vector'], 'flat vector illustration, minimal shapes, modern color palette'],
+  ['neon', '🌃', ['Неон', 'Неон', 'Neon'], 'neon cyberpunk style, glowing lights, dark background, futuristic'],
+  ['line', '✏️', ['Линии', 'Сызықтар', 'Line art'], 'minimalist line art, single color on clean background'],
+  ['pixel', '👾', ['Пиксель-арт', 'Пиксель-арт', 'Pixel art'], 'pixel art, 16-bit, retro game style'],
+  ['oil', '🖼️', ['Масло', 'Майлы бояу', 'Oil painting'], 'oil painting, expressive brush strokes, rich colors'],
+  ['iso', '🧊', ['Изометрия', 'Изометрия', 'Isometric 3D'], 'isometric 3D render, tiny detailed scene, soft shadows'],
+  ['clay', '🧩', ['Пластилин', 'Пластилин', 'Claymation'], 'claymation style, soft clay 3D render, cute'],
+  ['collage', '✂️', ['Коллаж', 'Коллаж', 'Paper collage'], 'paper cut collage, layered textures, handmade']
+];
+const LI = () => ({ ru: 0, kz: 1, en: 2 })[selectedLang] ?? 0;
+const hash = str => { let x = 7; for (const c of String(str)) x = (x * 31 + c.charCodeAt(0)) % 99991; return x; };
+function imgOf(s, i) {
+  const dk = D && D.deck; if (!dk || !dk.imgMode || dk.imgMode === 'none' || s.noimg || !IMG_LAYS.includes(s.layout) || !(s.vq || s.kw)) return '';
+  const seed = s.seed != null ? s.seed : hash((s.title || '') + i);
+  if (dk.imgMode === 'stock') { const tags = (s.kw || s.vq.split(' ').slice(0, 3).join(',')).split(',').map(t => t.trim().split(/\s+/)[0]).filter(Boolean).slice(0, 3).join(','); return `https://loremflickr.com/768/768/${encodeURIComponent(tags)}?lock=${seed}`; }
+  const st = IMG_STYLES.find(x => x[0] === dk.imgStyle) || IMG_STYLES[0];
+  return `https://image.pollinations.ai/prompt/${encodeURIComponent((s.vq || s.title) + ', ' + st[3] + ', no text, no letters, no watermark')}?width=768&height=768&nologo=true&seed=${seed}`;
+}
+
 // ---------- рендер слайда ----------
-function slideHtml(s, th, i, n, edit) {
+function slideHtml(s, th, i, n, edit, img) {
   const E = (p, txt, cls, d) => txt ? `<div class="a ${cls || ''}" style="--d:${d || 0}" data-p="${p}" ${edit ? 'contenteditable="true" spellcheck="false"' : ''}>${esc(txt)}</div>` : '';
   const li = (p, arr, d0) => arr.map((t, k) => E(`${p}.${k}`, t, 'sl-li', d0 + k)).join('');
   const lay = s.layout; let h = '';
@@ -2638,7 +2695,7 @@ function slideHtml(s, th, i, n, edit) {
   }
   const st = `--bg:${th.bg};--bg2:${th.bg2};--tx:${th.tx};--mut:${th.mut};--ac:${th.ac};--ac2:${th.ac2};--fh:'${th.fh}',sans-serif;--fb:'${th.fb}',sans-serif`;
   const ghost = th.deco === 'outline' && ['title', 'closing', 'section'].includes(lay) ? (() => { const w = (s.title.match(/[\p{L}\p{N}]+/gu) || [s.title]).sort((a, b) => b.length - a.length)[0] || ''; return `<div class="sl-ghost" style="font-size:${Math.min(17, 88 / (0.72 * Math.max(4, w.length))).toFixed(1)}cqw">${esc(w)}</div>`; })() : '';
-  return `<div class="sl" style="${st}" data-deco="${th.deco}" data-lay="${lay}" data-ttl="${th.ttl || 'grad'}"><div class="sl-deco"></div>${ghost}<div class="sl-bar"></div><div class="sl-c sl-${lay}">${h}</div><span class="sl-n">${i + 1} / ${n}</span></div>`;
+  return `<div class="sl" style="${st}" data-deco="${th.deco}" data-lay="${lay}" data-ttl="${th.ttl || 'grad'}"><div class="sl-deco"></div>${ghost}<div class="sl-bar"></div><div class="sl-c sl-${lay}${img ? ' has-img' : ''}">${h}</div>${img ? `<div class="a sl-img ${lay === 'title' || lay === 'closing' || lay === 'section' ? 'big' : ''}" style="--d:3"><i class="sl-ph">${esc(s.icon || '✨')}</i><img src="${esc(img)}" alt="" referrerpolicy="no-referrer" onerror="this.remove()"></div>` : ''}<span class="sl-n">${i + 1} / ${n}</span></div>`;
 }
 const setPath = (s, path, val) => { const k = path.split('.'); let o = s; for (let i = 0; i < k.length - 1; i++) o = o[k[i]]; o[k[k.length - 1]] = val; };
 
@@ -2655,12 +2712,18 @@ window.openSlidesView = function () {
         <button class="mode-card ${F.mode === 'verbatim' ? 'on' : ''}" data-m="verbatim" onclick="slMode('verbatim')"><p class="font-extrabold text-white text-sm">${l.verb}</p><p class="text-xs text-neutral-400 mt-1">${l.verbD}</p></button></div></div>
       <div class="space-y-2"><div class="flex items-center justify-between"><span class="mono">${l.cnt}: <b id="sl-n" class="text-white">${F.count}</b></span><span id="sl-cost" class="mono"></span></div>
         <input type="range" min="3" max="12" value="${F.count}" class="w-full" style="accent-color:#c8ff2e" oninput="slCount(this.value)"></div>
+      <div class="space-y-2"><p class="mono">${l.imgs}</p>
+        <div class="grid grid-cols-3 gap-2" id="im-modes">${[['none', l.imgNone], ['ai', l.imgAi], ['stock', l.imgStock]].map(m => `<button class="mode-card ${F.imgMode === m[0] ? 'on' : ''}" style="padding:.8rem;text-align:center" data-im="${m[0]}" onclick="slImgMode('${m[0]}')"><span class="text-xs font-extrabold text-white">${m[1]}</span></button>`).join('')}</div>
+        <div id="im-styles" class="${F.imgMode === 'ai' ? '' : 'hidden'} space-y-2"><p class="mono">${l.imgStyle}</p><div class="flex flex-wrap gap-2">${IMG_STYLES.map(x => `<button class="hz-tab ${F.imgStyle === x[0] ? 'on' : ''}" data-is="${x[0]}" onclick="slImgStyle('${x[0]}')">${x[1]} ${x[2][LI()]}</button>`).join('')}</div></div>
+        <p class="text-[11px] text-neutral-500">${l.imgNote}</p></div>
       <div class="space-y-2"><p class="mono">${l.style}</p><input id="sl-style" class="field" placeholder="${l.stylePh}" value="${esc(F.styleText)}" oninput="F_style(this.value)"></div>
       <button onclick="slNext()" class="btn-accent w-full py-3.5 text-sm">${l.next}</button>
       ${last ? `<button onclick="slOpenLast()" class="btn-ghost w-full py-3 text-xs">${l.last}</button>` : ''}</div></div>`;
   slCost();
 };
 window.F_style = v => { F.styleText = v; };
+window.slImgMode = m => { F.imgMode = m; document.querySelectorAll('[data-im]').forEach(b => b.classList.toggle('on', b.dataset.im === m)); $('im-styles').classList.toggle('hidden', m !== 'ai'); };
+window.slImgStyle = k => { F.imgStyle = k; document.querySelectorAll('[data-is]').forEach(b => b.classList.toggle('on', b.dataset.is === k)); };
 window.slInput = el => { F.prompt = el.value; const m = $('sl-mode'); if (m) { m.classList.toggle('hidden', el.value.length < 300); if (el.value.length >= 300 && F.mode === 'write') F.mode = 'shorten'; if (el.value.length < 300) F.mode = 'write'; } };
 window.slMode = m => { F.mode = m; document.querySelectorAll('[data-m]').forEach(b => b.classList.toggle('on', b.dataset.m === m)); };
 window.slCount = v => { F.count = +v; $('sl-n').textContent = v; slCost(); };
@@ -2692,7 +2755,7 @@ function renderStyles(sel) {
     <div class="flex items-center justify-between"><div><h3 class="display text-2xl font-bold text-white">${l.pick}</h3><p class="text-xs text-neutral-400 mt-1">${l.pickD}</p></div><button class="mono hover:text-white" onclick="openSlidesView()">← ${l.back}</button></div>
     <div class="grid sm:grid-cols-2 gap-3 max-h-[58vh] overflow-y-auto pr-1">
       ${ai.length ? `<p class="mono stl-sec" style="color:var(--accent)">${l.aiSet}</p>${ai.map((t, i) => card(t, i)).join('')}` : ''}
-      <p class="mono stl-sec" style="color:var(--violet)">${l.ready}</p>${pre.map((t, i) => card(t, ai.length + i)).join('')}</div>
+      ${[1, 2, 3].map(g => { const items = pre.map((t, i) => [t, i]).filter(x => (x[0].g || 3) === g); return items.length ? `<p class="mono stl-sec" style="color:var(--violet)">${l['gr' + g]}</p>${items.map(x => card(x[0], ai.length + x[1])).join('')}` : ''; }).join('')}</div>
     <div class="flex flex-col sm:flex-row gap-2.5"><button id="sl-go" class="btn-accent flex-1 py-3.5 text-sm ${sel == null ? 'opacity-40 pointer-events-none' : ''}" onclick="slGenerate(${sel == null ? 'null' : `window.__all[${sel}]`})">${l.useIt.replace('{n}', F.count)}</button><button class="btn-ghost flex-1 py-3.5 text-sm" onclick="slGenerate(null)">${l.auto}</button></div></div>`;
   window.__all = all;
 }
@@ -2706,7 +2769,7 @@ window.slGenerate = async function (theme) {
   const r = await api('/api/slides', 'POST', { prompt: F.prompt, count: F.count, mode: F.mode, style_text: F.styleText, theme: theme || null, lang: selectedLang });
   clearInterval(t);
   if (!r.ok) { c.innerHTML = errorBox(r.data.error || 'Error') + `<button class="btn-ghost px-5 py-2.5 text-xs mt-3" onclick="openSlidesView()">${l.back}</button>`; return; }
-  setTokens(r.data.tokens_left); D = { deck: r.data.deck, i: 0 };
+  setTokens(r.data.tokens_left); D = { deck: r.data.deck, i: 0 }; D.deck.imgMode = F.imgMode; D.deck.imgStyle = F.imgStyle;
   try { localStorage.setItem('lastDeck', JSON.stringify(D.deck)); } catch (e) {}
   viewDeck(); confetti(40);
 };
@@ -2718,29 +2781,40 @@ function viewDeck() {
     <div class="flex items-center justify-between gap-2 flex-wrap"><h3 class="display text-xl font-bold text-white truncate">${esc(dk.title)}</h3><span class="mono">${l.edit}</span></div>
     <div id="sl-stage"></div>
     <div class="flex items-center justify-between gap-2"><button class="btn-ghost px-5 py-2.5 text-sm" onclick="slGo(-1)">←</button><span id="sl-pos" class="mono"></span><button class="btn-ghost px-5 py-2.5 text-sm" onclick="slGo(1)">→</button></div>
+    <div id="sl-imgbar" class="tile p-3 space-y-2.5"></div>
     <div id="sl-thumbs" class="flex gap-2 overflow-x-auto pb-2"></div>
     <details class="tile p-4"><summary class="mono cursor-pointer">${l.notes}</summary><p id="sl-notes" class="text-sm text-neutral-300 mt-3 leading-relaxed"></p></details>
     <div class="grid grid-cols-2 sm:grid-cols-4 gap-2"><button class="btn-accent py-3 text-xs" onclick="slPresent()">${l.present}</button><button class="btn-ghost py-3 text-xs" onclick="slPptx()">${l.pptx}</button><button class="btn-ghost py-3 text-xs" onclick="slPdf()">${l.pdf}</button><button class="btn-ghost py-3 text-xs" onclick="openSlidesView()">${l.newP}</button></div></div>`;
-  drawStage(); drawThumbs();
+  drawStage(); drawThumbs(); drawImgBar();
 }
+function refreshAll() { persist(); drawStage(); drawThumbs(); drawImgBar(); }
+function drawImgBar() {
+  const l = L(), dk = D.deck, s = dk.slides[D.i], bar = $('sl-imgbar'); if (!bar) return; const mode = dk.imgMode || 'none', can = IMG_LAYS.includes(s.layout) && (s.vq || s.kw);
+  bar.innerHTML = `<div class="flex flex-wrap items-center gap-2"><span class="mono">${l.imgs}:</span>${[['none', l.imgNone], ['ai', l.imgAi], ['stock', l.imgStock]].map(m => `<button class="hz-tab ${mode === m[0] ? 'on' : ''}" onclick="slSetImgMode('${m[0]}')">${m[1]}</button>`).join('')}${mode !== 'none' && can ? `<button class="hz-tab" onclick="slOtherImg()">${l.imgOther}</button><button class="hz-tab" onclick="slToggleImg()">${s.noimg ? l.imgShow : l.imgHide}</button>` : ''}</div>
+    ${mode === 'ai' ? `<div class="flex gap-1.5 overflow-x-auto pb-1">${IMG_STYLES.map(x => `<button class="hz-tab shrink-0 ${dk.imgStyle === x[0] ? 'on' : ''}" onclick="slSetImgStyle('${x[0]}')">${x[1]} ${x[2][LI()]}</button>`).join('')}</div>` : ''}`;
+}
+window.slSetImgMode = m => { D.deck.imgMode = m; refreshAll(); };
+window.slSetImgStyle = k => { D.deck.imgStyle = k; refreshAll(); };
+window.slOtherImg = () => { D.deck.slides[D.i].seed = Math.floor(Math.random() * 99999); D.deck.slides[D.i].noimg = false; refreshAll(); };
+window.slToggleImg = () => { const s = D.deck.slides[D.i]; s.noimg = !s.noimg; refreshAll(); };
 function drawStage() {
-  const dk = D.deck, s = dk.slides[D.i]; $('sl-stage').innerHTML = `<div class="slw go" id="sl-main">${slideHtml(s, dk.theme, D.i, dk.slides.length, true)}</div>`;
+  const dk = D.deck, s = dk.slides[D.i]; $('sl-stage').innerHTML = `<div class="slw go" id="sl-main">${slideHtml(s, dk.theme, D.i, dk.slides.length, true, imgOf(s, D.i))}</div>`;
   $('sl-pos').textContent = `${L().slide} ${D.i + 1} / ${dk.slides.length}`; $('sl-notes').textContent = s.notes || '—';
   document.querySelectorAll('.thumb').forEach((t, k) => t.classList.toggle('on', k === D.i));
   $('sl-main').addEventListener('focusout', e => { const p = e.target.dataset && e.target.dataset.p; if (p) { setPath(s, p, e.target.innerText.trim()); persist(); drawThumbs(); } });
 }
 function drawThumbs() {
-  const dk = D.deck; $('sl-thumbs').innerHTML = dk.slides.map((s, k) => `<div class="thumb ${k === D.i ? 'on' : ''}" onclick="slSet(${k})"><div class="slw">${slideHtml(s, dk.theme, k, dk.slides.length, false)}</div></div>`).join('');
+  const dk = D.deck; $('sl-thumbs').innerHTML = dk.slides.map((s, k) => `<div class="thumb ${k === D.i ? 'on' : ''}" onclick="slSet(${k})"><div class="slw">${slideHtml(s, dk.theme, k, dk.slides.length, false, imgOf(s, k))}</div></div>`).join('');
 }
 const persist = () => { try { localStorage.setItem('lastDeck', JSON.stringify(D.deck)); } catch (e) {} };
-window.slSet = k => { D.i = k; drawStage(); };
-window.slGo = d => { D.i = Math.max(0, Math.min(D.deck.slides.length - 1, D.i + d)); drawStage(); };
+window.slSet = k => { D.i = k; drawStage(); drawImgBar(); };
+window.slGo = d => { D.i = Math.max(0, Math.min(D.deck.slides.length - 1, D.i + d)); drawStage(); drawImgBar(); };
 
 // ---------- показ, PPTX, PDF ----------
 let presOn = false;
 window.slPresent = function () {
   const dk = D.deck, o = document.createElement('div'); o.id = 'pres'; document.body.appendChild(o); presOn = true;
-  const draw = () => { o.innerHTML = `<div class="slw go">${slideHtml(dk.slides[D.i], dk.theme, D.i, dk.slides.length, false)}</div>`; };
+  const draw = () => { o.innerHTML = `<div class="slw go">${slideHtml(dk.slides[D.i], dk.theme, D.i, dk.slides.length, false, imgOf(dk.slides[D.i], D.i))}</div>`; };
   draw(); o.onclick = e => { if (e.clientX < innerWidth / 3) step(-1); else step(1); };
   const step = d => { const n = D.i + d; if (n < 0) return; if (n >= dk.slides.length) return close(); D.i = n; draw(); };
   const close = () => { presOn = false; o.remove(); document.removeEventListener('keydown', key); if (document.fullscreenElement) document.exitFullscreen().catch(() => {}); drawStage(); };
@@ -2751,14 +2825,15 @@ document.addEventListener('keydown', e => { if (presOn || window.currentActiveVi
 window.slPptx = async function () {
   const btn = event && event.currentTarget; const old = btn && btn.textContent; if (btn) btn.textContent = L().saved;
   try {
-    const res = await fetch('/api/slides/export', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(D.deck) });
+    const res = await fetch('/api/slides/export', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ ...D.deck, slides: D.deck.slides.map((s, i) => ({ ...s, img: imgOf(s, i) })) }) });
     if (!res.ok) { const d = await res.json().catch(() => ({})); alert(d.error || 'Error'); return; }
     const a = document.createElement('a'); a.href = URL.createObjectURL(await res.blob()); a.download = (D.deck.title || 'presentation').replace(/[^\w\u0400-\u04FF-]+/g, '_').slice(0, 40) + '.pptx'; document.body.appendChild(a); a.click(); a.remove();
   } finally { if (btn) btn.textContent = old; }
 };
 window.slPdf = function () {
   const dk = D.deck; let p = $('print-deck'); if (!p) { p = document.createElement('div'); p.id = 'print-deck'; document.body.appendChild(p); }
-  p.innerHTML = dk.slides.map((s, k) => `<div class="slw">${slideHtml(s, dk.theme, k, dk.slides.length, false)}</div>`).join(''); setTimeout(() => print(), 250);
+  p.innerHTML = dk.slides.map((s, k) => `<div class="slw">${slideHtml(s, dk.theme, k, dk.slides.length, false, imgOf(s, k))}</div>`).join('');
+  const imgs = [...p.querySelectorAll('img')], t0 = Date.now(); const wait = () => { if (imgs.every(im => im.complete) || Date.now() - t0 > 15000) print(); else setTimeout(wait, 300); }; setTimeout(wait, 300);
 };
 
 // ---------- история и меню ----------
@@ -2770,6 +2845,49 @@ window.readableContent = it => {
 const lab = () => { const e = $('btn-mode-slides'); if (e) e.textContent = L().mode; };
 const _cl6 = window.changeLanguage; window.changeLanguage = function () { _cl6(); lab(); };
 lab();
+})();
+</script>
+<script>
+(function () {
+const $ = id => document.getElementById(id), esc = escapeHtml;
+const PACKS = [{ t: 100, p: 300, c: '#3de0ff' }, { t: 300, p: 800, c: '#a78bfa' }, { t: 500, p: 1200, c: '#c8ff2e' }];
+const BASE = 3, KASPI_VIEW = '8 708 147 74 26';
+const S = {
+  ru: { title: 'Пополни токены', sub: 'Токены не сгорают. Бесплатно каждый день — по 3.', tokens: 'токенов', per: 'за токен', save: 'Выгода', best: 'Лучшая цена', pop: 'Популярный', enough: 'хватит на', tests: 'тестов', decks: 'презентаций (по 8 слайдов)', kaspi: 'Kaspi Freedom', transfer: 'Переведите', send: 'Отправьте чек на этот номер и свой ник — и токены придут на аккаунт', nick: 'Ваш ник', copy: 'Скопировать', copied: 'Скопировано ✓', login: 'Войдите, чтобы увидеть свой ник', s1: 'Выберите пакет', s2: 'Переведите сумму на Kaspi', s3: 'Отправьте чек и ник — получите токены',
+    pwT: 'Токены закончились', pwS: 'Бесплатные токены обновятся завтра. Или пополните прямо сейчас — выгоднее брать больше.', pwCta: 'Выбрать пакет', pwLater: 'Подожду до завтра' },
+  kz: { title: 'Токенді толықтыр', sub: 'Токен жанбайды. Күн сайын тегін — 3.', tokens: 'токен', per: 'бір токен', save: 'Артықшылық', best: 'Ең жақсы баға', pop: 'Танымал', enough: 'жетеді', tests: 'тестке', decks: 'презентацияға (8 слайдтан)', kaspi: 'Kaspi Freedom', transfer: 'Аударыңыз', send: 'Чекті осы нөмірге және өз никіңізді жіберіңіз — токен аккаунтқа түседі', nick: 'Сіздің ник', copy: 'Көшіру', copied: 'Көшірілді ✓', login: 'Никіңізді көру үшін кіріңіз', s1: 'Пакетті таңдаңыз', s2: 'Kaspi-ге аударыңыз', s3: 'Чек пен ник жіберіңіз — токен аласыз',
+    pwT: 'Токендер таусылды', pwS: 'Тегін токендер ертең жаңарады. Немесе қазір толықтырыңыз — көп алған тиімді.', pwCta: 'Пакетті таңдау', pwLater: 'Ертеңге дейін күтемін' },
+  en: { title: 'Top up tokens', sub: 'Tokens never expire. Free every day: 3.', tokens: 'tokens', per: 'per token', save: 'You save', best: 'Best value', pop: 'Popular', enough: 'enough for', tests: 'quizzes', decks: 'presentations (8 slides each)', kaspi: 'Kaspi Freedom', transfer: 'Transfer', send: 'Send the receipt to this number with your nickname — and tokens arrive on your account', nick: 'Your nickname', copy: 'Copy', copied: 'Copied ✓', login: 'Log in to see your nickname', s1: 'Pick a pack', s2: 'Transfer via Kaspi', s3: 'Send receipt and nickname — get tokens',
+    pwT: 'You are out of tokens', pwS: 'Free tokens refresh tomorrow. Or top up now — bigger packs are cheaper.', pwCta: 'Choose a pack', pwLater: 'I will wait until tomorrow' }
+};
+const L = () => S[selectedLang] || S.ru, fmt = n => n.toLocaleString('ru-RU');
+const sv = p => p.t * BASE - p.p, pct = p => Math.round(sv(p) / (p.t * BASE) * 100);
+let PK = 1;
+window.pickPack = i => { PK = i; window.renderPricing(); };
+window.renderPricing = function () {
+  const b = $('pricing-box'); if (!b) return; const l = L(), pk = PACKS[PK], nick = currentUser ? (currentUser.username ? '@' + currentUser.username : (currentUser.display_name || '')) : '';
+  b.innerHTML = `<div class="text-center mb-8"><p class="mono" style="color:var(--violet)">⚡ tokens</p><h2 class="display text-4xl lg:text-5xl font-bold text-white mt-2">${l.title}</h2><p class="text-sm text-neutral-400 mt-2">${l.sub}</p></div>
+  <div class="grid md:grid-cols-3 gap-4 mb-6">${PACKS.map((p, i) => `<div class="pack ${PK === i ? 'on' : ''}" onclick="pickPack(${i})" style="animation:mdIn .5s ${i * 100}ms backwards">
+    ${i === 2 ? `<span class="tag">${l.best}</span>` : i === 1 ? `<span class="tag" style="background:linear-gradient(135deg,#a78bfa,#ff8fa0)">${l.pop}</span>` : ''}
+    <p class="display text-5xl font-bold" style="color:${p.c}">${p.t}</p><p class="mono mt-1">${l.tokens}</p>
+    <p class="display text-3xl font-bold text-white mt-4">${fmt(p.p)} ₸</p><p class="text-xs text-neutral-400 mt-1">${(p.p / p.t).toFixed(2).replace(/\.?0+$/, '')} ₸ ${l.per}</p>
+    ${sv(p) > 0 ? `<div class="mt-3 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-extrabold" style="background:${p.c}22;color:${p.c};border:1px solid ${p.c}66">🔥 ${l.save} ${fmt(sv(p))} ₸ · −${pct(p)}%</div>` : `<div class="mt-3 text-xs text-neutral-500">&nbsp;</div>`}
+    <p class="text-[11px] text-neutral-500 mt-3">${l.enough}: ${p.t} ${l.tests} ${selectedLang === 'en' ? 'or' : (selectedLang === 'kz' ? 'немесе' : 'или')} ${Math.floor(p.t / 8)} ${l.decks}</p></div>`).join('')}</div>
+  <div class="kaspi space-y-5 relative z-0"><div class="grid sm:grid-cols-3 gap-2 relative z-10 text-xs font-bold">${[l.s1, l.s2, l.s3].map((x, i) => `<div class="flex items-center gap-2"><span class="w-6 h-6 rounded-full bg-white text-[#b3261a] flex items-center justify-center font-extrabold">${i + 1}</span>${x}</div>`).join('')}</div>
+    <p class="font-extrabold text-lg relative z-10">${l.kaspi} · ${l.transfer} <span class="underline decoration-2">${fmt(pk.p)} ₸</span></p>
+    <p class="display text-4xl sm:text-5xl font-bold tracking-tight relative z-10">${KASPI_VIEW}</p><button class="copy-btn relative z-10" onclick="copyKaspi(this)">${l.copy}</button>
+    <p class="text-base font-bold leading-snug relative z-10">${l.send}</p>
+    <div class="relative z-10 flex flex-wrap items-center gap-2 p-3 rounded-2xl bg-black/25"><span class="text-xs opacity-80">${l.nick}:</span>${nick ? `<b class="text-sm">${esc(nick)}</b><button class="copy-btn" data-v="${esc(nick)}" onclick="copyNick(this, this.dataset.v)">${l.copy}</button>` : `<span class="text-xs">${l.login}</span>`}</div></div>`;
+};
+window.showPaywall = function () {
+  if ($('pw')) return; const l = L();
+  document.body.insertAdjacentHTML('beforeend', `<div id="pw" class="pw-ov" onclick="if(event.target===this) closePaywall()"><div class="pw-card space-y-4">
+    <div class="pw-ico">🔋</div><div class="text-center"><h3 class="display text-2xl font-bold text-white">${l.pwT}</h3><p class="text-xs text-neutral-400 mt-2">${l.pwS}</p></div>
+    <div class="space-y-2">${PACKS.map((p, i) => `<div class="pw-li" style="animation-delay:${150 + i * 100}ms;align-items:center;justify-content:space-between;padding:.8rem 1rem;border-radius:1rem;background:#161616;border:1px solid ${p.c}55"><div><p class="display text-xl font-bold" style="color:${p.c}">${p.t} ${l.tokens}</p>${sv(p) > 0 ? `<p class="text-[11px]" style="color:${p.c}">🔥 ${l.save} ${fmt(sv(p))} ₸ · −${pct(p)}%</p>` : `<p class="text-[11px] text-neutral-500">${(p.p / p.t)} ₸ ${l.per}</p>`}</div><b class="display text-xl text-white">${fmt(p.p)} ₸</b></div>`).join('')}</div>
+    <div class="p-3 rounded-2xl bg-[#f14635]/15 border border-[#f14635]/40 text-xs text-neutral-200 space-y-2"><p>${l.kaspi}: ${l.send}</p><div class="flex items-center justify-between gap-2"><b class="display text-lg text-white">${KASPI_VIEW}</b><button class="copy-btn" onclick="copyKaspi(this)">${l.copy}</button></div></div>
+    <div class="flex flex-col gap-2"><button class="btn-accent py-3.5 text-sm" onclick="closePaywall(); scrollToSection('pricing')">${l.pwCta}</button><button class="text-xs text-neutral-500 py-2 hover:text-white" onclick="closePaywall()">${l.pwLater}</button></div></div></div>`);
+};
+window.renderPricing();
 })();
 </script>
 </body>
