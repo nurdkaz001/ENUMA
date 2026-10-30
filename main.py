@@ -7,9 +7,11 @@ import logging
 import os
 import random
 import re
+import functools
 import secrets
 import threading
 import time
+from concurrent.futures import ThreadPoolExecutor
 from collections import OrderedDict, defaultdict, deque
 from datetime import date, datetime, timedelta, timezone
 from pathlib import Path
@@ -60,6 +62,46 @@ if _missing:
 
 app = FastAPI(title="StudyAI Hub")
 sb: Client = create_client(SUPABASE_URL, SUPABASE_SERVICE_KEY)
+
+
+def _patch_supabase_retries() -> None:
+    """Supabase иногда рвёт keep-alive соединение — из-за этого случайно падали запросы.
+    Читающие запросы повторяем при любых сетевых сбоях, пишущие — только если запрос заведомо не дошёл."""
+    try:
+        import postgrest._sync.request_builder as rb
+    except Exception:
+        return
+    connect_only = (httpx.ConnectError, httpx.ConnectTimeout, httpx.PoolTimeout)
+    flaky = (httpx.ReadError, httpx.ReadTimeout, httpx.RemoteProtocolError, httpx.WriteError, httpx.WriteTimeout)
+
+    def wrap(orig):
+        @functools.wraps(orig)
+        def wrapped(self, *a, **kw):
+            method = str(getattr(self, "http_method", "GET")).upper()
+            idempotent = method in ("GET", "HEAD", "PATCH", "PUT", "DELETE")
+            err = None
+            for attempt in range(3):
+                try:
+                    return orig(self, *a, **kw)
+                except connect_only as e:
+                    err = e
+                except flaky as e:
+                    if not idempotent:
+                        raise
+                    err = e
+                time.sleep(0.35 * (attempt + 1))
+            raise err
+        wrapped._retry = True
+        return wrapped
+
+    for name in dir(rb):
+        cls = getattr(rb, name)
+        ex = cls.__dict__.get("execute") if isinstance(cls, type) else None
+        if ex and not getattr(ex, "_retry", False):
+            cls.execute = wrap(ex)
+
+
+_patch_supabase_retries()
 INDEX_FILE = Path(__file__).parent / "templates" / "index.html"
 
 HISTORY_TYPES = {"quiz", "flashcards", "summary", "simple", "plan", "teacher", "tickets"}
@@ -85,6 +127,25 @@ async def validation_error(_: Request, exc: RequestValidationError):
 async def unhandled_error(_: Request, exc: Exception):
     log.exception("Unhandled error")
     return JSONResponse({"error": "Внутренняя ошибка сервера."}, status_code=500)
+
+
+@app.exception_handler(httpx.TransportError)
+async def network_error(_: Request, exc: Exception):
+    log.warning("network error: %s", type(exc).__name__)
+    return JSONResponse({"error": "Связь с сервером данных нестабильна. Повторите через пару секунд."}, status_code=503)
+
+
+try:
+    from postgrest.exceptions import APIError as _PgError
+
+    @app.exception_handler(_PgError)
+    async def db_error(_: Request, exc: Exception):
+        code = str(getattr(exc, "code", "") or "")
+        log.error("DB error %s: %s", code, getattr(exc, "message", exc))
+        hint = " Похоже, не выполнена SQL-миграция (migration_v3.sql / migration_v4.sql)." if code in ("42P01", "42703", "PGRST205", "PGRST204") else ""
+        return JSONResponse({"error": f"Ошибка базы данных ({code or '—'}).{hint}"}, status_code=500)
+except Exception:        # другая версия библиотеки — остаётся общий обработчик
+    pass
 
 
 # ==================== АВТОРИЗАЦИЯ ====================
@@ -130,6 +191,7 @@ def public_profile(u: dict) -> dict:
         "tokens": u.get("tokens", 0), "score": u.get("score", 0),
         "is_subscribed": bool(u.get("is_subscribed")), "is_admin": u.get("telegram_id") in ADMIN_IDS, "subscription_until": u.get("subscription_until"), "created_at": u.get("created_at"),
         "consent_version": u.get("consent_version"), "consent_at": u.get("consent_at"),
+        "public_id": u.get("public_id"), "onboarded": ("onboarded_at" not in u) or bool(u.get("onboarded_at")),
     }
 
 
@@ -469,18 +531,25 @@ def generate_content(
 
 
 @app.post("/api/chat")
-def chat(message: str = Form(...), doc_id: str = Form("default"), lang: str = Form("kz"),
+def chat(message: str = Form(...), doc_id: str = Form("default"), lang: str = Form("kz"), history: str = Form(""),
          user: dict = Depends(current_user)):
     message = message.strip()[:2000]
     if not message:
         raise HTTPException(400, "Пустое сообщение.")
     ctx = get_doc_text(doc_id, user) or ""
-    past = (sb.table("chat_messages").select("message,reply").eq("user_id", user["id"])
-            .order("created_at", desc=True).limit(6).execute().data or [])
-    dialog = "\n".join(f"Студент: {m['message']}\nНаставник: {m['reply']}" for m in reversed(past))
+    # память — только текущая беседа, которую присылает страница (старые чаты тему не навязывают)
+    past: list = []
+    try:
+        hist = json.loads(history) if history else []
+        past = [{"message": _str(h.get("m"), 800), "reply": _str(h.get("r"), 1500)} for h in hist[-6:] if isinstance(h, dict)]
+    except Exception:
+        past = []
+    dialog = "\n".join(f"Студент: {m['message']}\nНаставник: {m['reply']}" for m in past)
     prompt = (
         "Ты — дружелюбный ИИ-наставник для студентов. Отвечай понятно и по делу. "
-        "Формулы пиши в LaTeX между $...$. " + lang_line(lang) + "\n\n"
+        "Формулы пиши в LaTeX между $...$. " + lang_line(lang) + "\n"
+        "ВАЖНО: не выбирай тему за студента и не додумывай её. Если сообщение — приветствие или в нём нет конкретного вопроса/темы, "
+        "коротко поздоровайся и спроси, какую тему или задачу он хочет разобрать (1–2 предложения, без списка тем и без лекции).\n\n"
         + (f"Материал студента:\n{ctx[:MAX_DOC_CHARS]}\n\n" if ctx else "")
         + (f"Предыдущий диалог:\n{dialog}\n\n" if dialog else "")
         + f"Студент: {message}\nНаставник:"
@@ -1030,6 +1099,44 @@ def clean_slide(sl: dict) -> Optional[dict]:
     return out
 
 
+def salvage_slides(text: str) -> list:
+    """Достаёт целые объекты-слайды из «обрезанного» или битого JSON (ответ ИИ мог оборваться на длинной презентации)."""
+    i = text.find('"slides"')
+    i = text.find("[", i) if i >= 0 else -1
+    if i < 0:
+        return []
+    out, depth, start, in_str, esc_ = [], 0, -1, False, False
+    for k in range(i + 1, len(text)):
+        ch = text[k]
+        if in_str:
+            if esc_:
+                esc_ = False
+            elif ch == "\\":
+                esc_ = True
+            elif ch == '"':
+                in_str = False
+            continue
+        if ch == '"':
+            in_str = True
+        elif ch == "{":
+            if depth == 0:
+                start = k
+            depth += 1
+        elif ch == "}":
+            depth -= 1
+            if depth == 0 and start >= 0:
+                try:
+                    obj = json.loads(text[start:k + 1])
+                    if isinstance(obj, dict):
+                        out.append(obj)
+                except json.JSONDecodeError:
+                    pass
+                start = -1
+        elif ch == "]" and depth == 0:
+            break
+    return out
+
+
 MODE_RULES = {
     "write": "РЕЖИМ ТЕКСТА: пользователь дал идею или тему — ты сам пишешь весь контент: точно, конкретно, без воды.",
     "shorten": ("РЕЖИМ ТЕКСТА: пользователь дал готовый текст — СОКРАТИ его до тезисов. Сохрани все ключевые факты, числа, имена и порядок "
@@ -1040,8 +1147,7 @@ MODE_RULES = {
 }
 
 
-@app.post("/api/slides")
-def slides_generate(body: SlidesIn, user: dict = Depends(current_user)):
+def _generate_deck(body: "SlidesIn", user: dict) -> dict:
     n = body.count
     mode = body.mode if body.mode in MODE_RULES else "write"
     preset = clean_theme(body.theme) if isinstance(body.theme, dict) else None
@@ -1081,12 +1187,28 @@ def slides_generate(body: SlidesIn, user: dict = Depends(current_user)):
     )
 
     def run():
-        raw = parse_json(ask_ai(prompt, json_mode=True, max_tokens=8000, temperature=0.8, timeout=170.0))
-        slides = [x for x in (clean_slide(sl) for sl in (raw.get("slides") if isinstance(raw, dict) else None) or []) if x]
-        if len(slides) < max(3, n - 1):
-            raise HTTPException(502, "ИИ вернул неполную презентацию. Попробуйте ещё раз — токены вернутся.")
-        theme = preset or clean_theme((raw or {}).get("theme"))
-        return {"title": _str(raw.get("title"), 120) or slides[0]["title"], "theme": theme, "slides": slides[:n]}
+        best_slides, best_raw, last_err = [], None, None
+        for attempt in range(3):                      # до трёх попыток: ИИ иногда отдаёт битый или неполный JSON
+            try:
+                txt = ask_ai(prompt, json_mode=True, max_tokens=8000, temperature=0.8 if attempt == 0 else 0.6, timeout=150.0)
+            except HTTPException as e:
+                last_err = e
+                time.sleep(1.5)
+                continue
+            raw = parse_json(txt)
+            items = raw.get("slides") if isinstance(raw, dict) else None
+            if not isinstance(items, list) or len(items) < 3:
+                items = salvage_slides(txt) or items or []
+            slides = [x for x in (clean_slide(sl) for sl in items) if x]
+            if len(slides) > len(best_slides):
+                best_slides, best_raw = slides, raw
+            if len(slides) >= max(3, n - 1):
+                break
+        if len(best_slides) < min(3, n):
+            raise last_err or HTTPException(502, "ИИ вернул неполную презентацию. Попробуйте ещё раз — токены вернутся.")
+        raw = best_raw if isinstance(best_raw, dict) else {}
+        theme = preset or clean_theme(raw.get("theme"))
+        return {"title": _str(raw.get("title"), 120) or best_slides[0]["title"], "theme": theme, "slides": best_slides[:n]}
 
     deck, left, spent = paid_n(user, n, run)
     extra = spent - len(deck["slides"])      # ИИ дал меньше слайдов — возвращаем разницу
@@ -1094,6 +1216,54 @@ def slides_generate(body: SlidesIn, user: dict = Depends(current_user)):
         refund_token(user["id"]); left += 1
     save_generation(user["id"], "slides", deck["title"], json.dumps(deck, ensure_ascii=False))
     return {"deck": deck, "tokens_left": left, "charged": len(deck["slides"])}
+
+
+@app.post("/api/slides")
+def slides_generate(body: SlidesIn, user: dict = Depends(current_user)):
+    return _generate_deck(body, user)
+
+
+# Генерация в фоне: запрос не висит минутами (прокси обрывают долгие запросы), страница опрашивает статус.
+SLIDE_JOBS: dict[str, dict] = {}
+_JOB_POOL = ThreadPoolExecutor(max_workers=6)
+
+
+def _run_slide_job(jid: str, body: "SlidesIn", user: dict) -> None:
+    job = SLIDE_JOBS[jid]
+    try:
+        job.update(status="done", result=_generate_deck(body, user))
+    except HTTPException as e:
+        job.update(status="error", error=str(e.detail))
+    except Exception:
+        log.exception("slide job failed")
+        job.update(status="error", error="Не удалось создать презентацию. Токены возвращены, попробуйте ещё раз.")
+    job["finished"] = time.time()
+
+
+@app.post("/api/slides/start")
+def slides_start(body: SlidesIn, user: dict = Depends(current_user)):
+    now = time.time()
+    for k in [k for k, j in SLIDE_JOBS.items() if now - j["created"] > 1800]:
+        SLIDE_JOBS.pop(k, None)
+    if any(j["user"] == user["id"] and j["status"] == "running" for j in SLIDE_JOBS.values()):
+        raise HTTPException(409, "Предыдущая презентация ещё создаётся. Подождите минуту.")
+    rate_limit(f"slidejob:{user['id']}", 8, 600)
+    jid = secrets.token_urlsafe(12)
+    SLIDE_JOBS[jid] = {"user": user["id"], "status": "running", "created": now}
+    _JOB_POOL.submit(_run_slide_job, jid, body, user)
+    return {"job_id": jid}
+
+
+@app.get("/api/slides/job/{jid}")
+def slides_job(jid: str, user: dict = Depends(current_user)):
+    job = SLIDE_JOBS.get(jid)
+    if not job or job["user"] != user["id"]:
+        raise HTTPException(404, "Задача не найдена (сервер мог перезапуститься). Попробуйте создать презентацию заново.")
+    if job["status"] == "done":
+        return {"status": "done", **job["result"]}
+    if job["status"] == "error":
+        return {"status": "error", "error": job["error"]}
+    return {"status": "running"}
 
 
 def build_pptx(deck: dict, imgs: Optional[dict] = None) -> bytes:
@@ -1587,6 +1757,16 @@ def xp_add(body: XpIn, user: dict = Depends(current_user)):
 CONSENT_VERSION = "2026-10-29"
 
 
+@app.post("/api/onboarded")
+def mark_onboarded(user: dict = Depends(current_user)):
+    """Пользователь прошёл (или пропустил) обучающий тур — больше не показываем."""
+    try:
+        sb.table("profiles").update({"onboarded_at": datetime.now(timezone.utc).isoformat()}).eq("id", user["id"]).execute()
+    except Exception:
+        log.exception("onboarded update failed")
+    return {"ok": True}
+
+
 @app.post("/api/consent")
 def give_consent(user: dict = Depends(current_user)):
     """Фиксирует согласие пользователя с Политикой конфиденциальности и Условиями (версия + время)."""
@@ -1649,6 +1829,8 @@ POLLINATIONS_API_KEY = os.getenv("POLLINATIONS_API_KEY", "")
 _IMG_CACHE: "OrderedDict[str, tuple[bytes, str]]" = OrderedDict()
 _IMG_LOCKS: dict[str, threading.Lock] = defaultdict(threading.Lock)
 _IMG_CACHE_MAX = 150
+_AI_SEM = threading.BoundedSemaphore(3)       # не более 3 одновременных генераций
+_IMG_FAIL: dict[str, float] = {}               # ключ → когда была неудача (на минуту не долбим источник)
 
 
 def client_ip(request: Request) -> str:
@@ -1680,6 +1862,8 @@ def get_slide_image(kind: str, q: str, seed: int) -> Optional[tuple[bytes, str]]
     if hit:
         _IMG_CACHE.move_to_end(key)
         return hit
+    if time.time() - _IMG_FAIL.get(key, 0) < 45:
+        return None
     with _IMG_LOCKS[key]:
         hit = _IMG_CACHE.get(key)
         if hit:
@@ -1693,15 +1877,20 @@ def get_slide_image(kind: str, q: str, seed: int) -> Optional[tuple[bytes, str]]
             else:
                 url = f"https://image.pollinations.ai/prompt/{enc}?width=768&height=768&nologo=true&seed={seed}&model=flux"
                 hdr = {}
-            for attempt in range(3):
-                res = _http_image(url, hdr, timeout=70.0)
+            for attempt, tmo in enumerate((45.0, 30.0)):
+                with _AI_SEM:
+                    res = _http_image(url, hdr, timeout=tmo)
                 if res:
                     break
-                time.sleep(1.5 * (attempt + 1))
+                time.sleep(1.0)
                 url = url.replace(f"seed={seed}", f"seed={seed + attempt + 1}")
         if not res:
             tags = quote(_stock_tags(q) if kind == "ai" else q[:80], safe=",")
-            res = _http_image(f"https://loremflickr.com/768/768/{tags}?lock={seed}", timeout=25.0)
+            res = _http_image(f"https://loremflickr.com/768/768/{tags}?lock={seed}", timeout=20.0)
+        if not res:
+            _IMG_FAIL[key] = time.time()
+            if len(_IMG_FAIL) > 500:
+                _IMG_FAIL.clear()
         if res:
             _IMG_CACHE[key] = res
             while len(_IMG_CACHE) > _IMG_CACHE_MAX:
@@ -1870,18 +2059,35 @@ def group_delete(gid: int, user: dict = Depends(current_user)):
     return {"ok": True}
 
 
+def _find_invitee(raw: str) -> tuple[Optional[dict], str]:
+    """Ищет пользователя по @нику Telegram, по ID из кабинета (public_id) или по Telegram ID."""
+    raw = (raw or "").strip()
+    cols = "id,username,display_name,telegram_id"
+    if re.fullmatch(r"#?\d{1,15}", raw):
+        num = int(raw.lstrip("#"))
+        for col in ("public_id", "telegram_id"):
+            try:
+                rows = sb.table("profiles").select(cols).eq(col, num).limit(1).execute().data
+            except Exception:            # колонки public_id нет (миграция v4 не выполнена) — пробуем следующий способ
+                rows = []
+            if rows:
+                return rows[0], raw
+        return None, raw
+    nick = re.sub(r"^@+", "", raw)
+    if not NICK_RE.match(nick):
+        raise HTTPException(400, "Введите @ник Telegram (латиница, цифры, _) или числовой ID из кабинета.")
+    rows = sb.table("profiles").select(cols).ilike("username", nick.replace("_", "\\_")).limit(5).execute().data or []
+    found = [p for p in rows if (p.get("username") or "").lower() == nick.lower()]
+    return (found[0] if found else None), "@" + nick
+
+
 @app.post("/api/groups/{gid}/invite")
 def group_invite(gid: int, body: InviteIn, user: dict = Depends(current_user)):
     _need_owner(gid, user)
     rate_limit(f"ginvite:{user['id']}", 30, 600)
-    nick = re.sub(r"^@+", "", body.nick.strip())
-    if not NICK_RE.match(nick):
-        raise HTTPException(400, "Введите ник Telegram, например @ivan_k (латиница, цифры, _).")
-    found = [p for p in (sb.table("profiles").select("id,username,display_name,telegram_id").ilike("username", nick.replace("_", "\\_")).limit(5).execute().data or [])
-             if (p.get("username") or "").lower() == nick.lower()]
-    if not found:
-        raise HTTPException(404, f"Пользователь @{nick} не найден. Он должен хотя бы раз войти в StudyAI Hub.")
-    target = found[0]
+    target, shown = _find_invitee(body.nick)
+    if not target:
+        raise HTTPException(404, f"Пользователь «{shown}» не найден. Он должен хотя бы раз войти в StudyAI Hub. Введите @ник или ID из его кабинета.")
     if target["id"] == user["id"]:
         raise HTTPException(400, "Нельзя пригласить самого себя.")
     if _my_role(gid, target["id"]):
@@ -1890,7 +2096,12 @@ def group_invite(gid: int, body: InviteIn, user: dict = Depends(current_user)):
         raise HTTPException(400, f"В группе не может быть больше {MAX_MEMBERS} участников.")
     if sb.table("group_invites").select("id").eq("group_id", gid).eq("user_id", target["id"]).eq("status", "pending").limit(1).execute().data:
         raise HTTPException(400, "Приглашение уже отправлено.")
-    sb.table("group_invites").insert({"group_id": gid, "user_id": target["id"], "invited_by": user["id"]}).execute()
+    try:
+        sb.table("group_invites").insert({"group_id": gid, "user_id": target["id"], "invited_by": user["id"]}).execute()
+    except Exception as e:
+        if "23505" in str(e) or "duplicate" in str(e).lower():
+            raise HTTPException(400, "Приглашение уже отправлено.")
+        raise
     gname = sb.table("groups").select("name").eq("id", gid).limit(1).execute().data[0]["name"]
     me_name = user.get("display_name") or user.get("username") or "Пользователь"
     notified = bool(target.get("telegram_id")) and tg_send(
