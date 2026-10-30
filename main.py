@@ -8,11 +8,13 @@ import os
 import random
 import re
 import secrets
+import threading
 import time
-from collections import defaultdict, deque
+from collections import OrderedDict, defaultdict, deque
 from datetime import date, datetime, timedelta, timezone
 from pathlib import Path
 from typing import Optional
+from urllib.parse import parse_qs, quote, urlparse
 
 import httpx
 import jwt
@@ -127,6 +129,7 @@ def public_profile(u: dict) -> dict:
         "username": u.get("username"), "display_name": u.get("display_name") or u.get("username"),
         "tokens": u.get("tokens", 0), "score": u.get("score", 0),
         "is_subscribed": bool(u.get("is_subscribed")), "is_admin": u.get("telegram_id") in ADMIN_IDS, "subscription_until": u.get("subscription_until"), "created_at": u.get("created_at"),
+        "consent_version": u.get("consent_version"), "consent_at": u.get("consent_at"),
     }
 
 
@@ -362,6 +365,12 @@ def lang_line(lang: str) -> str:
 # ==================== СТРАНИЦА / ЗАГРУЗКА / ГЕНЕРАЦИЯ ====================
 @app.get("/", response_class=HTMLResponse)
 def read_root():
+    return HTMLResponse(INDEX_FILE.read_text(encoding="utf-8"))
+
+
+@app.get("/privacy", response_class=HTMLResponse)
+@app.get("/terms", response_class=HTMLResponse)
+def read_privacy():
     return HTMLResponse(INDEX_FILE.read_text(encoding="utf-8"))
 
 
@@ -1238,6 +1247,13 @@ def fetch_images(urls: dict) -> dict:
 
     def one(item):
         idx, url = item
+        if url.startswith("/api/img?"):                      # свой прокси: берём напрямую, без HTTP
+            qs = parse_qs(urlparse(url).query)
+            try:
+                got = get_slide_image((qs.get("k") or ["ai"])[0], (qs.get("q") or [""])[0][:600], abs(int((qs.get("s") or ["1"])[0])) % 1_000_000)
+            except Exception:
+                got = None
+            return idx, (got[0] if got else None)
         try:
             r = httpx.get(url, timeout=httpx.Timeout(28.0, connect=6.0), follow_redirects=True, headers={"User-Agent": "StudyAIHub/1.0"})
             ok = r.status_code == 200 and r.headers.get("content-type", "").startswith("image/") and len(r.content) < 6_000_000
@@ -1251,13 +1267,12 @@ def fetch_images(urls: dict) -> dict:
 
 @app.post("/api/slides/export")
 def slides_export(deck: dict = Body(...), user: dict = Depends(current_user)):
-    from urllib.parse import quote
     slides, urls = [], {}
     for sl in (deck.get("slides") or [])[:14]:
         c = clean_slide(sl)
         if c:
             u = str(sl.get("img") or "")
-            if u.startswith(IMG_HOSTS) and len(u) < 1500 and c["layout"] in IMG_LAYS:
+            if (u.startswith(IMG_HOSTS) or u.startswith("/api/img?")) and len(u) < 1500 and c["layout"] in IMG_LAYS:
                 urls[len(slides)] = u
             slides.append(c)
     if not slides:
@@ -1566,6 +1581,475 @@ def xp_add(body: XpIn, user: dict = Depends(current_user)):
         raise HTTPException(429, "Дневной лимит XP достигнут.")
     score = sb.rpc("add_xp", {"p_user": user["id"], "p_amount": body.amount, "p_reason": body.reason}).execute().data
     return {"score": score}
+
+
+# ==================== СОГЛАСИЕ, ЭКСПОРТ И УДАЛЕНИЕ ДАННЫХ ====================
+CONSENT_VERSION = "2026-10-29"
+
+
+@app.post("/api/consent")
+def give_consent(user: dict = Depends(current_user)):
+    """Фиксирует согласие пользователя с Политикой конфиденциальности и Условиями (версия + время)."""
+    now = datetime.now(timezone.utc).isoformat()
+    sb.table("profiles").update({"consent_at": now, "consent_version": CONSENT_VERSION}).eq("id", user["id"]).execute()
+    return {"ok": True, "consent_version": CONSENT_VERSION, "consent_at": now}
+
+
+@app.get("/api/me/export")
+def export_my_data(user: dict = Depends(current_user)):
+    """Выгрузка всех данных пользователя в JSON (право на доступ к своим данным)."""
+    uid = user["id"]
+
+    def rows(table: str, cols: str = "*", order: str = "created_at"):
+        try:
+            return sb.table(table).select(cols).eq("user_id", uid).order(order, desc=True).limit(5000).execute().data or []
+        except Exception:
+            log.exception("export %s failed", table)
+            return []
+
+    mem = sb.table("group_members").select("group_id,role,joined_at").eq("user_id", uid).execute().data or []
+    data = {
+        "exported_at": datetime.now(timezone.utc).isoformat(),
+        "profile": {k: v for k, v in user.items() if k not in ("id",)},
+        "documents": rows("documents"),
+        "generations": rows("generations"),
+        "chat_messages": rows("chat_messages"),
+        "tasks": rows("tasks", order="due_date"),
+        "xp_events": rows("xp_events"),
+        "groups": mem,
+    }
+    return Response(json.dumps(data, ensure_ascii=False, default=str, indent=1), media_type="application/json",
+                    headers={"Content-Disposition": 'attachment; filename="studyai_my_data.json"'})
+
+
+@app.delete("/api/me")
+def delete_my_account(user: dict = Depends(current_user)):
+    """Полное удаление аккаунта и связанных данных (право на удаление)."""
+    uid = user["id"]
+    # группы, где пользователь владелец: передаём владение другому участнику или удаляем пустую группу
+    for g in sb.table("groups").select("id").eq("owner_id", uid).execute().data or []:
+        others = (sb.table("group_members").select("user_id").eq("group_id", g["id"]).neq("user_id", uid)
+                  .order("joined_at").limit(1).execute().data)
+        if others:
+            sb.table("groups").update({"owner_id": others[0]["user_id"]}).eq("id", g["id"]).execute()
+            sb.table("group_members").update({"role": "owner"}).eq("group_id", g["id"]).eq("user_id", others[0]["user_id"]).execute()
+        else:
+            sb.table("groups").delete().eq("id", g["id"]).execute()
+    if user.get("telegram_id"):
+        sb.table("auth_codes").delete().eq("telegram_id", user["telegram_id"]).execute()
+    sb.table("profiles").delete().eq("id", uid).execute()      # остальное удалится каскадом
+    return {"ok": True}
+
+
+# ==================== КАРТИНКИ ДЛЯ СЛАЙДОВ (серверный прокси) ====================
+# Браузер на телефоне часто не может загрузить картинки напрямую с pollinations/loremflickr
+# (лимиты по IP, долгая генерация, блокировки). Сервер сам ходит за картинкой, повторяет попытки,
+# при неудаче берёт стоковое фото и кэширует результат.
+POLLINATIONS_API_KEY = os.getenv("POLLINATIONS_API_KEY", "")
+_IMG_CACHE: "OrderedDict[str, tuple[bytes, str]]" = OrderedDict()
+_IMG_LOCKS: dict[str, threading.Lock] = defaultdict(threading.Lock)
+_IMG_CACHE_MAX = 150
+
+
+def client_ip(request: Request) -> str:
+    fwd = request.headers.get("x-forwarded-for", "")
+    return (fwd.split(",")[0].strip() if fwd else (request.client.host if request.client else "?")) or "?"
+
+
+def _http_image(url: str, headers: Optional[dict] = None, timeout: float = 60.0) -> Optional[tuple[bytes, str]]:
+    try:
+        r = httpx.get(url, timeout=httpx.Timeout(timeout, connect=8.0), follow_redirects=True,
+                      headers={"User-Agent": "Mozilla/5.0 StudyAIHub/1.0", **(headers or {})})
+        ctype = r.headers.get("content-type", "").split(";")[0].strip().lower()
+        if r.status_code == 200 and ctype.startswith("image/") and 1000 < len(r.content) < 6_000_000:
+            return r.content, ctype
+        log.warning("img %s -> %s %s", url[:80], r.status_code, ctype)
+    except Exception as e:
+        log.warning("img fetch failed: %s", type(e).__name__)
+    return None
+
+
+def _stock_tags(q: str) -> str:
+    words = [w for w in re.findall(r"[A-Za-z]{4,}", q) if w.lower() not in {"cute", "style", "illustration", "with", "that", "from", "this", "letters", "watermark", "text", "high", "detail", "colors", "vibrant", "soft", "lighting"}]
+    return ",".join(words[:3]) or "study"
+
+
+def get_slide_image(kind: str, q: str, seed: int) -> Optional[tuple[bytes, str]]:
+    key = f"{kind}|{seed}|{q}"
+    hit = _IMG_CACHE.get(key)
+    if hit:
+        _IMG_CACHE.move_to_end(key)
+        return hit
+    with _IMG_LOCKS[key]:
+        hit = _IMG_CACHE.get(key)
+        if hit:
+            return hit
+        res = None
+        if kind == "ai":
+            enc = quote(q[:600], safe="")
+            if POLLINATIONS_API_KEY:
+                url = f"https://gen.pollinations.ai/image/{enc}?width=768&height=768&nologo=true&seed={seed}&model=flux"
+                hdr = {"Authorization": f"Bearer {POLLINATIONS_API_KEY}"}
+            else:
+                url = f"https://image.pollinations.ai/prompt/{enc}?width=768&height=768&nologo=true&seed={seed}&model=flux"
+                hdr = {}
+            for attempt in range(3):
+                res = _http_image(url, hdr, timeout=70.0)
+                if res:
+                    break
+                time.sleep(1.5 * (attempt + 1))
+                url = url.replace(f"seed={seed}", f"seed={seed + attempt + 1}")
+        if not res:
+            tags = quote(_stock_tags(q) if kind == "ai" else q[:80], safe=",")
+            res = _http_image(f"https://loremflickr.com/768/768/{tags}?lock={seed}", timeout=25.0)
+        if res:
+            _IMG_CACHE[key] = res
+            while len(_IMG_CACHE) > _IMG_CACHE_MAX:
+                _IMG_CACHE.popitem(last=False)
+        _IMG_LOCKS.pop(key, None)
+        return res
+
+
+@app.get("/api/img")
+def slide_image(request: Request, k: str = "ai", q: str = "", s: int = 1):
+    q = q.strip()[:600]
+    if k not in ("ai", "stock") or len(q) < 2:
+        raise HTTPException(400, "bad request")
+    s = abs(int(s)) % 1_000_000
+    cached = _IMG_CACHE.get(f"{k}|{s}|{q}")
+    if not cached:
+        rate_limit(f"img:{client_ip(request)}", 160, 600)
+    got = cached or get_slide_image(k, q, s)
+    if not got:
+        raise HTTPException(502, "Картинка недоступна.")
+    return Response(got[0], media_type=got[1], headers={"Cache-Control": "public, max-age=86400"})
+
+
+# ==================== ГРУППЫ: приглашения по нику и распределение задач ====================
+MAX_GROUPS_OWNED = 10
+MAX_MEMBERS = 20
+MAX_GROUP_TASKS = 200
+NICK_RE = re.compile(r"^[A-Za-z0-9_]{3,64}$")
+
+
+class GroupIn(BaseModel):
+    name: str = Field(min_length=2, max_length=60)
+
+
+class InviteIn(BaseModel):
+    nick: str = Field(min_length=1, max_length=80)
+
+
+class GTaskIn(BaseModel):
+    title: str = Field(min_length=1, max_length=200)
+    description: str = Field(default="", max_length=1000)
+    assignee_id: Optional[str] = None
+    due_date: Optional[str] = None
+
+
+class GTaskPatch(BaseModel):
+    title: Optional[str] = Field(default=None, min_length=1, max_length=200)
+    description: Optional[str] = Field(default=None, max_length=1000)
+    assignee_id: Optional[str] = None
+    unassign: bool = False
+    due_date: Optional[str] = None
+    done: Optional[bool] = None
+
+
+class SplitIn(BaseModel):
+    goal: str = Field(min_length=5, max_length=2000)
+    lang: str = "ru"
+
+
+def _gdate(s: Optional[str]) -> Optional[str]:
+    if not s:
+        return None
+    try:
+        return date.fromisoformat(str(s)[:10]).isoformat()
+    except ValueError:
+        return None
+
+
+def _who(p: dict) -> dict:
+    return {"user_id": p["id"], "username": p.get("username"), "display_name": p.get("display_name") or p.get("username") or "—"}
+
+
+def _profiles(ids) -> dict:
+    ids = list({i for i in ids if i})
+    if not ids:
+        return {}
+    rows = sb.table("profiles").select("id,username,display_name,telegram_id").in_("id", ids).execute().data or []
+    return {r["id"]: r for r in rows}
+
+
+def _my_role(gid: int, uid: str) -> Optional[str]:
+    r = sb.table("group_members").select("role").eq("group_id", gid).eq("user_id", uid).limit(1).execute().data
+    return r[0]["role"] if r else None
+
+
+def _need_member(gid: int, user: dict) -> str:
+    role = _my_role(gid, user["id"])
+    if not role:
+        raise HTTPException(404, "Группа не найдена.")
+    return role
+
+
+def _need_owner(gid: int, user: dict) -> None:
+    if _need_member(gid, user) != "owner":
+        raise HTTPException(403, "Это действие доступно только владельцу группы.")
+
+
+def _count_members(gid: int) -> int:
+    return len(sb.table("group_members").select("user_id").eq("group_id", gid).execute().data or [])
+
+
+@app.get("/api/groups")
+def groups_list(user: dict = Depends(current_user)):
+    uid = user["id"]
+    mem = sb.table("group_members").select("group_id,role").eq("user_id", uid).execute().data or []
+    gids = [m["group_id"] for m in mem]
+    roles = {m["group_id"]: m["role"] for m in mem}
+    groups, counts, tasks = [], defaultdict(int), defaultdict(lambda: [0, 0])
+    if gids:
+        groups = sb.table("groups").select("*").in_("id", gids).order("created_at", desc=True).execute().data or []
+        for r in sb.table("group_members").select("group_id").in_("group_id", gids).execute().data or []:
+            counts[r["group_id"]] += 1
+        for r in sb.table("group_tasks").select("group_id,done").in_("group_id", gids).limit(5000).execute().data or []:
+            tasks[r["group_id"]][1 if r["done"] else 0] += 1
+    inv = sb.table("group_invites").select("id,group_id,invited_by,created_at").eq("user_id", uid).eq("status", "pending").execute().data or []
+    igroups = {}
+    if inv:
+        for g in sb.table("groups").select("id,name").in_("id", [i["group_id"] for i in inv]).execute().data or []:
+            igroups[g["id"]] = g["name"]
+    inviters = _profiles([i["invited_by"] for i in inv])
+    return {
+        "groups": [{"id": g["id"], "name": g["name"], "role": roles.get(g["id"]), "members": counts[g["id"]],
+                    "open": tasks[g["id"]][0], "done": tasks[g["id"]][1]} for g in groups],
+        "invites": [{"id": i["id"], "group_id": i["group_id"], "group_name": igroups.get(i["group_id"], "—"),
+                     "from": _who(inviters[i["invited_by"]]) if i["invited_by"] in inviters else None,
+                     "created_at": i["created_at"]} for i in inv if i["group_id"] in igroups],
+    }
+
+
+@app.post("/api/groups")
+def groups_create(body: GroupIn, user: dict = Depends(current_user)):
+    rate_limit(f"gcreate:{user['id']}", 10, 600)
+    if len(sb.table("groups").select("id").eq("owner_id", user["id"]).execute().data or []) >= MAX_GROUPS_OWNED:
+        raise HTTPException(400, f"Можно создать не больше {MAX_GROUPS_OWNED} групп.")
+    g = sb.table("groups").insert({"name": body.name.strip(), "owner_id": user["id"]}).execute().data[0]
+    sb.table("group_members").insert({"group_id": g["id"], "user_id": user["id"], "role": "owner"}).execute()
+    return {"id": g["id"], "name": g["name"]}
+
+
+@app.get("/api/groups/{gid}")
+def group_detail(gid: int, user: dict = Depends(current_user)):
+    role = _need_member(gid, user)
+    g = sb.table("groups").select("*").eq("id", gid).limit(1).execute().data
+    if not g:
+        raise HTTPException(404, "Группа не найдена.")
+    members = sb.table("group_members").select("user_id,role,joined_at").eq("group_id", gid).order("joined_at").execute().data or []
+    tasks = sb.table("group_tasks").select("*").eq("group_id", gid).order("created_at").limit(MAX_GROUP_TASKS + 5).execute().data or []
+    invites = []
+    if role == "owner":
+        invites = sb.table("group_invites").select("id,user_id,created_at").eq("group_id", gid).eq("status", "pending").execute().data or []
+    prof = _profiles([m["user_id"] for m in members] + [i["user_id"] for i in invites])
+    return {
+        "group": {"id": gid, "name": g[0]["name"], "owner_id": g[0]["owner_id"]},
+        "me": {"user_id": user["id"], "role": role},
+        "members": [{**_who(prof[m["user_id"]]), "role": m["role"]} for m in members if m["user_id"] in prof],
+        "tasks": [{"id": t["id"], "title": t["title"], "description": t.get("description", ""), "assignee_id": t.get("assignee_id"),
+                   "due_date": t.get("due_date"), "done": bool(t.get("done"))} for t in tasks],
+        "invites": [{"id": i["id"], "user": _who(prof[i["user_id"]])} for i in invites if i["user_id"] in prof],
+    }
+
+
+@app.delete("/api/groups/{gid}")
+def group_delete(gid: int, user: dict = Depends(current_user)):
+    _need_owner(gid, user)
+    sb.table("groups").delete().eq("id", gid).execute()
+    return {"ok": True}
+
+
+@app.post("/api/groups/{gid}/invite")
+def group_invite(gid: int, body: InviteIn, user: dict = Depends(current_user)):
+    _need_owner(gid, user)
+    rate_limit(f"ginvite:{user['id']}", 30, 600)
+    nick = re.sub(r"^@+", "", body.nick.strip())
+    if not NICK_RE.match(nick):
+        raise HTTPException(400, "Введите ник Telegram, например @ivan_k (латиница, цифры, _).")
+    found = [p for p in (sb.table("profiles").select("id,username,display_name,telegram_id").ilike("username", nick.replace("_", "\\_")).limit(5).execute().data or [])
+             if (p.get("username") or "").lower() == nick.lower()]
+    if not found:
+        raise HTTPException(404, f"Пользователь @{nick} не найден. Он должен хотя бы раз войти в StudyAI Hub.")
+    target = found[0]
+    if target["id"] == user["id"]:
+        raise HTTPException(400, "Нельзя пригласить самого себя.")
+    if _my_role(gid, target["id"]):
+        raise HTTPException(400, "Этот пользователь уже в группе.")
+    if _count_members(gid) >= MAX_MEMBERS:
+        raise HTTPException(400, f"В группе не может быть больше {MAX_MEMBERS} участников.")
+    if sb.table("group_invites").select("id").eq("group_id", gid).eq("user_id", target["id"]).eq("status", "pending").limit(1).execute().data:
+        raise HTTPException(400, "Приглашение уже отправлено.")
+    sb.table("group_invites").insert({"group_id": gid, "user_id": target["id"], "invited_by": user["id"]}).execute()
+    gname = sb.table("groups").select("name").eq("id", gid).limit(1).execute().data[0]["name"]
+    me_name = user.get("display_name") or user.get("username") or "Пользователь"
+    notified = bool(target.get("telegram_id")) and tg_send(
+        target["telegram_id"], f"👥 {me_name} приглашает вас в группу «{gname}» в StudyAI Hub.\nОткройте сайт → «Группы», чтобы принять приглашение.")
+    return {"ok": True, "user": _who(target), "notified": notified}
+
+
+@app.delete("/api/groups/{gid}/invites/{iid}")
+def group_invite_cancel(gid: int, iid: int, user: dict = Depends(current_user)):
+    _need_owner(gid, user)
+    sb.table("group_invites").delete().eq("id", iid).eq("group_id", gid).eq("status", "pending").execute()
+    return {"ok": True}
+
+
+def _my_invite(iid: int, user: dict) -> dict:
+    r = sb.table("group_invites").select("*").eq("id", iid).eq("user_id", user["id"]).eq("status", "pending").limit(1).execute().data
+    if not r:
+        raise HTTPException(404, "Приглашение не найдено или уже обработано.")
+    return r[0]
+
+
+@app.post("/api/invites/{iid}/accept")
+def invite_accept(iid: int, user: dict = Depends(current_user)):
+    inv = _my_invite(iid, user)
+    if _count_members(inv["group_id"]) >= MAX_MEMBERS:
+        raise HTTPException(400, "В группе уже нет мест.")
+    claimed = sb.table("group_invites").update({"status": "accepted"}).eq("id", iid).eq("status", "pending").execute().data
+    if not claimed:
+        raise HTTPException(400, "Приглашение уже обработано.")
+    sb.table("group_members").upsert({"group_id": inv["group_id"], "user_id": user["id"], "role": "member"}, on_conflict="group_id,user_id").execute()
+    return {"ok": True, "group_id": inv["group_id"]}
+
+
+@app.post("/api/invites/{iid}/decline")
+def invite_decline(iid: int, user: dict = Depends(current_user)):
+    _my_invite(iid, user)
+    sb.table("group_invites").update({"status": "declined"}).eq("id", iid).eq("status", "pending").execute()
+    return {"ok": True}
+
+
+@app.delete("/api/groups/{gid}/members/{uid}")
+def group_remove_member(gid: int, uid: str, user: dict = Depends(current_user)):
+    role = _need_member(gid, user)
+    if uid != user["id"] and role != "owner":
+        raise HTTPException(403, "Исключать участников может только владелец.")
+    if _my_role(gid, uid) == "owner":
+        raise HTTPException(400, "Владелец не может выйти из группы — удалите группу целиком.")
+    sb.table("group_members").delete().eq("group_id", gid).eq("user_id", uid).execute()
+    sb.table("group_tasks").update({"assignee_id": None}).eq("group_id", gid).eq("assignee_id", uid).execute()
+    return {"ok": True}
+
+
+def _check_assignee(gid: int, assignee_id: Optional[str]) -> None:
+    if assignee_id and not _my_role(gid, assignee_id):
+        raise HTTPException(400, "Исполнитель должен быть участником группы.")
+
+
+def _notify_assignee(assignee_id: Optional[str], me: dict, title: str, gname: str) -> None:
+    if not assignee_id or assignee_id == me["id"]:
+        return
+    p = _profiles([assignee_id]).get(assignee_id)
+    if p and p.get("telegram_id"):
+        tg_send(p["telegram_id"], f"📌 {me.get('display_name') or me.get('username') or 'Участник'} назначил(а) вам задачу в группе «{gname}»:\n{title[:200]}")
+
+
+@app.post("/api/groups/{gid}/tasks")
+def gtask_create(gid: int, body: GTaskIn, user: dict = Depends(current_user)):
+    _need_member(gid, user)
+    _check_assignee(gid, body.assignee_id)
+    if len(sb.table("group_tasks").select("id").eq("group_id", gid).execute().data or []) >= MAX_GROUP_TASKS:
+        raise HTTPException(400, "В группе слишком много задач. Удалите выполненные.")
+    t = sb.table("group_tasks").insert({
+        "group_id": gid, "title": body.title.strip(), "description": body.description.strip(),
+        "assignee_id": body.assignee_id or None, "created_by": user["id"], "due_date": _gdate(body.due_date),
+    }).execute().data[0]
+    gname = sb.table("groups").select("name").eq("id", gid).limit(1).execute().data[0]["name"]
+    _notify_assignee(body.assignee_id, user, body.title, gname)
+    return {"id": t["id"]}
+
+
+@app.patch("/api/groups/{gid}/tasks/{tid}")
+def gtask_patch(gid: int, tid: int, body: GTaskPatch, user: dict = Depends(current_user)):
+    _need_member(gid, user)
+    cur = sb.table("group_tasks").select("*").eq("id", tid).eq("group_id", gid).limit(1).execute().data
+    if not cur:
+        raise HTTPException(404, "Задача не найдена.")
+    upd: dict = {}
+    if body.title is not None:
+        upd["title"] = body.title.strip()
+    if body.description is not None:
+        upd["description"] = body.description.strip()
+    if body.done is not None:
+        upd["done"] = body.done
+    if body.due_date is not None:
+        upd["due_date"] = _gdate(body.due_date)
+    if body.unassign:
+        upd["assignee_id"] = None
+    elif body.assignee_id:
+        _check_assignee(gid, body.assignee_id)
+        upd["assignee_id"] = body.assignee_id
+    if upd:
+        sb.table("group_tasks").update(upd).eq("id", tid).execute()
+        if body.assignee_id and body.assignee_id != cur[0].get("assignee_id"):
+            gname = sb.table("groups").select("name").eq("id", gid).limit(1).execute().data[0]["name"]
+            _notify_assignee(body.assignee_id, user, upd.get("title", cur[0]["title"]), gname)
+    return {"ok": True}
+
+
+@app.delete("/api/groups/{gid}/tasks/{tid}")
+def gtask_delete(gid: int, tid: int, user: dict = Depends(current_user)):
+    role = _need_member(gid, user)
+    cur = sb.table("group_tasks").select("created_by").eq("id", tid).eq("group_id", gid).limit(1).execute().data
+    if not cur:
+        return {"ok": True}
+    if role != "owner" and cur[0].get("created_by") != user["id"]:
+        raise HTTPException(403, "Удалить задачу может её автор или владелец группы.")
+    sb.table("group_tasks").delete().eq("id", tid).execute()
+    return {"ok": True}
+
+
+@app.post("/api/groups/{gid}/split")
+def group_split(gid: int, body: SplitIn, user: dict = Depends(current_user)):
+    """ИИ делит общую цель на задачи и раздаёт участникам. Стоит 1 токен."""
+    _need_member(gid, user)
+    members = sb.table("group_members").select("user_id").eq("group_id", gid).execute().data or []
+    prof = _profiles([m["user_id"] for m in members])
+    people = [p for p in prof.values()]
+    if not people:
+        raise HTTPException(400, "В группе нет участников.")
+    names = {p["id"]: (("@" + p["username"]) if p.get("username") else (p.get("display_name") or "участник")) for p in people}
+    roster = "\n".join(f"- {names[p['id']]}" for p in people)
+    n = min(12, max(len(people), 3) * 2)
+    prompt = (
+        "Ты — тимлид учебной группы. Раздели общую цель на конкретные задачи и справедливо распредели между участниками.\n"
+        f"ЦЕЛЬ ГРУППЫ:\n<<<\n{body.goal.strip()}\n>>>\n\nУЧАСТНИКИ (используй ники ТОЧНО как написано):\n{roster}\n\n"
+        f"Сделай от {len(people)} до {n} задач. Каждому участнику — хотя бы одна задача, нагрузка примерно равная. "
+        "Заголовок — короткое действие (до 10 слов), description — 1–2 предложения, что именно сделать. " + lang_line(body.lang) + "\n"
+        'Верни ТОЛЬКО JSON: {"tasks":[{"title":"...","description":"...","assignee":"@ник"}]}'
+    )
+    data, left = paid(user, lambda: parse_json(ask_ai(prompt, json_mode=True, max_tokens=2500, temperature=0.6)))
+    items = (data or {}).get("tasks") if isinstance(data, dict) else None
+    if not items:
+        refund_token(user["id"])
+        raise HTTPException(502, "ИИ вернул неполный ответ. Токен возвращён, попробуйте ещё раз.")
+    by_nick = {names[p["id"]].lower(): p["id"] for p in people}
+    rows, rr = [], 0
+    for it in items[:12]:
+        if not isinstance(it, dict) or not _str(it.get("title"), 200):
+            continue
+        aid = by_nick.get(str(it.get("assignee", "")).strip().lower())
+        if not aid:
+            aid, rr = people[rr % len(people)]["id"], rr + 1
+        rows.append({"group_id": gid, "title": _str(it.get("title"), 200), "description": _str(it.get("description"), 1000),
+                     "assignee_id": aid, "created_by": user["id"]})
+    if not rows:
+        refund_token(user["id"])
+        raise HTTPException(502, "ИИ не смог составить задачи. Токен возвращён.")
+    sb.table("group_tasks").insert(rows).execute()
+    return {"added": len(rows), "tokens_left": left}
 
 
 if __name__ == "__main__":
