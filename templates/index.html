@@ -420,6 +420,64 @@
         .pack { position: relative; cursor: pointer; border-radius: 1.8rem; padding: 1.4rem; background: linear-gradient(160deg, #181818, #0e0e0e); border: 1.5px solid var(--line); transition: transform .25s, border-color .25s; text-align: left; }
         .pack:hover { transform: translateY(-5px); } .pack.on { border-color: var(--accent); box-shadow: 0 0 0 4px rgba(200,255,46,.14); }
         .pack .tag { position: absolute; top: -.7rem; right: 1rem; padding: .25rem .7rem; border-radius: 999px; font-size: .65rem; font-weight: 900; color: #000; background: linear-gradient(135deg, var(--accent), var(--cyan)); }
+/* ===== v3: мобильное меню, чат в шапке, группы, политика ===== */
+.hc{max-width:46rem}
+.hc-msgs{max-height:48vh;overflow-y:auto;display:flex;flex-direction:column;gap:.75rem;padding:1rem;margin-bottom:.75rem;border:1px solid var(--line);border-radius:1.5rem;background:rgba(17,17,17,.85);backdrop-filter:blur(10px);-webkit-overflow-scrolling:touch}
+.hc-bar{display:flex;align-items:flex-end;gap:.5rem;padding:.55rem .55rem .55rem 1.1rem;border:1px solid rgba(255,255,255,.14);border-radius:1.75rem;background:#141414;transition:border-color .2s,box-shadow .2s}
+.hc-bar:focus-within{border-color:var(--accent);box-shadow:0 0 0 3px rgba(200,255,46,.12)}
+.hc-bar textarea{flex:1;min-height:2.4rem;max-height:9rem;resize:none;background:transparent;border:0;outline:0;color:#fff;font-size:1rem;line-height:1.4;padding:.5rem 0;font-family:inherit}
+.hc-bar textarea::placeholder{color:#6b6b66}
+.hc-send{width:2.6rem;height:2.6rem;flex:none;border-radius:999px;background:var(--accent);color:#000;font-weight:900;font-size:1.1rem;display:flex;align-items:center;justify-content:center;transition:transform .15s,opacity .2s}
+.hc-send:active{transform:scale(.92)}.hc-send:disabled{opacity:.4}
+.hc-chips{display:flex;flex-wrap:wrap;gap:.5rem;margin-top:.75rem}
+.hc-chips button{font-size:.78rem;font-weight:600;color:#cfcfc8;padding:.45rem .85rem;border:1px solid var(--line);border-radius:999px;background:transparent;transition:.2s}
+.hc-chips button:hover{border-color:var(--accent);color:#fff}
+.hc-note{font-size:.7rem;color:#6b6b66;margin-top:.6rem}
+#side-bg{display:none}
+#side-close,#side-fab,#work-mbar{display:none}
+@media (max-width:1023px){
+  #side-panel{position:fixed!important;top:0;bottom:0;left:0;width:min(88vw,340px)!important;z-index:70;border-radius:0 28px 28px 0!important;overflow-y:auto;overscroll-behavior:contain;transform:translateX(-106%);transition:transform .3s cubic-bezier(.2,.8,.2,1)!important;padding-bottom:max(1.25rem,env(safe-area-inset-bottom))}
+  #side-panel.open{transform:none;box-shadow:0 0 80px rgba(0,0,0,.8)}
+  #side-bg{display:block;position:fixed;inset:0;z-index:65;background:rgba(0,0,0,.6);backdrop-filter:blur(3px);opacity:0;pointer-events:none;transition:opacity .25s}
+  #side-bg.open{opacity:1;pointer-events:auto}
+  #side-close{display:flex;position:sticky;top:0;margin-left:auto;z-index:2;width:2.2rem;height:2.2rem;align-items:center;justify-content:center;border-radius:999px;border:1px solid var(--line);background:#161616;color:#ddd}
+  #work-mbar{display:flex;align-items:center;justify-content:space-between;gap:.5rem;margin-bottom:1rem}
+  #side-fab{display:flex;position:fixed;left:1rem;bottom:max(1rem,env(safe-area-inset-bottom));z-index:55;align-items:center;gap:.5rem;padding:.8rem 1.1rem;border-radius:999px;background:var(--accent);color:#000;font-weight:800;font-size:.8rem;box-shadow:0 8px 30px rgba(0,0,0,.5);transition:transform .25s,opacity .25s}
+  #side-fab.off{transform:translateY(140%);opacity:0;pointer-events:none}
+  #work-main{padding:1rem!important;min-height:420px!important}
+  #result-container{padding-top:1rem!important;padding-bottom:1rem!important}
+  .hero-title{line-height:.95}
+}
+body.no-scroll{overflow:hidden}
+.g-badge.hidden,.hc-msgs.hidden{display:none!important}
+#nav-menu{position:fixed;top:4.6rem;right:1rem;left:1rem;max-width:20rem;margin-left:auto;z-index:60;padding:.5rem;border:1px solid var(--line);border-radius:1.5rem;background:rgba(17,17,17,.97);backdrop-filter:blur(16px);box-shadow:0 20px 60px rgba(0,0,0,.6);transform-origin:top right;transition:transform .2s,opacity .2s}
+#nav-menu.off{transform:scale(.92);opacity:0;pointer-events:none}
+#nav-menu a,#nav-menu button.mi{display:flex;align-items:center;justify-content:space-between;width:100%;text-align:left;padding:.85rem 1rem;border-radius:1rem;font-size:.9rem;font-weight:700;color:#e6e6df}
+#nav-menu a:active,#nav-menu button.mi:active{background:rgba(255,255,255,.08)}
+.g-badge{display:inline-flex;min-width:1.2rem;height:1.2rem;padding:0 .3rem;align-items:center;justify-content:center;border-radius:999px;background:#ff5d73;color:#fff;font-size:.65rem;font-weight:800}
+.g-card{display:block;width:100%;text-align:left;padding:1rem 1.1rem;border:1px solid var(--line);border-radius:1.25rem;background:var(--tile);transition:border-color .2s}
+.g-card:hover{border-color:rgba(200,255,46,.4)}
+.g-chip{display:inline-flex;align-items:center;gap:.4rem;padding:.35rem .4rem .35rem .8rem;border:1px solid var(--line);border-radius:999px;font-size:.78rem;font-weight:600;color:#e6e6df;background:#141414}
+.g-chip button{width:1.3rem;height:1.3rem;border-radius:999px;color:#999;font-size:.8rem}
+.g-chip button:hover{background:rgba(255,93,115,.2);color:#ff5d73}
+.g-col{border:1px solid var(--line);border-radius:1.25rem;background:var(--tile);padding:.8rem;min-width:0}
+.g-task{display:flex;gap:.65rem;align-items:flex-start;padding:.65rem .7rem;border-radius:1rem;background:#141414;border:1px solid var(--line);margin-top:.5rem}
+.g-task.done .g-t{text-decoration:line-through;color:#6b6b66}
+.g-ck{flex:none;width:1.4rem;height:1.4rem;border-radius:.45rem;border:2px solid #555;display:flex;align-items:center;justify-content:center;font-size:.8rem;color:#000;margin-top:.1rem}
+.g-task.done .g-ck{background:var(--accent);border-color:var(--accent)}
+.g-sel{background:#0d0d0d;border:1px solid var(--line);border-radius:.7rem;color:#ccc;font-size:.7rem;padding:.3rem .4rem;max-width:100%}
+.pol-ov{position:fixed;inset:0;z-index:90;background:rgba(0,0,0,.85);backdrop-filter:blur(8px);display:flex;align-items:center;justify-content:center;padding:.75rem}
+.pol-card{width:100%;max-width:44rem;max-height:92vh;display:flex;flex-direction:column;border:1px solid var(--line);border-radius:1.75rem;background:var(--panel);overflow:hidden}
+.pol-body{overflow-y:auto;padding:1.25rem 1.5rem;-webkit-overflow-scrolling:touch}
+.pol-body h4{color:#fff;font-weight:800;font-size:.95rem;margin:1.1rem 0 .35rem}
+.pol-body p,.pol-body li{color:#b8b8b2;font-size:.82rem;line-height:1.6}
+.pol-body ul{list-style:disc;padding-left:1.2rem}
+.pol-foot{padding:.9rem 1.25rem;border-top:1px solid var(--line);display:flex;flex-wrap:wrap;gap:.5rem}
+.consent-row{display:flex;gap:.7rem;align-items:flex-start;text-align:left;font-size:.75rem;line-height:1.5;color:#b8b8b2;padding:.8rem;border:1px solid var(--line);border-radius:1rem;background:#0d0d0d;cursor:pointer}
+.consent-row input{flex:none;width:1.2rem;height:1.2rem;margin-top:.1rem;accent-color:#c8ff2e}
+.consent-row a,.consent-row button.lk{color:var(--accent);text-decoration:underline;font-weight:700}
+@keyframes shk{0%,100%{transform:translateX(0)}25%{transform:translateX(-6px)}75%{transform:translateX(6px)}}
+.shk{animation:shk .35s}
     </style>
 </head>
 <body class="min-h-screen flex flex-col">
@@ -452,10 +510,19 @@
                     <option value="ru" class="bg-neutral-900">🇷🇺 RU</option>
                     <option value="en" class="bg-neutral-900">🇬🇧 EN</option>
                 </select>
-                <button onclick="openCabinet()" class="btn-accent px-5 py-2.5 text-xs" id="nav-profile-btn">Кабинет</button>
+                <button onclick="openCabinet()" class="btn-accent px-4 sm:px-5 py-2.5 text-xs" id="nav-profile-btn">Кабинет</button>
+                <button id="nav-burger" onclick="toggleNavMenu(event)" aria-label="Menu" class="md:hidden relative w-10 h-10 rounded-full border border-white/10 text-white flex items-center justify-center text-lg font-black">⋯<span id="g-badge-top" class="g-badge hidden absolute -top-1 -right-1"></span></button>
             </div>
         </div>
     </header>
+    <div id="nav-menu" class="off md:hidden" onclick="event.stopPropagation()">
+        <a href="#work" onclick="navGo('workspace-section'); return false;"><span>🧠 <span data-i="work">Платформа</span></span><span>→</span></a>
+        <button class="mi" onclick="navGo('workspace-section'); openGroupsView()"><span>👥 <span data-i="groups">Группы</span></span><span id="g-badge-menu" class="g-badge hidden"></span></button>
+        <a href="#pricing" onclick="navGo('pricing'); return false;" style="color:var(--accent)"><span>⚡ <span data-i="tokens">Токены</span></span><span>→</span></a>
+        <a href="#about" onclick="navGo('about'); return false;"><span>ℹ️ <span data-i="about">О нас</span></span><span>→</span></a>
+        <a href="#contact" onclick="navGo('contact'); return false;"><span>✉️ <span data-i="contact">Контакты</span></span><span>→</span></a>
+        <button class="mi" onclick="openPolicy()"><span>🔒 <span data-i="privacy">Политика конфиденциальности</span></span><span>→</span></button>
+    </div>
 
     <!-- МОДАЛКИ -->
     <div id="day-modal" class="fixed inset-0 bg-black/80 backdrop-blur-md z-50 hidden flex items-center justify-center p-4">
@@ -479,7 +546,7 @@
 
     
 <div id="telegram-auth-modal" class="fixed inset-0 bg-black/95 z-50 flex items-center justify-center p-4 hidden" style="backdrop-filter: blur(12px);">
-        <div class="bento-card rounded-[28px] p-6 sm:p-8 max-w-md w-full shadow-2xl space-y-5 text-center">
+        <div class="bento-card rounded-[28px] p-6 sm:p-8 max-w-md w-full shadow-2xl space-y-4 text-center max-h-[94vh] overflow-y-auto">
             <div class="w-16 h-16 bg-[#c8ff2e] text-black rounded-full flex items-center justify-center text-3xl mx-auto animate-float">✈️</div>
             <h3 id="auth-title" class="display text-3xl font-bold text-white">HUB-қа кіру</h3>
             <a id="tg-link" href="https://t.me/enuuma_bot" target="_blank" rel="noopener" class="btn-accent w-full py-4 text-sm inline-flex items-center justify-center gap-2">✈️ <span id="tg-btn-text">Открыть Telegram</span></a>
@@ -488,6 +555,7 @@
                 <p id="auth-step-2">2. 6</p>
                 <p id="auth-auto" class="text-[#c8ff2e] font-bold"></p>
             </div>
+            <label class="consent-row" id="auth-consent-row"><input type="checkbox" id="auth-consent" onchange="consentTick(this.checked)"><span id="auth-consent-text"></span></label>
             <div class="flex items-center gap-3 text-neutral-600"><span class="flex-1 h-px bg-white/10"></span><span id="auth-or" class="mono">или</span><span class="flex-1 h-px bg-white/10"></span></div>
             <input id="otp" class="otp-one" type="text" inputmode="numeric" pattern="[0-9]*" autocomplete="one-time-code" maxlength="40" placeholder="······" oninput="otpInput(this)" onkeydown="if(event.key==='Enter') verifyCode()">
             <p id="auth-err" class="text-xs text-[#ff6b6b] min-h-[1rem]"></p>
@@ -512,6 +580,15 @@
                 <span class="chip-play animate-float"><span class="tri">▶</span>AI</span>
                 <span id="hero-word-2" class="text-neutral-500">platform</span>
             </h1>
+            <div id="hero-chat" class="hc mt-8 md:mt-10">
+                <div id="hc-messages" class="hc-msgs hidden"></div>
+                <div class="hc-bar">
+                    <textarea id="hc-input" rows="1" placeholder="Спросите ИИ о чём угодно…" oninput="hcGrow(this)" onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();hcSend();}"></textarea>
+                    <button id="hc-send" class="hc-send" onclick="hcSend()" aria-label="Send">↑</button>
+                </div>
+                <div id="hc-chips" class="hc-chips"></div>
+                <p id="hc-note" class="hc-note"></p>
+            </div>
             <div class="mt-10 flex flex-col md:flex-row md:items-end md:justify-between gap-8">
                 <p class="max-w-md text-base lg:text-lg font-medium text-neutral-400 leading-snug" id="hero-subtitle">
                     Твой путь к знаниям с искусственным интеллектом 2026 года
@@ -543,7 +620,9 @@
 
         <div class="flex flex-col lg:flex-row gap-5">
             <!-- БОКОВАЯ ПАНЕЛЬ -->
-            <aside class="w-full lg:w-80 bento-card rounded-[28px] p-5 flex flex-col justify-between z-20">
+            <div id="side-bg" onclick="toggleSide(false)"></div>
+            <aside id="side-panel" class="w-full lg:w-80 bento-card rounded-[28px] p-5 flex flex-col justify-between z-20">
+                <button id="side-close" onclick="toggleSide(false)" aria-label="Close">✕</button>
                 <div class="space-y-6">
                     <div class="space-y-2.5">
                         <h2 id="lbl-sec-1" class="mono">1. Материал</h2>
@@ -569,6 +648,7 @@
                         <button onclick="openHumanizerView()" class="mode-row accent"><span class="num">09</span><span id="btn-mode-human">✍️ Мәтінді адамдандыру</span><span class="arrow">NEW</span></button>
                         <button onclick="openCareerView()" class="mode-row accent"><span class="num">10</span><span id="btn-mode-career">🎓 11 сынып: түсу кеңесі</span><span class="arrow">NEW</span></button>
                         <button onclick="openSlidesView()" class="mode-row accent"><span class="num">11</span><span id="btn-mode-slides">🎞️ ЖИ-презентациялар</span><span class="arrow">NEW</span></button>
+                        <button onclick="openGroupsView()" class="mode-row accent"><span class="num">12</span><span id="btn-mode-groups">👥 Группы</span><span class="arrow"><span id="g-badge-side" class="g-badge hidden"></span><span id="g-new">NEW</span></span></button>
                     </div>
                 </div>
 
@@ -590,7 +670,8 @@
             </aside>
 
             <!-- РАБОЧАЯ ЗОНА -->
-            <main class="flex-grow bento-card rounded-[28px] p-6 lg:p-10 flex flex-col justify-between relative overflow-hidden min-h-[520px]">
+            <main id="work-main" class="flex-grow bento-card rounded-[28px] p-6 lg:p-10 flex flex-col justify-between relative overflow-hidden min-h-[520px] min-w-0">
+                <div id="work-mbar"><button onclick="toggleSide(true)" class="btn-accent px-5 py-2.5 text-xs" id="btn-sections">☰ Разделы</button><span id="status-mobile" class="mono"></span></div>
                 <div class="border-b border-white/10 pb-4 mb-6 flex items-center justify-between">
                     <h2 class="display text-lg font-bold text-white flex items-center space-x-2">
                         <span id="lbl-workspace">✨ ЖИ Жұмыс аймағы</span>
@@ -639,10 +720,12 @@
             </div>
             <div class="flex items-center justify-between pt-8 border-t border-white/10">
                 <span class="mono">© 2026 StudyAI Hub</span>
+                <span class="flex gap-4"><button class="mono hover:text-white transition" onclick="openPolicy()" id="foot-privacy">Политика конфиденциальности</button></span>
                 <a href="#home" onclick="scrollToSection('home'); return false;" class="mono hover:text-white transition">↑ top</a>
             </div>
         </div>
     </footer>
+    <button id="side-fab" class="off" onclick="toggleSide(true)" aria-label="Sections"><span>☰</span><span id="fab-label">Разделы</span></button>
 
     <script>
         let currentUser = JSON.parse(localStorage.getItem('studyai_user')) || null;
@@ -2630,19 +2713,19 @@ const T = {
     cnt: 'Слайдов', cost: 'Стоимость', tok: 'токенов', have: 'у вас', style: 'Свой стиль (необязательно)', stylePh: 'Например: минимализм как у Apple, чёрно-белый, много воздуха', next: 'Создать презентацию',
     q: 'У вас готовый текст. Что с ним сделать?', shorten: '✂️ Сократить до тезисов', shortenD: 'ИИ оставит главное: короткие пункты, все факты и порядок мыслей.', verb: '📄 Оставить как есть', verbD: 'Слова не меняются: ИИ только разложит текст по слайдам.',
     pick: 'Выберите стиль', pickD: 'ИИ подобрал оформления под вашу тему. Нажмите на понравившийся.', picking: 'ИИ подбирает стили…', auto: '🎲 Пусть ИИ выберет сам', aiSet: '✨ Подобрано ИИ под вашу тему', ready: '🎨 Готовые стили', imgs: 'Картинки на слайдах', imgNone: '🚫 Без картинок', imgAi: '🎨 ИИ-иллюстрации', imgStock: '📷 Стоковые фото', imgStyle: 'Стиль картинок', imgOther: '🔄 Другое фото', imgHide: '🚫 Убрать здесь', imgShow: '🖼 Вернуть', imgNote: 'Картинки подгружаются из интернета и бесплатны. Их можно включить и сменить стиль прямо после создания.', imgLoad: 'Собираю картинки…', gr1: '⭐ По вашим референсам', gr2: '🆕 Новые', gr3: '🎞 Классика', useIt: 'Создать · {n} токенов', back: 'Назад',
-    g1: 'Продумываю структуру…', g2: 'Пишу заголовки-выводы…', g3: 'Подбираю раскладки…', g4: 'Оформляю слайды…', slide: 'Слайд', edit: 'Нажмите на текст, чтобы поправить', present: '▶ Показ', pptx: '⬇ PowerPoint', pdf: '🖨 PDF', newP: 'Новая', last: 'Открыть последнюю презентацию', notes: 'Заметки докладчика',
+    g1: 'Продумываю структуру…', g2: 'Пишу заголовки-выводы…', g3: 'Подбираю раскладки…', g4: 'Оформляю слайды…', slide: 'Слайд', edit: 'Нажмите на текст, чтобы поправить', present: '▶ Показ', pptx: '⬇ PowerPoint', pdf: '⬇ PDF', newP: 'Новая', last: 'Открыть последнюю презентацию', notes: 'Заметки докладчика',
     few: 'Не хватает токенов', fewD: 'Выберите меньше слайдов или купите токены.', short: 'Опишите тему подробнее (хотя бы пара слов).', saved: 'Скачиваю…', needText: 'Для режима «как есть» вставьте готовый текст.' },
   kz: { mode: '🎞️ ЖИ-презентациялар', t: '🎞️ ЖИ-презентациялар', d: 'Тақырыпты сипатта немесе өз мәтініңді қой — ЖИ әдемі слайдтар жасайды. Бір слайд — 1 токен.', ph: 'Презентация не туралы? Мысалы: «Жасанды интеллект қалай жұмыс істейді», 9 сынып үшін. Немесе дайын мәтінді қойыңыз.',
     cnt: 'Слайд саны', cost: 'Құны', tok: 'токен', have: 'сізде', style: 'Өз стилің (міндетті емес)', stylePh: 'Мысалы: Apple сияқты минимализм, ақ-қара', next: 'Презентация жасау',
     q: 'Дайын мәтін бар. Не істейміз?', shorten: '✂️ Тезиске дейін қысқарту', shortenD: 'ЖИ маңыздысын қалдырады: қысқа тармақтар.', verb: '📄 Сол күйінде қалдыру', verbD: 'Сөздер өзгермейді: ЖИ мәтінді тек слайдқа бөледі.',
     pick: 'Стильді таңда', pickD: 'ЖИ тақырыбыңа сай безендіру таңдады. Ұнағанын бас.', picking: 'ЖИ стиль таңдауда…', auto: '🎲 ЖИ өзі таңдасын', aiSet: '✨ ЖИ тақырыпқа сай таңдады', ready: '🎨 Дайын стильдер', imgs: 'Слайдтардағы суреттер', imgNone: '🚫 Суретсіз', imgAi: '🎨 ЖИ-иллюстрациялар', imgStock: '📷 Сток фото', imgStyle: 'Сурет стилі', imgOther: '🔄 Басқа сурет', imgHide: '🚫 Мұнда алып тастау', imgShow: '🖼 Қайтару', imgNote: 'Суреттер интернеттен жүктеледі және тегін. Оларды жасағаннан кейін де қосып, стилін ауыстыруға болады.', imgLoad: 'Суреттерді жинаудамын…', gr1: '⭐ Сіздің үлгілеріңіз бойынша', gr2: '🆕 Жаңа', gr3: '🎞 Классика', useIt: 'Жасау · {n} токен', back: 'Артқа',
-    g1: 'Құрылымды ойластырудамын…', g2: 'Тақырыптарды жазудамын…', g3: 'Орналасуды таңдаудамын…', g4: 'Слайдтарды безендіруде…', slide: 'Слайд', edit: 'Мәтінді түзету үшін басыңыз', present: '▶ Көрсету', pptx: '⬇ PowerPoint', pdf: '🖨 PDF', newP: 'Жаңа', last: 'Соңғы презентацияны ашу', notes: 'Баяндамашы жазбалары',
+    g1: 'Құрылымды ойластырудамын…', g2: 'Тақырыптарды жазудамын…', g3: 'Орналасуды таңдаудамын…', g4: 'Слайдтарды безендіруде…', slide: 'Слайд', edit: 'Мәтінді түзету үшін басыңыз', present: '▶ Көрсету', pptx: '⬇ PowerPoint', pdf: '⬇ PDF', newP: 'Жаңа', last: 'Соңғы презентацияны ашу', notes: 'Баяндамашы жазбалары',
     few: 'Токен жетпейді', fewD: 'Слайдты азайтыңыз немесе токен сатып алыңыз.', short: 'Тақырыпты толығырақ сипаттаңыз.', saved: 'Жүктелуде…', needText: '«Сол күйінде» режимі үшін дайын мәтінді қойыңыз.' },
   en: { mode: '🎞️ AI Presentations', t: '🎞️ AI Presentations', d: 'Describe a topic or paste your text — the AI builds beautiful slides. One slide costs 1 token.', ph: 'What is it about? e.g. “How AI works” for 9th graders, with everyday examples. Or paste your finished text.',
     cnt: 'Slides', cost: 'Cost', tok: 'tokens', have: 'you have', style: 'Your own style (optional)', stylePh: 'e.g. Apple-like minimalism, black and white, lots of air', next: 'Create presentation',
     q: 'You pasted a finished text. What should we do with it?', shorten: '✂️ Shorten to key points', shortenD: 'The AI keeps the essentials: short bullets, every fact, same order.', verb: '📄 Keep as is', verbD: 'Words stay untouched: the AI only splits the text into slides.',
     pick: 'Pick a style', pickD: 'The AI chose designs that fit your topic. Tap your favorite.', picking: 'The AI is picking styles…', auto: '🎲 Let the AI choose', aiSet: '✨ Picked by the AI for your topic', ready: '🎨 Ready-made styles', imgs: 'Slide pictures', imgNone: '🚫 No pictures', imgAi: '🎨 AI illustrations', imgStock: '📷 Stock photos', imgStyle: 'Picture style', imgOther: '🔄 Another picture', imgHide: '🚫 Hide here', imgShow: '🖼 Restore', imgNote: 'Pictures load from the internet and are free. You can switch them on and change the style right after creation.', imgLoad: 'Collecting pictures…', gr1: '⭐ From your references', gr2: '🆕 New', gr3: '🎞 Classic', useIt: 'Create · {n} tokens', back: 'Back',
-    g1: 'Planning the structure…', g2: 'Writing headline takeaways…', g3: 'Choosing layouts…', g4: 'Designing slides…', slide: 'Slide', edit: 'Click any text to edit it', present: '▶ Present', pptx: '⬇ PowerPoint', pdf: '🖨 PDF', newP: 'New', last: 'Open last presentation', notes: 'Speaker notes',
+    g1: 'Planning the structure…', g2: 'Writing headline takeaways…', g3: 'Choosing layouts…', g4: 'Designing slides…', slide: 'Slide', edit: 'Click any text to edit it', present: '▶ Present', pptx: '⬇ PowerPoint', pdf: '⬇ PDF', newP: 'New', last: 'Open last presentation', notes: 'Speaker notes',
     few: 'Not enough tokens', fewD: 'Choose fewer slides or buy tokens.', short: 'Describe the topic in more detail.', saved: 'Downloading…', needText: 'For “keep as is” paste your finished text.' }
 };
 const L = () => T[selectedLang] || T.ru;
@@ -2672,9 +2755,9 @@ const hash = str => { let x = 7; for (const c of String(str)) x = (x * 31 + c.ch
 function imgOf(s, i) {
   const dk = D && D.deck; if (!dk || !dk.imgMode || dk.imgMode === 'none' || s.noimg || !IMG_LAYS.includes(s.layout) || !(s.vq || s.kw)) return '';
   const seed = s.seed != null ? s.seed : hash((s.title || '') + i);
-  if (dk.imgMode === 'stock') { const tags = (s.kw || s.vq.split(' ').slice(0, 3).join(',')).split(',').map(t => t.trim().split(/\s+/)[0]).filter(Boolean).slice(0, 3).join(','); return `https://loremflickr.com/768/768/${encodeURIComponent(tags)}?lock=${seed}`; }
+  if (dk.imgMode === 'stock') { const tags = (s.kw || s.vq.split(' ').slice(0, 3).join(',')).split(',').map(t => t.trim().split(/\s+/)[0]).filter(Boolean).slice(0, 3).join(','); return `/api/img?k=stock&q=${encodeURIComponent(tags)}&s=${seed}`; }
   const st = IMG_STYLES.find(x => x[0] === dk.imgStyle) || IMG_STYLES[0];
-  return `https://image.pollinations.ai/prompt/${encodeURIComponent((s.vq || s.title) + ', ' + st[3] + ', no text, no letters, no watermark')}?width=768&height=768&nologo=true&seed=${seed}`;
+  return `/api/img?k=ai&q=${encodeURIComponent((s.vq || s.title) + ', ' + st[3] + ', no text, no letters, no watermark')}&s=${seed}`;
 }
 
 // ---------- рендер слайда ----------
@@ -2784,7 +2867,7 @@ function viewDeck() {
     <div id="sl-imgbar" class="tile p-3 space-y-2.5"></div>
     <div id="sl-thumbs" class="flex gap-2 overflow-x-auto pb-2"></div>
     <details class="tile p-4"><summary class="mono cursor-pointer">${l.notes}</summary><p id="sl-notes" class="text-sm text-neutral-300 mt-3 leading-relaxed"></p></details>
-    <div class="grid grid-cols-2 sm:grid-cols-4 gap-2"><button class="btn-accent py-3 text-xs" onclick="slPresent()">${l.present}</button><button class="btn-ghost py-3 text-xs" onclick="slPptx()">${l.pptx}</button><button class="btn-ghost py-3 text-xs" onclick="slPdf()">${l.pdf}</button><button class="btn-ghost py-3 text-xs" onclick="openSlidesView()">${l.newP}</button></div></div>`;
+    <div class="grid grid-cols-2 sm:grid-cols-4 gap-2"><button class="btn-accent py-3 text-xs" onclick="slPresent()">${l.present}</button><button class="btn-ghost py-3 text-xs" onclick="slPptx()">${l.pptx}</button><button class="btn-ghost py-3 text-xs" onclick="slPdf(event)">${l.pdf}</button><button class="btn-ghost py-3 text-xs" onclick="openSlidesView()">${l.newP}</button></div></div>`;
   drawStage(); drawThumbs(); drawImgBar();
 }
 function refreshAll() { persist(); drawStage(); drawThumbs(); drawImgBar(); }
@@ -2830,10 +2913,104 @@ window.slPptx = async function () {
     const a = document.createElement('a'); a.href = URL.createObjectURL(await res.blob()); a.download = (D.deck.title || 'presentation').replace(/[^\w\u0400-\u04FF-]+/g, '_').slice(0, 40) + '.pptx'; document.body.appendChild(a); a.click(); a.remove();
   } finally { if (btn) btn.textContent = old; }
 };
-window.slPdf = function () {
-  const dk = D.deck; let p = $('print-deck'); if (!p) { p = document.createElement('div'); p.id = 'print-deck'; document.body.appendChild(p); }
-  p.innerHTML = dk.slides.map((s, k) => `<div class="slw">${slideHtml(s, dk.theme, k, dk.slides.length, false, imgOf(s, k))}</div>`).join('');
-  const imgs = [...p.querySelectorAll('img')], t0 = Date.now(); const wait = () => { if (imgs.every(im => im.complete) || Date.now() - t0 > 15000) print(); else setTimeout(wait, 300); }; setTimeout(wait, 300);
+// ---------- PDF как обычный файл (работает на телефонах): слайды рисуются на canvas → JPEG → PDF ----------
+const PW = 1920, PH = 1080, K = 144;                          // 1 дюйм = 144 px, слайд 13.333 × 7.5 дюйма
+const pxs = v => v * K;
+function loadImg(url) {
+  return new Promise(res => { if (!url) return res(null); const im = new Image(), t = setTimeout(() => res(null), 40000); im.onload = () => { clearTimeout(t); res(im); }; im.onerror = () => { clearTimeout(t); res(null); }; im.src = url; });
+}
+function drawSlideCanvas(s, th, i, n, img) {
+  const cv = document.createElement('canvas'); cv.width = PW; cv.height = PH; const g = cv.getContext('2d');
+  const deco = th.deco, big = ['title', 'closing', 'section'].includes(s.layout), flip = deco === 'gradblock' && big;
+  const res = { diag: 2.9, blocks: 1.4, curve: 2.7 }[deco] || 0, AW = 11.6 - res;
+  const bg = flip ? th.ac : th.bg, tx = flip ? '#ffffff' : th.tx, mut = flip ? '#e8f4ff' : th.mut;
+  g.fillStyle = bg; g.fillRect(0, 0, PW, PH);
+  const rect = (x, y, w, h, c) => { g.fillStyle = c; g.fillRect(pxs(x), pxs(y), pxs(w), pxs(h)); };
+  const oval = (x, y, w, h, c) => { g.fillStyle = c; g.beginPath(); g.ellipse(pxs(x + w / 2), pxs(y + h / 2), pxs(w / 2), pxs(h / 2), 0, 0, Math.PI * 2); g.fill(); };
+  const poly = (pts, c) => { g.fillStyle = c; g.beginPath(); pts.forEach((p, k) => k ? g.lineTo(pxs(p[0]), pxs(p[1])) : g.moveTo(pxs(p[0]), pxs(p[1]))); g.closePath(); g.fill(); };
+  const para = (x, y, w, h, c) => poly([[x + 0.35 * w, y], [x + w, y], [x + 0.65 * w, y + h], [x, y + h]], c);
+  const rtri = (x, y, w, h, c) => poly([[x, y], [x, y + h], [x + w, y + h]], c);
+  const rrect = (x, y, w, h, c, r = 0.25) => { g.fillStyle = c; g.beginPath(); g.roundRect ? g.roundRect(pxs(x), pxs(y), pxs(w), pxs(h), pxs(r)) : g.rect(pxs(x), pxs(y), pxs(w), pxs(h)); g.fill(); };
+  // декор
+  if (deco === 'diag') { para(big ? 10.6 : 11.6, -0.1, big ? 3.4 : 2.4, 7.7, th.ac); rtri(12.2, 5.9, 1.2, 1.7, th.ac2); }
+  else if (deco === 'blocks') { rect(0, 0, 0.55, 7.5, th.ac2); rect(big ? 10.6 : 12.2, 0, big ? 2.73 : 1.13, big ? 7.5 : 1.13, th.ac); }
+  else if (deco === 'strips') { para(-0.5, 0, 1.6, 7.5, th.ac); rtri(11.0, 5.0, 2.33, 2.5, th.ac2); }
+  else if (deco === 'gradblock') { rect(0, 0, 0.4, 7.5, flip ? '#ffffff' : th.ac); if (!big) oval(12.0, -0.8, 2.2, 2.2, th.ac2); }
+  else if (deco === 'outline') { oval(12.0, 0.6, 0.5, 0.5, th.ac2); oval(12.7, 1.1, 0.25, 0.25, th.ac); }
+  else if (deco === 'organic') { oval(11.0, -1.2, 3.4, 2.7, th.ac); oval(-1.0, 6.2, 3.6, 2.6, th.ac2); }
+  else if (deco === 'curve') { oval(11.3, -0.9, 4.0, 9.3, th.ac); oval(12.3, -0.7, 1.8, 1.8, th.ac2); }
+  else { rect(0, 0, 0.22, 7.5, th.ac); if (big) { oval(9.6, -1.4, 5.2, 5.2, th.bg2); oval(10.9, 4.6, 3.4, 3.4, th.ac2); } }
+  // текст с переносами
+  const text = (str, x, y, w, size, color, weight, font, align = 'left', italic = false) => {
+    const px = size * 2, lh = px * 1.3; g.font = `${italic ? 'italic ' : ''}${weight} ${px}px "${font}", "Inter", sans-serif`; g.fillStyle = color; g.textBaseline = 'top'; g.textAlign = 'left';
+    const lines = []; String(str || '').split('\n').forEach(par => { let cur = ''; par.split(/\s+/).forEach(wd => { const t = cur ? cur + ' ' + wd : wd; if (g.measureText(t).width > pxs(w) && cur) { lines.push(cur); cur = wd; } else cur = t; }); lines.push(cur); });
+    lines.forEach((ln, k) => { const lw = g.measureText(ln).width; const xx = align === 'center' ? pxs(x) + (pxs(w) - lw) / 2 : pxs(x); g.fillText(ln, xx, pxs(y) + k * lh); });
+    return lines.length * lh / K;
+  };
+  const list = (arr, x, y, w, size, color, bullet, font) => { let yy = y; arr.forEach(t => { yy += text(bullet + t, x, yy, w, size, color, 500, font) + 0.14; }); return yy; };
+  const left = (deco === 'blocks' || deco === 'strips') ? 1.4 : 1.0, x0 = left - (big ? 0 : 0.1);
+  const pic = img && ['title', 'section', 'bullets', 'quote', 'closing'].includes(s.layout) ? img : null;
+  const pw = pic ? (res ? 3.2 : 4.3) : 0;
+  if (pic) { const px = 13.333 - 0.7 - res - pw, py = big ? 1.5 : 1.6; g.save(); g.beginPath(); g.roundRect ? g.roundRect(pxs(px), pxs(py), pxs(pw), pxs(pw), pxs(0.3)) : g.rect(pxs(px), pxs(py), pxs(pw), pxs(pw)); g.clip(); g.drawImage(pic, pxs(px), pxs(py), pxs(pw), pxs(pw)); g.restore(); }
+  const AWp = AW - (pic ? pw + 0.6 : 0);
+  if (big) {
+    let tw = res ? Math.min(9.4, AW - 1.0) : 9.4; if (pic) tw = Math.min(tw, 13.333 - 0.7 - res - pw - left - 0.4);
+    g.font = '700 80px sans-serif'; g.textBaseline = 'top'; g.fillStyle = flip ? '#fff' : th.ac; g.fillText(s.icon || '', pxs(left), pxs(2.0));
+    const fs = (s.title || '').length <= 28 ? 44 : 36, h = text(s.title, left, 2.9, tw, tw < 5.6 ? Math.min(fs, 30) : fs, tx, 800, th.fh);
+    let y = 2.9 + h + 0.3; if (s.subtitle) y += text(s.subtitle, left, y, Math.min(9.0, tw), 22, mut, 500, th.fb) + 0.3;
+    if (s.layout === 'closing' && (s.bullets || []).length) list(s.bullets.slice(0, 3), left, Math.min(6.2, y + 0.2), AW - 0.5, 16, flip ? '#fff' : th.ac, '→ ', th.fb);
+  } else {
+    const hh = text(s.title, x0, 0.55, AW - 0.2, 34, tx, 800, th.fh); rect(x0 + 0.05, Math.max(1.9, 0.55 + hh + 0.15), 1.2, 0.07, th.ac);
+    const L = s.layout;
+    if (L === 'two_col' || L === 'compare') {
+      const w = (AW - 0.5) / 2; ['left', 'right'].forEach((sd, j) => { const b = s[sd] || { h: '', items: [] }, x = x0 + j * (w + 0.4); rrect(x, 2.3, w, 4.5, th.bg2); text(b.h, x + 0.3, 2.5, w - 0.6, 22, j ? th.ac2 : th.ac, 800, th.fh); list(b.items || [], x + 0.3, 3.3, w - 0.6, 17, tx, '• ', th.fb); });
+    } else if (L === 'stats') {
+      const st = s.stats || [], w = (AW - 0.2) / Math.max(1, st.length); st.forEach((it, j) => { const x = x0 + j * w; rrect(x, 2.5, w - 0.25, 3.6, th.bg2); text(it.v, x + 0.1, 3.0, w - 0.45, 54, j % 2 ? th.ac2 : th.ac, 800, th.fh, 'center'); text(it.l, x + 0.2, 4.7, w - 0.65, 16, tx, 500, th.fb, 'center'); });
+    } else if (L === 'quote') {
+      const h = text('“' + (s.quote || '') + '”', x0 + 0.3, 2.4, AWp - 0.8, pic ? 24 : 30, tx, 500, th.fh, 'left', true); text('— ' + (s.author || ''), x0 + 0.3, Math.min(6.2, 2.4 + h + 0.3), AWp - 0.8, 18, th.ac, 700, th.fb);
+    } else if (L === 'timeline') {
+      const stp = s.steps || [], w = AW / Math.max(1, stp.length); rect(x0, 3.05, AW - 0.2, 0.05, th.mut);
+      stp.forEach((it, j) => { const x = x0 + j * w; oval(x, 2.75, 0.65, 0.65, j % 2 ? th.ac2 : th.ac); text(String(j + 1), x, 2.9, 0.65, 18, th.bg, 800, th.fh, 'center'); const h = text(it.h, x, 3.65, w - 0.2, 20, tx, 800, th.fh); text(it.t, x, 3.7 + h, w - 0.25, 14, mut, 500, th.fb); });
+    } else list(s.bullets || [], x0 + 0.05, 2.35, AWp - 0.4, pic ? 19 : 22, tx, '▸  ', th.fb);
+  }
+  g.font = '500 22px sans-serif'; g.fillStyle = mut; g.textAlign = 'right'; g.textBaseline = 'alphabetic'; g.fillText(`${i + 1} / ${n}`, PW - 40, PH - 30);
+  return cv;
+}
+function buildPdf(pages) {                                    // pages: [{bytes:Uint8Array(JPEG), w, h}]
+  const enc = new TextEncoder(), parts = [], offs = []; let pos = 0;
+  const put = b => { if (typeof b === 'string') b = enc.encode(b); parts.push(b); pos += b.length; };
+  const N = 2 + pages.length * 3; const ids = i => ({ page: 3 + i * 3, cont: 4 + i * 3, img: 5 + i * 3 });
+  put('%PDF-1.4\n'); offs[1] = pos; put('1 0 obj\n<< /Type /Catalog /Pages 2 0 R >>\nendobj\n');
+  offs[2] = pos; put(`2 0 obj\n<< /Type /Pages /Count ${pages.length} /Kids [${pages.map((_, i) => ids(i).page + ' 0 R').join(' ')}] >>\nendobj\n`);
+  pages.forEach((p, i) => {
+    const id = ids(i), content = `q 960 0 0 540 0 0 cm /Im0 Do Q`;
+    offs[id.page] = pos; put(`${id.page} 0 obj\n<< /Type /Page /Parent 2 0 R /MediaBox [0 0 960 540] /Resources << /XObject << /Im0 ${id.img} 0 R >> >> /Contents ${id.cont} 0 R >>\nendobj\n`);
+    offs[id.cont] = pos; put(`${id.cont} 0 obj\n<< /Length ${content.length} >>\nstream\n${content}\nendstream\nendobj\n`);
+    offs[id.img] = pos; put(`${id.img} 0 obj\n<< /Type /XObject /Subtype /Image /Width ${p.w} /Height ${p.h} /ColorSpace /DeviceRGB /BitsPerComponent 8 /Filter /DCTDecode /Length ${p.bytes.length} >>\nstream\n`); put(p.bytes); put('\nendstream\nendobj\n');
+  });
+  const xr = pos; put(`xref\n0 ${N + 1}\n0000000000 65535 f \n`); for (let k = 1; k <= N; k++) put(String(offs[k]).padStart(10, '0') + ' 00000 n \n');
+  put(`trailer\n<< /Size ${N + 1} /Root 1 0 R >>\nstartxref\n${xr}\n%%EOF`);
+  return new Blob(parts, { type: 'application/pdf' });
+}
+window.slPdf = async function (ev) {
+  const btn = (ev && ev.currentTarget) || (typeof event !== 'undefined' && event && event.currentTarget) || null, old = btn && btn.textContent, dk = D.deck, th = dk.theme, n = dk.slides.length;
+  const setB = t => { if (btn) btn.textContent = t; };
+  try {
+    setB('0 / ' + n);
+    try { await Promise.all([th.fh, th.fb].map(f => document.fonts.load(`800 40px "${f}"`, 'АаӘәҒғ Aa').then(() => document.fonts.load(`500 40px "${f}"`, 'АаӘәҒғ Aa')))); } catch (e) {}
+    const imgs = await Promise.all(dk.slides.map((s, i) => loadImg(imgOf(s, i))));
+    const pages = [];
+    for (let i = 0; i < n; i++) {
+      setB((i + 1) + ' / ' + n); await new Promise(r => setTimeout(r, 20));
+      const cv = drawSlideCanvas(dk.slides[i], th, i, n, imgs[i]);
+      const blob = await new Promise(r => cv.toBlob(r, 'image/jpeg', 0.9));
+      pages.push({ bytes: new Uint8Array(await blob.arrayBuffer()), w: PW, h: PH });
+    }
+    const pdf = buildPdf(pages), url = URL.createObjectURL(pdf), name = (dk.title || 'presentation').replace(/[^\w\u0400-\u04FF-]+/g, '_').slice(0, 40) + '.pdf';
+    const a = document.createElement('a'); a.href = url; a.download = name; a.rel = 'noopener'; document.body.appendChild(a); a.click(); a.remove();
+    const bar = $('sl-imgbar'); if (bar) { const old2 = $('sl-pdf-note'); if (old2) old2.remove(); bar.insertAdjacentHTML('afterend', `<p id="sl-pdf-note" class="text-xs text-neutral-400 px-1">✅ PDF · ${(pdf.size / 1048576).toFixed(1)} MB — <a href="${url}" download="${esc(name)}" target="_blank" rel="noopener" style="color:var(--accent);text-decoration:underline;font-weight:700">${selectedLang === 'en' ? 'tap here if it did not download' : selectedLang === 'kz' ? 'жүктелмесе, осы жерді басыңыз' : 'если не скачалось — нажмите здесь'}</a></p>`); }
+  } catch (e) { console.error(e); alert('PDF error: ' + (e && e.message || e)); }
+  finally { setB(old); }
 };
 
 // ---------- история и меню ----------
@@ -2888,6 +3065,242 @@ window.showPaywall = function () {
     <div class="flex flex-col gap-2"><button class="btn-accent py-3.5 text-sm" onclick="closePaywall(); scrollToSection('pricing')">${l.pwCta}</button><button class="text-xs text-neutral-500 py-2 hover:text-white" onclick="closePaywall()">${l.pwLater}</button></div></div></div>`);
 };
 window.renderPricing();
+})();
+</script>
+<script>
+(function () {
+const $ = id => document.getElementById(id), esc = escapeHtml, CV = '2026-10-29';
+const OPERATOR = 'Администрация StudyAI Hub', CONTACT = '@enuuma_bot';   // ← при необходимости укажите своё имя/ИП и контакт
+const LG = () => (['ru', 'kz', 'en'].includes(selectedLang) ? selectedLang : 'ru');
+
+// ======================= ТЕКСТЫ =======================
+const U = {
+  ru: { work: 'Платформа', groups: 'Группы', tokens: 'Токены', about: 'О нас', contact: 'Контакты', privacy: 'Политика конфиденциальности', sections: 'Разделы',
+    chatPh: 'Спросите ИИ о чём угодно…', chips: ['Объясни тему простыми словами', 'Составь план подготовки к экзамену', 'Реши задачу по шагам'], hcNote: 'Каждый ответ — 1 токен. Чат учитывает загруженный материал.', hcErr: 'Ошибка',
+    cTxt: 'Я прочитал(а) и принимаю <a href="#" onclick="openPolicy();return false">Политику конфиденциальности и Условия</a>, даю согласие на обработку моих персональных данных, включая передачу моих запросов и текстов ИИ-провайдеру. Мне есть 18 лет либо согласие дали родители/законные представители.',
+    cNeed: 'Поставьте галочку согласия, чтобы войти', cTitle: 'Согласие на обработку данных', cDesc: 'Мы обновили Политику конфиденциальности. Чтобы продолжить пользоваться сервисом, примите её.', cOk: 'Принимаю и продолжаю', cOut: 'Выйти',
+    close: 'Закрыть', export: '⬇ Скачать мои данные', del: '🗑 Удалить аккаунт', delQ: 'Удалить аккаунт и все данные безвозвратно? Это действие нельзя отменить.', delOk: 'Аккаунт удалён.', version: 'Версия' },
+  kz: { work: 'Платформа', groups: 'Топтар', tokens: 'Токендер', about: 'Біз туралы', contact: 'Байланыс', privacy: 'Құпиялылық саясаты', sections: 'Бөлімдер',
+    chatPh: 'ЖИ-дан кез келген нәрсені сұраңыз…', chips: ['Тақырыпты қарапайым тілмен түсіндір', 'Емтиханға дайындық жоспарын құр', 'Есепті қадам-қадаммен шеш'], hcNote: 'Әр жауап — 1 токен. Чат жүктелген материалды ескереді.', hcErr: 'Қате',
+    cTxt: 'Мен <a href="#" onclick="openPolicy();return false">Құпиялылық саясаты мен Шарттарды</a> оқыдым және қабылдаймын, жеке деректерімді өңдеуге, соның ішінде сұраныстарым мен мәтіндерімді ЖИ-провайдерге беруге келісім беремін. Мен 18 жастамын немесе ата-анам/заңды өкілім келісім берген.',
+    cNeed: 'Кіру үшін келісім белгісін қойыңыз', cTitle: 'Деректерді өңдеуге келісім', cDesc: 'Біз Құпиялылық саясатын жаңарттық. Жалғастыру үшін оны қабылдаңыз.', cOk: 'Қабылдаймын, жалғастыру', cOut: 'Шығу',
+    close: 'Жабу', export: '⬇ Деректерімді жүктеу', del: '🗑 Аккаунтты жою', delQ: 'Аккаунт пен барлық деректі біржола жою керек пе? Мұны қайтару мүмкін емес.', delOk: 'Аккаунт жойылды.', version: 'Нұсқа' },
+  en: { work: 'Platform', groups: 'Groups', tokens: 'Tokens', about: 'About', contact: 'Contact', privacy: 'Privacy Policy', sections: 'Sections',
+    chatPh: 'Ask the AI anything…', chips: ['Explain a topic in simple words', 'Make an exam prep plan', 'Solve a problem step by step'], hcNote: 'Each answer costs 1 token. The chat uses your uploaded material.', hcErr: 'Error',
+    cTxt: 'I have read and accept the <a href="#" onclick="openPolicy();return false">Privacy Policy and Terms</a> and consent to the processing of my personal data, including sending my requests and texts to the AI provider. I am 18+ or have consent from my parent/legal guardian.',
+    cNeed: 'Tick the consent box to log in', cTitle: 'Consent to data processing', cDesc: 'We updated the Privacy Policy. Please accept it to keep using the service.', cOk: 'Accept and continue', cOut: 'Log out',
+    close: 'Close', export: '⬇ Download my data', del: '🗑 Delete account', delQ: 'Delete your account and all data permanently? This cannot be undone.', delOk: 'Account deleted.', version: 'Version' }
+};
+const l = () => U[LG()];
+
+const POL = {
+  ru: { t: 'Политика конфиденциальности и Условия использования', s: [
+    ['1. Кто мы', `Сервис StudyAI Hub (далее — «Сервис») управляется: ${OPERATOR}. Контакт по вопросам данных: ${CONTACT} в Telegram. Политика составлена с учётом Закона Республики Казахстан «О персональных данных и их защите» № 94-V.`],
+    ['2. Какие данные мы собираем', '<ul><li><b>Аккаунт:</b> Telegram ID, ник (username) и имя из Telegram — для входа через бота. Пароль не используется.</li><li><b>Материалы:</b> файлы и тексты, которые вы загружаете (PDF, Word, Excel, TXT), и извлечённый из них текст.</li><li><b>Результаты работы:</b> тесты, карточки, конспекты, презентации, билеты, история чата с ИИ.</li><li><b>Учебная активность:</b> задачи планера, XP, токены, подписка.</li><li><b>Группы:</b> названия групп, участники, приглашения и задачи.</li><li><b>Технические данные:</b> IP-адрес (для защиты от злоупотреблений и ограничения частоты запросов), данные в localStorage браузера (токен входа, язык, последняя презентация).</li></ul>'],
+    ['3. Зачем мы это используем', 'Чтобы вы могли войти, пользоваться ИИ-функциями, сохранять историю, получать напоминания в Telegram, работать в группах, учитывать токены и подписку, а также защищать сервис от злоупотреблений. Мы не продаём ваши данные и не показываем рекламу.'],
+    ['4. Кому передаются данные', '<ul><li><b>Supabase</b> — хранение базы данных.</li><li><b>DeepSeek</b> (ИИ-провайдер) — ваши запросы и тексты материалов отправляются для генерации ответов. Серверы провайдера могут находиться за пределами Казахстана (трансграничная передача). Не отправляйте в чат и материалы чужие персональные, финансовые и иные конфиденциальные сведения.</li><li><b>Telegram</b> — вход, коды, уведомления о приглашениях и напоминания.</li><li><b>Сервисы картинок</b> (Pollinations, LoremFlickr) — получают только текстовое описание иллюстрации, без личных данных.</li><li><b>Google Fonts и CDN</b> — шрифты и библиотеки; при загрузке они видят ваш IP.</li></ul>'],
+    ['5. Группы', 'Ваш ник и имя видны участникам групп, в которые вы вступили. Пригласить вас может любой владелец группы, зная ваш ник; приглашение вступает в силу только после вашего принятия. Из группы можно выйти в любой момент.'],
+    ['6. Срок хранения', 'Данные хранятся, пока существует ваш аккаунт. Историю и задачи можно удалить в личном кабинете. При удалении аккаунта все связанные данные удаляются безвозвратно (группы, где вы владелец, передаются другому участнику или удаляются, если он один).'],
+    ['7. Безопасность', 'Доступ к базе данных возможен только через наш сервер; сессии защищены подписанным токеном; применяются ограничения частоты запросов. Ни одна система не защищена на 100%, поэтому не загружайте особо чувствительные документы.'],
+    ['8. Ваши права', 'Вы вправе: получить копию своих данных, исправить или удалить их, отозвать согласие. В этом окне (после входа) есть кнопки «Скачать мои данные» и «Удалить аккаунт». Отзыв согласия означает прекращение использования Сервиса и удаление аккаунта. По другим вопросам пишите: ' + CONTACT + '.'],
+    ['9. Возраст', 'Сервис рассчитан на школьников и студентов. Если вам нет 18 лет, пользоваться Сервисом можно с согласия родителей или законных представителей.'],
+    ['10. Файлы cookie и localStorage', 'Мы используем только технические данные браузера (вход, язык, последняя презентация). Рекламных и аналитических трекеров нет.'],
+    ['11. Условия использования', '<ul><li>Ответы ИИ могут содержать ошибки — проверяйте важные факты. Сервис не заменяет учителя, врача или юриста.</li><li>Соблюдайте правила своей школы или вуза об академической честности. Вы отвечаете за то, как используете созданные материалы.</li><li>Запрещено загружать незаконный контент, нарушать авторские права, пытаться обойти лимиты, взломать сервис или оскорблять участников групп.</li><li>Токены и Premium оплачиваются переводом через Kaspi и активируются вручную; неиспользованные токены не сгорают. Бесплатные токены обновляются ежедневно.</li><li>Мы можем ограничить доступ при нарушении условий и обновлять Сервис.</li></ul>'],
+    ['12. Изменения', 'При существенных изменениях мы попросим вас принять новую версию. Актуальная версия всегда доступна по ссылке /privacy.'] ] },
+  kz: { t: 'Құпиялылық саясаты және Пайдалану шарттары', s: [
+    ['1. Біз кімбіз', `StudyAI Hub сервисін (бұдан әрі — «Сервис») басқарады: ${OPERATOR}. Деректер мәселесі бойынша байланыс: Telegram-да ${CONTACT}. Саясат «Дербес деректер және оларды қорғау туралы» Қазақстан Республикасының № 94-V Заңын ескере отырып жасалған.`],
+    ['2. Қандай деректерді жинаймыз', '<ul><li><b>Аккаунт:</b> Telegram ID, ник (username) және Telegram-дағы аты — бот арқылы кіру үшін. Құпиясөз қолданылмайды.</li><li><b>Материалдар:</b> жүктеген файлдарыңыз бен мәтіндеріңіз (PDF, Word, Excel, TXT) және олардан алынған мәтін.</li><li><b>Жұмыс нәтижелері:</b> тесттер, карточкалар, конспектілер, презентациялар, билеттер, ЖИ-мен чат тарихы.</li><li><b>Оқу белсенділігі:</b> жоспарлаушы тапсырмалары, XP, токендер, жазылым.</li><li><b>Топтар:</b> топ атаулары, қатысушылар, шақырулар және тапсырмалар.</li><li><b>Техникалық деректер:</b> IP-мекенжай (теріс пайдаланудан қорғау және сұраныс жиілігін шектеу үшін), браузер localStorage деректері (кіру токені, тіл, соңғы презентация).</li></ul>'],
+    ['3. Не үшін қолданамыз', 'Кіруіңіз, ЖИ-функцияларды пайдалануыңыз, тарихты сақтауыңыз, Telegram-да еске салғыштар алуыңыз, топтарда жұмыс істеуіңіз, токендер мен жазылымды есепке алуыңыз және сервисті теріс пайдаланудан қорғау үшін. Деректеріңізді сатпаймыз, жарнама көрсетпейміз.'],
+    ['4. Деректер кімге беріледі', '<ul><li><b>Supabase</b> — дерекқорды сақтау.</li><li><b>DeepSeek</b> (ЖИ-провайдер) — жауап жасау үшін сұраныстарыңыз бен материал мәтіндері жіберіледі. Провайдер серверлері Қазақстаннан тыс жерде болуы мүмкін (трансшекаралық беру). Чатқа және материалдарға басқа адамдардың жеке, қаржылық және өзге құпия мәліметтерін жүктемеңіз.</li><li><b>Telegram</b> — кіру, кодтар, шақыру хабарламалары және еске салғыштар.</li><li><b>Сурет сервистері</b> (Pollinations, LoremFlickr) — тек иллюстрацияның мәтіндік сипаттамасын алады, жеке деректерсіз.</li><li><b>Google Fonts және CDN</b> — қаріптер мен кітапханалар; жүктеу кезінде IP-ңызды көреді.</li></ul>'],
+    ['5. Топтар', 'Ник пен атыңыз сіз қосылған топ қатысушыларына көрінеді. Сізді ник арқылы кез келген топ иесі шақыра алады; шақыру тек сіз қабылдағаннан кейін күшіне енеді. Топтан кез келген уақытта шыға аласыз.'],
+    ['6. Сақтау мерзімі', 'Деректер аккаунтыңыз бар кезде сақталады. Тарих пен тапсырмаларды жеке кабинетте жоюға болады. Аккаунт жойылғанда барлық байланысты деректер қайтарусыз жойылады (сіз иесі болған топтар басқа қатысушыға беріледі немесе қатысушы жалғыз болса, жойылады).'],
+    ['7. Қауіпсіздік', 'Дерекқорға тек біздің сервер арқылы қол жеткізіледі; сессиялар қол қойылған токенмен қорғалған; сұраныс жиілігіне шектеу бар. Ешбір жүйе 100% қорғалмаған, сондықтан аса құпия құжаттарды жүктемеңіз.'],
+    ['8. Сіздің құқықтарыңыз', 'Сіз: деректеріңіздің көшірмесін алуға, оларды түзетуге немесе жоюға, келісімді қайтарып алуға құқылысыз. Осы терезеде (кіргеннен кейін) «Деректерімді жүктеу» және «Аккаунтты жою» батырмалары бар. Келісімді қайтару — Сервисті пайдалануды тоқтату және аккаунтты жою дегенді білдіреді. Басқа сұрақтар бойынша: ' + CONTACT + '.'],
+    ['9. Жас', 'Сервис мектеп оқушылары мен студенттерге арналған. 18 жасқа толмасаңыз, ата-анаңыздың немесе заңды өкілдеріңіздің келісімімен пайдалана аласыз.'],
+    ['10. Cookie және localStorage', 'Біз тек браузердің техникалық деректерін қолданамыз (кіру, тіл, соңғы презентация). Жарнамалық және аналитикалық трекерлер жоқ.'],
+    ['11. Пайдалану шарттары', '<ul><li>ЖИ жауаптарында қате болуы мүмкін — маңызды фактілерді тексеріңіз. Сервис мұғалімді, дәрігерді немесе заңгерді алмастырмайды.</li><li>Мектебіңіз немесе ЖОО-ның академиялық адалдық ережелерін сақтаңыз. Жасалған материалдарды қалай қолданатыныңызға өзіңіз жауаптысыз.</li><li>Заңсыз контент жүктеуге, авторлық құқықты бұзуға, лимиттерді айналып өтуге, сервисті бұзуға немесе топ қатысушыларын қорлауға тыйым салынады.</li><li>Токендер мен Premium Kaspi арқылы аударыммен төленеді және қолмен қосылады; пайдаланылмаған токендер жанбайды. Тегін токендер күн сайын жаңарады.</li><li>Шарттар бұзылса, қолжетімділікті шектеуге және Сервисті жаңартуға құқылымыз.</li></ul>'],
+    ['12. Өзгерістер', 'Елеулі өзгерістер болса, жаңа нұсқаны қабылдауды сұраймыз. Өзекті нұсқа әрқашан /privacy сілтемесінде қолжетімді.'] ] },
+  en: { t: 'Privacy Policy and Terms of Use', s: [
+    ['1. Who we are', `StudyAI Hub (the “Service”) is operated by: ${OPERATOR}. Contact for data questions: ${CONTACT} on Telegram. This policy takes into account the Law of the Republic of Kazakhstan “On Personal Data and Their Protection” No. 94-V.`],
+    ['2. Data we collect', '<ul><li><b>Account:</b> Telegram ID, username and display name from Telegram — for bot-based login. No passwords are used.</li><li><b>Materials:</b> files and texts you upload (PDF, Word, Excel, TXT) and the text extracted from them.</li><li><b>Your results:</b> quizzes, flashcards, summaries, presentations, tickets, AI chat history.</li><li><b>Learning activity:</b> planner tasks, XP, tokens, subscription.</li><li><b>Groups:</b> group names, members, invitations and tasks.</li><li><b>Technical data:</b> IP address (abuse protection and rate limiting) and browser localStorage (login token, language, last presentation).</li></ul>'],
+    ['3. Why we use it', 'To let you log in, use AI features, keep your history, get Telegram reminders, work in groups, account for tokens and subscriptions, and protect the Service from abuse. We do not sell your data and show no ads.'],
+    ['4. Who receives data', '<ul><li><b>Supabase</b> — database hosting.</li><li><b>DeepSeek</b> (AI provider) — your requests and material texts are sent to generate answers. The provider’s servers may be outside Kazakhstan (cross-border transfer). Do not put other people’s personal, financial or otherwise confidential information into the chat or materials.</li><li><b>Telegram</b> — login, codes, invitation notices and reminders.</li><li><b>Image services</b> (Pollinations, LoremFlickr) — receive only a text description of the illustration, no personal data.</li><li><b>Google Fonts and CDNs</b> — fonts and libraries; they see your IP when loading.</li></ul>'],
+    ['5. Groups', 'Your username and name are visible to members of groups you join. Any group owner who knows your username can invite you; an invitation takes effect only after you accept. You can leave a group at any time.'],
+    ['6. Retention', 'Data is kept while your account exists. You can delete history and tasks in your cabinet. When you delete your account, all related data is permanently erased (groups you own pass to another member, or are deleted if you are the only one).'],
+    ['7. Security', 'The database is reachable only through our server; sessions are protected by a signed token; rate limits apply. No system is 100% secure, so do not upload highly sensitive documents.'],
+    ['8. Your rights', 'You may obtain a copy of your data, correct or delete it, and withdraw consent. This window (when logged in) has “Download my data” and “Delete account” buttons. Withdrawing consent means you stop using the Service and your account is deleted. Other requests: ' + CONTACT + '.'],
+    ['9. Age', 'The Service is meant for school and university students. If you are under 18, use it with the consent of your parent or legal guardian.'],
+    ['10. Cookies and localStorage', 'We only use technical browser data (login, language, last presentation). There are no advertising or analytics trackers.'],
+    ['11. Terms of use', '<ul><li>AI answers can contain mistakes — verify important facts. The Service does not replace a teacher, doctor or lawyer.</li><li>Follow your school’s or university’s academic integrity rules. You are responsible for how you use generated materials.</li><li>Do not upload illegal content, infringe copyright, bypass limits, attack the Service or harass group members.</li><li>Tokens and Premium are paid by Kaspi transfer and activated manually; unused tokens do not expire. Free tokens refresh daily.</li><li>We may restrict access for violations and may update the Service.</li></ul>'],
+    ['12. Changes', 'If changes are material, we will ask you to accept the new version. The current version is always available at /privacy.'] ] }
+};
+
+// ======================= ПОЛИТИКА =======================
+window.openPolicy = function () {
+  closePolicy(); const p = POL[LG()], t = l();
+  document.body.insertAdjacentHTML('beforeend', `<div id="pol" class="pol-ov" onclick="if(event.target===this) closePolicy()"><div class="pol-card">
+    <div class="px-5 pt-5 pb-3 border-b border-white/10 flex items-start justify-between gap-3"><div><h3 class="display text-xl font-bold text-white leading-tight">🔒 ${esc(p.t)}</h3><p class="mono mt-1">${t.version}: ${CV}</p></div><button onclick="closePolicy()" class="w-8 h-8 shrink-0 rounded-full border border-white/10 text-neutral-300 font-bold">✕</button></div>
+    <div class="pol-body">${p.s.map(x => `<h4>${esc(x[0])}</h4>${x[1].startsWith('<') ? x[1] : `<p>${esc(x[1])}</p>`}`).join('')}</div>
+    <div class="pol-foot">${currentUser ? `<button class="btn-ghost px-4 py-2.5 text-xs" onclick="exportMyData()">${t.export}</button><button class="btn-ghost px-4 py-2.5 text-xs" style="color:#ff6b6b" onclick="deleteMyAccount()">${t.del}</button>` : ''}<button class="btn-accent px-6 py-2.5 text-xs ml-auto" onclick="closePolicy()">${t.close}</button></div></div></div>`);
+};
+window.closePolicy = () => { const e = $('pol'); if (e) e.remove(); };
+window.exportMyData = async function () {
+  const res = await fetch('/api/me/export').catch(() => null); if (!res || !res.ok) return alert(l().hcErr);
+  const a = document.createElement('a'); a.href = URL.createObjectURL(await res.blob()); a.download = 'studyai_my_data.json'; document.body.appendChild(a); a.click(); a.remove();
+};
+window.deleteMyAccount = async function () {
+  if (!confirm(l().delQ)) return; const r = await api('/api/me', 'DELETE'); if (!r.ok) return alert((r.data && r.data.error) || l().hcErr);
+  alert(l().delOk); localStorage.removeItem('studyai_user'); location.href = '/';
+};
+
+// ======================= СОГЛАСИЕ =======================
+window.consentTick = v => { try { v ? sessionStorage.setItem('consentTick', '1') : sessionStorage.removeItem('consentTick'); } catch (e) {} const e = $('auth-err'); if (v && e) e.textContent = ''; };
+const ticked = () => { const c = $('auth-consent'); return !!(c && c.checked); };
+function consentFill() { const e = $('auth-consent-text'); if (e) e.innerHTML = l().cTxt; }
+function needConsent() { const e = $('auth-err'); if (e) e.textContent = l().cNeed; const r = $('auth-consent-row'); if (r) { r.classList.remove('shk'); void r.offsetWidth; r.classList.add('shk'); } }
+// блокируем кнопки входа без галочки
+document.addEventListener('click', e => { const t = e.target.closest && e.target.closest('#tg-link,#auth-btn,#auth-paste'); if (t && !ticked()) { e.preventDefault(); e.stopPropagation(); needConsent(); } }, true);
+const _vc = window.verifyCode; window.verifyCode = function () { if (!ticked()) { needConsent(); return; } return _vc.apply(this, arguments); };
+async function recordConsent() {
+  const r = await api('/api/consent', 'POST', {});
+  if (r.ok && currentUser) { currentUser.consent_version = CV; persistUser(); const m = $('consent-gate'); if (m) m.remove(); }
+}
+function consentGate() {
+  if ($('consent-gate')) return; const t = l();
+  document.body.insertAdjacentHTML('beforeend', `<div id="consent-gate" class="pol-ov" style="z-index:95;background:rgba(0,0,0,.94)"><div class="bento-card rounded-[28px] p-6 max-w-md w-full space-y-4 text-center"><div class="text-4xl">🔒</div><h3 class="display text-2xl font-bold text-white">${t.cTitle}</h3><p class="text-xs text-neutral-400">${t.cDesc}</p>
+    <label class="consent-row"><input type="checkbox" id="cg-ck" onchange="document.getElementById('cg-ok').classList.toggle('opacity-40',!this.checked)"><span>${t.cTxt}</span></label>
+    <button id="cg-ok" class="btn-accent w-full py-3.5 text-sm opacity-40" onclick="if(document.getElementById('cg-ck').checked) acceptConsent(); else document.getElementById('cg-ck').parentElement.classList.add('shk')">${t.cOk}</button>
+    <button class="text-xs text-neutral-500 hover:text-white py-1" onclick="logout()">${t.cOut}</button></div></div>`);
+}
+window.acceptConsent = recordConsent;
+let consentBusy = false;
+function consentCheck() {
+  if (!currentUser || currentUser.consent_version === CV || consentBusy) return;
+  let tick = false; try { tick = sessionStorage.getItem('consentTick') === '1'; } catch (e) {}
+  if (tick) { consentBusy = true; recordConsent().finally(() => { consentBusy = false; }); } else consentGate();
+}
+
+// ======================= МОБИЛЬНОЕ МЕНЮ =======================
+const isMobile = () => matchMedia('(max-width:1023px)').matches;
+window.toggleSide = function (open) {
+  const p = $('side-panel'), b = $('side-bg'); if (!p) return; p.classList.toggle('open', open); b.classList.toggle('open', open); document.body.classList.toggle('no-scroll', open && isMobile());
+};
+window.toggleNavMenu = function (ev) { ev && ev.stopPropagation(); $('nav-menu').classList.toggle('off'); };
+window.navGo = function (id) { $('nav-menu').classList.add('off'); scrollToSection(id); };
+document.addEventListener('click', e => { const m = $('nav-menu'); if (m && !m.classList.contains('off') && !e.target.closest('#nav-burger')) m.classList.add('off'); });
+document.addEventListener('keydown', e => { if (e.key === 'Escape') { toggleSide(false); $('nav-menu').classList.add('off'); closePolicy(); } });
+const sp = $('side-panel');
+if (sp) sp.addEventListener('click', e => { const b = e.target.closest('.mode-row'); if (b && isMobile()) { toggleSide(false); setTimeout(() => { const m = $('work-main'); if (m) window.scrollTo({ top: m.getBoundingClientRect().top + scrollY - 84, behavior: 'smooth' }); }, 120); } });
+// плавающая кнопка «Разделы» — только пока видна рабочая зона
+const fab = $('side-fab'), ws = $('workspace-section');
+if (fab && ws && 'IntersectionObserver' in window) new IntersectionObserver(es => fab.classList.toggle('off', !es[0].isIntersecting), { threshold: 0.05 }).observe(ws);
+
+// ======================= ЧАТ В ШАПКЕ =======================
+window.hcGrow = el => { el.style.height = 'auto'; el.style.height = Math.min(el.scrollHeight, 144) + 'px'; };
+function hcLabels() {
+  const t = l(), i = $('hc-input'); if (i) i.placeholder = t.chatPh;
+  const c = $('hc-chips'); if (c) c.innerHTML = t.chips.map(x => `<button onclick="hcChip(this)">${esc(x)}</button>`).join('');
+  const n = $('hc-note'); if (n) n.textContent = t.hcNote;
+  document.querySelectorAll('[data-i]').forEach(e => { e.textContent = t[e.dataset.i] || e.textContent; });
+  const set = (id, v) => { const e = $(id); if (e) e.textContent = v; };
+  set('btn-sections', '☰ ' + t.sections); set('fab-label', t.sections); set('foot-privacy', t.privacy); set('btn-mode-groups', '👥 ' + G().title); consentFill();
+}
+window.hcChip = b => { $('hc-input').value = b.textContent; hcSend(); };
+window.hcSend = async function () {
+  if (!currentUser) return checkAuth();
+  const inp = $('hc-input'), msg = inp.value.trim(), box = $('hc-messages'), btn = $('hc-send'); if (!msg || btn.disabled) return;
+  box.classList.remove('hidden'); $('hc-chips').style.display = 'none';
+  box.insertAdjacentHTML('beforeend', `<div class="me-bubble">${esc(msg)}</div>`); inp.value = ''; hcGrow(inp); btn.disabled = true;
+  const id = 'hct-' + Date.now(); box.insertAdjacentHTML('beforeend', `<div id="${id}" class="ai-row"><div class="ai-av">✨</div><div class="ai-bubble"><span class="dots"><i></i><i></i><i></i></span></div></div>`); box.scrollTop = box.scrollHeight;
+  const fd = new FormData(); fd.append('message', msg); fd.append('doc_id', currentDocId || 'default'); fd.append('lang', selectedLang);
+  let res = null, data = {}; try { res = await fetch('/api/chat', { method: 'POST', body: fd }); data = await res.json().catch(() => ({})); } catch (e) {}
+  const t = $(id); if (t) t.remove();
+  if (res && res.ok) { setTokens(data.tokens_left); box.insertAdjacentHTML('beforeend', `<div class="ai-row"><div class="ai-av">✨</div><div class="ai-bubble md">${window.formatText(data.reply)}</div></div>`); try { renderMath(box.lastElementChild); } catch (e) {} }
+  else box.insertAdjacentHTML('beforeend', `<div class="ai-row">${errorBox(data.error || l().hcErr)}</div>`);
+  box.scrollTop = box.scrollHeight; btn.disabled = false;
+};
+
+// ======================= ГРУППЫ =======================
+const GT = {
+  ru: { title: 'Группы', desc: 'Создайте группу, пригласите друзей по нику Telegram и поделите работу.', create: 'Создать группу', namePh: 'Название группы', mine: 'Мои группы', none: 'Пока нет групп. Создайте первую или примите приглашение.', invites: 'Приглашения', accept: 'Принять', decline: 'Отклонить', from: 'от', members: 'Участники', owner: 'владелец', you: 'вы', invite: 'Пригласить по нику', nickPh: '@ник в Telegram', send: 'Отправить', sent: 'Приглашение отправлено', pushed: 'Уведомление ушло в Telegram', nopush: 'Уведомление в Telegram не доставлено — человек увидит приглашение на сайте', pending: 'Ждут ответа', cancel: 'Отменить', tasks: 'Задачи', taskPh: 'Что нужно сделать?', add: 'Добавить', unassigned: 'Не назначено', assignee: 'Исполнитель', open: 'Открыть', back: 'Назад', del: 'Удалить группу', delQ: 'Удалить группу вместе со всеми задачами?', leave: 'Выйти из группы', leaveQ: 'Выйти из группы?', kickQ: 'Исключить участника?', split: '✨ ИИ поделит работу', splitD: 'Опишите общую цель — ИИ разобьёт её на задачи и раздаст участникам. 1 токен.', splitPh: 'Например: подготовить доклад и презентацию по экологии к пятнице', splitBtn: 'Разделить · 1 токен', splitDone: 'Добавлено задач', open_n: 'в работе', done_n: 'готово', empty: 'Нет задач', delTask: 'Удалить задачу?', err: 'Ошибка', due: 'Срок' },
+  kz: { title: 'Топтар', desc: 'Топ құрып, достарыңызды Telegram ник арқылы шақырып, жұмысты бөлісіңіз.', create: 'Топ құру', namePh: 'Топ атауы', mine: 'Менің топтарым', none: 'Әзірге топ жоқ. Біріншісін құрыңыз немесе шақыруды қабылдаңыз.', invites: 'Шақырулар', accept: 'Қабылдау', decline: 'Бас тарту', from: 'кімнен:', members: 'Қатысушылар', owner: 'иесі', you: 'сіз', invite: 'Ник арқылы шақыру', nickPh: 'Telegram @ник', send: 'Жіберу', sent: 'Шақыру жіберілді', pushed: 'Хабарлама Telegram-ға жіберілді', nopush: 'Telegram-ға жеткізілмеді — адам шақыруды сайттан көреді', pending: 'Жауап күтуде', cancel: 'Болдырмау', tasks: 'Тапсырмалар', taskPh: 'Не істеу керек?', add: 'Қосу', unassigned: 'Тағайындалмаған', assignee: 'Орындаушы', open: 'Ашу', back: 'Артқа', del: 'Топты жою', delQ: 'Топты барлық тапсырмасымен жою керек пе?', leave: 'Топтан шығу', leaveQ: 'Топтан шығасыз ба?', kickQ: 'Қатысушыны шығару керек пе?', split: '✨ ЖИ жұмысты бөледі', splitD: 'Жалпы мақсатты сипаттаңыз — ЖИ тапсырмаларға бөліп, қатысушыларға таратады. 1 токен.', splitPh: 'Мысалы: жұмаға дейін экология бойынша баяндама мен презентация дайындау', splitBtn: 'Бөлу · 1 токен', splitDone: 'Қосылған тапсырма', open_n: 'орындалуда', done_n: 'дайын', empty: 'Тапсырма жоқ', delTask: 'Тапсырманы жою керек пе?', err: 'Қате', due: 'Мерзім' },
+  en: { title: 'Groups', desc: 'Create a group, invite friends by Telegram username and split the work.', create: 'Create group', namePh: 'Group name', mine: 'My groups', none: 'No groups yet. Create one or accept an invitation.', invites: 'Invitations', accept: 'Accept', decline: 'Decline', from: 'from', members: 'Members', owner: 'owner', you: 'you', invite: 'Invite by username', nickPh: 'Telegram @username', send: 'Send', sent: 'Invitation sent', pushed: 'A Telegram notification was sent', nopush: 'Telegram notice not delivered — they will see the invite on the site', pending: 'Waiting for reply', cancel: 'Cancel', tasks: 'Tasks', taskPh: 'What needs to be done?', add: 'Add', unassigned: 'Unassigned', assignee: 'Assignee', open: 'Open', back: 'Back', del: 'Delete group', delQ: 'Delete the group with all its tasks?', leave: 'Leave group', leaveQ: 'Leave this group?', kickQ: 'Remove this member?', split: '✨ AI splits the work', splitD: 'Describe the shared goal — the AI breaks it into tasks and assigns them to members. 1 token.', splitPh: 'e.g. prepare a report and slides about ecology by Friday', splitBtn: 'Split · 1 token', splitDone: 'Tasks added', open_n: 'open', done_n: 'done', empty: 'No tasks', delTask: 'Delete this task?', err: 'Error', due: 'Due' }
+};
+const G = () => GT[LG()];
+let GID = null, GD = null;
+const gload = () => `<div class="py-12 text-center"><div class="w-10 h-10 border-4 border-[#c8ff2e] border-t-transparent rounded-full animate-spin mx-auto"></div></div>`;
+const nm = u => u.username ? '@' + u.username : u.display_name;
+const gerr = (r) => alert((r.data && r.data.error) || G().err);
+
+window.openGroupsView = async function () {
+  window.currentActiveView = 'groups'; if (!currentUser) return checkAuth(); GID = null;
+  const c = $('result-container'), g = G(); c.innerHTML = gload();
+  const r = await api('/api/groups'); if (!r.ok) { c.innerHTML = errorBox((r.data && r.data.error) || g.err); return; }
+  const { groups, invites } = r.data; setBadge(invites.length);
+  c.innerHTML = `<div class="w-full space-y-4 text-left quiz-slide-enter">
+    <div class="banner"><h3 class="display text-2xl font-bold text-white">👥 ${g.title}</h3><p class="text-xs text-neutral-400 mt-1">${g.desc}</p></div>
+    ${invites.length ? `<div class="space-y-2"><p class="mono" style="color:#ff8fa0">${g.invites}</p>${invites.map(i => `<div class="tile p-4 flex flex-wrap items-center justify-between gap-3"><div><p class="font-extrabold text-white text-sm">${esc(i.group_name)}</p><p class="text-[11px] text-neutral-400">${g.from} ${i.from ? esc(nm(i.from)) : '—'}</p></div><div class="flex gap-2"><button class="btn-accent px-4 py-2 text-xs" onclick="gAnswer(${i.id},true)">${g.accept}</button><button class="btn-ghost px-4 py-2 text-xs" onclick="gAnswer(${i.id},false)">${g.decline}</button></div></div>`).join('')}</div>` : ''}
+    <div class="tile p-4 flex flex-col sm:flex-row gap-2"><input id="g-name" class="field" maxlength="60" placeholder="${g.namePh}" onkeydown="if(event.key==='Enter') gCreate()"><button class="btn-accent px-6 py-3 text-xs shrink-0" onclick="gCreate()">${g.create}</button></div>
+    <p class="mono">${g.mine}</p>
+    ${groups.length ? `<div class="grid sm:grid-cols-2 gap-3">${groups.map(x => `<button class="g-card" onclick="gOpen(${x.id})"><div class="flex items-center justify-between gap-2"><p class="font-extrabold text-white truncate">${esc(x.name)}</p>${x.role === 'owner' ? `<span class="mono" style="color:var(--accent)">${g.owner}</span>` : ''}</div><p class="text-[11px] text-neutral-400 mt-2">👥 ${x.members} · ⏳ ${x.open} ${g.open_n} · ✅ ${x.done} ${g.done_n}</p></button>`).join('')}</div>` : `<p class="text-sm text-neutral-500 py-6 text-center">${g.none}</p>`}</div>`;
+};
+window.gCreate = async function () { const n = $('g-name').value.trim(); if (n.length < 2) return; const r = await api('/api/groups', 'POST', { name: n }); if (!r.ok) return gerr(r); gOpen(r.data.id); };
+window.gAnswer = async function (id, ok) { const r = await api(`/api/invites/${id}/${ok ? 'accept' : 'decline'}`, 'POST', {}); if (!r.ok) gerr(r); if (r.ok && ok) gOpen(r.data.group_id); else openGroupsView(); };
+
+window.gOpen = async function (id) {
+  GID = id; window.currentActiveView = 'group'; const c = $('result-container'); if (!GD || GD.group.id !== id) c.innerHTML = gload();
+  const r = await api('/api/groups/' + id); if (!r.ok) { gerr(r); GD = null; return openGroupsView(); }
+  GD = r.data; gDraw();
+};
+function gDraw() {
+  const g = G(), d = GD, me = d.me, own = me.role === 'owner', c = $('result-container'), byId = {}; d.members.forEach(m => byId[m.user_id] = m);
+  const opts = sel => `<option value="">${g.unassigned}</option>` + d.members.map(m => `<option value="${esc(m.user_id)}" ${sel === m.user_id ? 'selected' : ''}>${esc(nm(m))}</option>`).join('');
+  const cols = [{ id: null, title: g.unassigned }].concat(d.members.map(m => ({ id: m.user_id, title: nm(m) + (m.user_id === me.user_id ? ` (${g.you})` : '') })));
+  const task = t => `<div class="g-task ${t.done ? 'done' : ''}"><button class="g-ck" onclick="gToggle(${t.id},${!t.done})">${t.done ? '✓' : ''}</button><div class="min-w-0 flex-1"><p class="g-t text-sm font-semibold text-white break-words">${esc(t.title)}</p>${t.description ? `<p class="text-[11px] text-neutral-400 mt-0.5 break-words">${esc(t.description)}</p>` : ''}${t.due_date ? `<p class="text-[10px] text-neutral-500 mt-0.5">📅 ${esc(t.due_date)}</p>` : ''}<select class="g-sel mt-1.5" onchange="gAssign(${t.id},this.value)">${opts(t.assignee_id)}</select></div><button class="text-neutral-500 hover:text-[#ff5d73] text-sm px-1" onclick="gDelTask(${t.id})">✕</button></div>`;
+  c.innerHTML = `<div class="w-full space-y-4 text-left quiz-slide-enter">
+    <div class="flex items-center justify-between gap-2 flex-wrap"><button class="mono hover:text-white" onclick="openGroupsView()">← ${g.back}</button><div class="flex gap-2">${own ? `<button class="btn-ghost px-4 py-2 text-xs" style="color:#ff6b6b" onclick="gDelGroup()">${g.del}</button>` : `<button class="btn-ghost px-4 py-2 text-xs" onclick="gKick('${esc(me.user_id)}',true)">${g.leave}</button>`}</div></div>
+    <div class="banner"><h3 class="display text-2xl font-bold text-white break-words">👥 ${esc(d.group.name)}</h3></div>
+    <div class="tile p-4 space-y-3"><p class="mono">${g.members} · ${d.members.length}</p><div class="flex flex-wrap gap-2">${d.members.map(m => `<span class="g-chip">${esc(nm(m))}${m.role === 'owner' ? ` <span class="mono" style="color:var(--accent)">${g.owner}</span>` : ''}${own && m.role !== 'owner' ? `<button onclick="gKick('${esc(m.user_id)}',false)" aria-label="remove">✕</button>` : ''}`).join('')}</span></div>
+      ${own ? `<div class="flex flex-col sm:flex-row gap-2 pt-1"><input id="g-nick" class="field" maxlength="80" placeholder="${g.nickPh}" onkeydown="if(event.key==='Enter') gInvite()"><button class="btn-accent px-6 py-3 text-xs shrink-0" onclick="gInvite()">${g.invite}</button></div><p id="g-inv-msg" class="text-xs min-h-[1rem]"></p>
+      ${d.invites.length ? `<p class="mono">${g.pending}</p><div class="flex flex-wrap gap-2">${d.invites.map(i => `<span class="g-chip" style="opacity:.75">${esc(nm(i.user))}<button onclick="gCancelInv(${i.id})" title="${g.cancel}">✕</button></span>`).join('')}</div>` : ''}` : ''}</div>
+    <div class="tile p-4 space-y-3"><p class="mono">${g.tasks} · ${d.tasks.length}</p>
+      <div class="grid sm:grid-cols-[1fr_11rem_9rem_auto] gap-2"><input id="gt-title" class="field" maxlength="200" placeholder="${g.taskPh}" onkeydown="if(event.key==='Enter') gAddTask()"><select id="gt-as" class="field" style="padding:.8rem .6rem">${opts('')}</select><input id="gt-due" type="date" class="field" title="${g.due}"><button class="btn-accent px-6 py-3 text-xs" onclick="gAddTask()">${g.add}</button></div>
+      <details class="rounded-2xl border border-white/10 p-3"><summary class="mono cursor-pointer" style="color:var(--accent)">${g.split}</summary><p class="text-xs text-neutral-400 mt-2">${g.splitD}</p><textarea id="g-goal" rows="3" class="field mt-2" maxlength="2000" placeholder="${g.splitPh}"></textarea><button class="btn-accent w-full py-3 text-xs mt-2" onclick="gSplit(this)">${g.splitBtn}</button></details></div>
+    <div class="grid md:grid-cols-2 gap-3">${cols.map(col => { const ts = d.tasks.filter(t => (t.assignee_id || null) === col.id); if (col.id === null && !ts.length) return ''; return `<div class="g-col"><p class="font-extrabold text-white text-sm truncate">${esc(col.title)} <span class="mono">${ts.filter(t => t.done).length}/${ts.length}</span></p>${ts.length ? ts.map(task).join('') : `<p class="text-[11px] text-neutral-600 mt-2">${g.empty}</p>`}</div>`; }).join('')}</div></div>`;
+}
+window.gInvite = async function () {
+  const i = $('g-nick'), m = $('g-inv-msg'), g = G(), v = i.value.trim(); if (!v) return;
+  const r = await api(`/api/groups/${GID}/invite`, 'POST', { nick: v });
+  if (!r.ok) { m.style.color = '#ff6b6b'; m.textContent = (r.data && r.data.error) || g.err; return; }
+  await gOpen(GID); const m2 = $('g-inv-msg'); if (m2) { m2.style.color = 'var(--accent)'; m2.textContent = '✓ ' + g.sent + ' (' + nm(r.data.user) + '). ' + (r.data.notified ? g.pushed : g.nopush); }
+};
+window.gCancelInv = async id => { await api(`/api/groups/${GID}/invites/${id}`, 'DELETE'); gOpen(GID); };
+window.gKick = async function (uid, leaving) { if (!confirm(leaving ? G().leaveQ : G().kickQ)) return; const r = await api(`/api/groups/${GID}/members/${uid}`, 'DELETE'); if (!r.ok) return gerr(r); if (leaving) openGroupsView(); else gOpen(GID); };
+window.gDelGroup = async function () { if (!confirm(G().delQ)) return; const r = await api('/api/groups/' + GID, 'DELETE'); if (!r.ok) return gerr(r); openGroupsView(); };
+window.gAddTask = async function () {
+  const t = $('gt-title').value.trim(); if (!t) return;
+  const r = await api(`/api/groups/${GID}/tasks`, 'POST', { title: t, assignee_id: $('gt-as').value || null, due_date: $('gt-due').value || null }); if (!r.ok) return gerr(r); gOpen(GID);
+};
+window.gToggle = async (tid, done) => { const r = await api(`/api/groups/${GID}/tasks/${tid}`, 'PATCH', { done }); if (!r.ok) return gerr(r); gOpen(GID); };
+window.gAssign = async (tid, uid) => { const r = await api(`/api/groups/${GID}/tasks/${tid}`, 'PATCH', uid ? { assignee_id: uid } : { unassign: true }); if (!r.ok) gerr(r); gOpen(GID); };
+window.gDelTask = async tid => { if (!confirm(G().delTask)) return; const r = await api(`/api/groups/${GID}/tasks/${tid}`, 'DELETE'); if (!r.ok) return gerr(r); gOpen(GID); };
+window.gSplit = async function (btn) {
+  const goal = $('g-goal').value.trim(); if (goal.length < 5) return; const o = btn.textContent; btn.disabled = true; btn.textContent = '…';
+  const r = await api(`/api/groups/${GID}/split`, 'POST', { goal, lang: selectedLang }); btn.disabled = false; btn.textContent = o;
+  if (!r.ok) return gerr(r); setTokens(r.data.tokens_left); await gOpen(GID);
+};
+// бейдж приглашений
+function setBadge(n) { ['g-badge-top', 'g-badge-menu', 'g-badge-side'].forEach(id => { const e = $(id); if (!e) return; e.textContent = n; e.classList.toggle('hidden', !n); }); const nw = $('g-new'); if (nw) nw.style.display = n ? 'none' : ''; }
+async function pollInvites() { if (!currentUser || document.hidden) return; const r = await api('/api/groups'); if (r.ok) setBadge((r.data.invites || []).length); }
+setInterval(pollInvites, 60000);
+
+// ======================= ИНИЦИАЛИЗАЦИЯ =======================
+const _ca3 = window.checkAuth; window.checkAuth = function () { _ca3(); if (currentUser) { consentCheck(); } hcLabels(); };
+const _cl7 = window.changeLanguage; window.changeLanguage = function () { _cl7(); hcLabels(); };
+const _ld = window.loginDone; 
+hcLabels(); if (currentUser) { consentCheck(); pollInvites(); }
+document.addEventListener('visibilitychange', () => { if (!document.hidden) pollInvites(); });
+if (/^\/(privacy|terms)\/?$/.test(location.pathname) || location.hash === '#privacy') setTimeout(openPolicy, 300);
 })();
 </script>
 </body>
