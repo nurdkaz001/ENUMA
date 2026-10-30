@@ -478,6 +478,21 @@ body.no-scroll{overflow:hidden}
 .consent-row a,.consent-row button.lk{color:var(--accent);text-decoration:underline;font-weight:700}
 @keyframes shk{0%,100%{transform:translateX(0)}25%{transform:translateX(-6px)}75%{transform:translateX(6px)}}
 .shk{animation:shk .35s}
+/* ===== v4: копирование, тур ===== */
+.cp-row{display:flex;justify-content:flex-end;margin-top:.55rem}
+.cp-btn{font-size:.68rem;font-weight:700;opacity:.6;padding:.28rem .7rem;border-radius:999px;border:1px solid currentColor;background:transparent;color:inherit;transition:opacity .2s;font-family:inherit}
+.cp-btn:hover,.cp-btn:active{opacity:1}
+#tour-ov{position:fixed;inset:0;z-index:100}
+#tour-hl{position:fixed;z-index:101;pointer-events:none;border-radius:18px;box-shadow:0 0 0 100vmax rgba(0,0,0,.74),0 0 0 3px var(--accent);transition:all .28s cubic-bezier(.2,.8,.2,1)}
+#tour-hl.none{box-shadow:0 0 0 100vmax rgba(0,0,0,.78);border-radius:0}
+#tour-card{position:fixed;z-index:102;width:min(21.5rem,calc(100vw - 1.5rem));padding:1.1rem 1.15rem;border:1px solid rgba(200,255,46,.35);border-radius:1.4rem;background:#121212;box-shadow:0 20px 60px rgba(0,0,0,.7);transition:top .28s,left .28s,opacity .2s}
+#tour-card h4{font-weight:800;color:#fff;font-size:1rem;margin:.15rem 0 .4rem}
+#tour-card p{font-size:.82rem;line-height:1.55;color:#b8b8b2}
+.tour-dots{display:flex;gap:.3rem;margin-bottom:.35rem}
+.tour-dots i{width:.4rem;height:.4rem;border-radius:99px;background:#333;transition:.2s}
+.tour-dots i.on{background:var(--accent);width:1.1rem}
+.tour-btns{display:flex;align-items:center;gap:.5rem;margin-top:.9rem}
+@media (max-width:640px){#tour-card{left:.75rem!important;right:.75rem;width:auto}}
     </style>
 </head>
 <body class="min-h-screen flex flex-col">
@@ -783,7 +798,7 @@ body.no-scroll{overflow:hidden}
                 cabTitle: "Жеке кабинет & Тарих", cabLogout: "Шығу", cabTokens: "Токендер", cabScore: "Ұпай (XP)", cabSub: "Жазылым", cabSaves: "📁 Сақталған материалдар мен тарих",
                 authTitle: "HUB-қа кіру", authStep1: '1. <a href="https://t.me/enuuma_bot" target="_blank" class="text-[#c8ff2e] font-extrabold underline">@enuuma_bot</a> ашыңыз', authStep2: "2. 6 таңбалы кодты енгізіңіз", authBtn: "Кіру",
                 fileUploaded: "Файл сәтті жүктелді!", topicSaved: "Тақырып сақталды!",
-                chatWelcome: "👋 Сәлем! Мен сіздің ЖИ-наставнигіңізбін. Кез келген сұрағыңызды қойыңыз!",
+                chatWelcome: "👋 Сәлем! Қандай тақырып немесе тапсырма бойынша жұмыс істейміз? Тақырып не сұрақ жазыңыз — бастайық. Жүктелген материалға сүйенгім келсе, төмендегі белгіні қойыңыз.",
                 chatPlaceholder: "Сұрағыңызды жазыңыз...", chatSend: "Жіберу", chatLoading: "⏳ ЖИ жауап жазуда...",
                 teacherTitle: "🤖 1. ИИ Мұғалім: Түсіндіру & Ойын арқылы бекіту", teacherDesc: "ИИ материалды түсіндіріп, видео ұсынады және ойын түрінде тексереді.",
                 teacherTopicPlaceholder: "Тақырыпты енгізіңіз...", teacherCommentPlaceholder: "Қосымша комментарий...", teacherBtn: "Сабақты бастау 🚀",
@@ -814,7 +829,7 @@ body.no-scroll{overflow:hidden}
                 cabTitle: "Личный кабинет & История", cabLogout: "Выйти", cabTokens: "Токены", cabScore: "Баллы (XP)", cabSub: "Подписка", cabSaves: "📁 Сохраненные материалы и история",
                 authTitle: "Вход в HUB", authStep1: '1. Откройте <a href="https://t.me/enuuma_bot" target="_blank" class="text-[#c8ff2e] font-extrabold underline">@enuuma_bot</a>', authStep2: "2. Введите 6-значный код", authBtn: "Войти",
                 fileUploaded: "Файл успешно загружен!", topicSaved: "Тема сохранена!",
-                chatWelcome: "👋 Привет! Я твой ИИ-наставник. Задай мне любой вопрос!",
+                chatWelcome: "👋 Привет! Над какой темой или задачей поработаем? Напишите тему или вопрос — и начнём. Если нужно опираться на загруженный материал, включите галочку ниже.",
                 chatPlaceholder: "Введите ваш вопрос...", chatSend: "Отправить", chatLoading: "⏳ ИИ пишет ответ...",
                 teacherTitle: "🤖 1. ИИ Учитель: Объяснение & Игровое закрепление", teacherDesc: "ИИ объяснит материал, предложит видео и проверит знания в виде игры.",
                 teacherTopicPlaceholder: "Введите тему...", teacherCommentPlaceholder: "Дополнительный комментарий...", teacherBtn: "Начать урок 🚀",
@@ -845,7 +860,7 @@ body.no-scroll{overflow:hidden}
                 cabTitle: "Personal Cabinet & History", cabLogout: "Logout", cabTokens: "Tokens", cabScore: "Score (XP)", cabSub: "Subscription", cabSaves: "📁 Saved materials & history",
                 authTitle: "Login to HUB", authStep1: '1. Open <a href="https://t.me/enuuma_bot" target="_blank" class="text-[#c8ff2e] font-extrabold underline">@enuuma_bot</a>', authStep2: "2. Enter the 6-digit code", authBtn: "Login",
                 fileUploaded: "File uploaded successfully!", topicSaved: "Topic saved!",
-                chatWelcome: "👋 Hello! I am your AI mentor. Ask me any question!",
+                chatWelcome: "👋 Hi! What topic or task shall we work on? Write a topic or a question and we’ll start. To use your uploaded material, tick the box below.",
                 chatPlaceholder: "Type your question...", chatSend: "Send", chatLoading: "⏳ AI is typing...",
                 teacherTitle: "🤖 1. AI Teacher: Explanation & Game Practice", teacherDesc: "AI explains material, suggests video, and tests knowledge through games.",
                 teacherTopicPlaceholder: "Enter topic...", teacherCommentPlaceholder: "Additional comment...", teacherBtn: "Start Lesson 🚀",
@@ -1267,7 +1282,7 @@ body.no-scroll{overflow:hidden}
                 <div class="space-y-5 quiz-slide-enter">
                     <div class="banner space-y-3">
                         <h4 class="mono" style="color:var(--accent)">${t.teacherExplanation}</h4>
-                        <p class="text-sm text-neutral-300 leading-relaxed">${formatText(explanation || topic)}</p>
+                        <div class="text-sm text-neutral-300 leading-relaxed copyable">${formatText(explanation || topic)}</div>
                         ${videoQuery ? `<a href="https://www.youtube.com/results?search_query=${encodeURIComponent(videoQuery)}" target="_blank" rel="noopener" class="btn-ghost inline-block px-4 py-2 text-xs">▶ YouTube</a>` : ''}
                     </div>
                     ${items.length ? `<div class="space-y-3"><h4 class="mono">${t.teacherGame}</h4>${questionsHtml}</div>` : ''}
@@ -1339,7 +1354,7 @@ body.no-scroll{overflow:hidden}
             if (parsed && !Array.isArray(parsed)) parsed = parsed.tickets || parsed.questions || null;
 
             if (!Array.isArray(parsed)) {
-                area.innerHTML = `<div class="p-4 tile leading-relaxed text-xs text-neutral-200">${formatText(raw)}</div>`;
+                area.innerHTML = `<div class="p-4 tile leading-relaxed text-xs text-neutral-200 copyable">${formatText(raw)}</div>`;
                 return;
             }
 
@@ -1839,6 +1854,7 @@ body.no-scroll{overflow:hidden}
                         <div>
                             <h3 class="display text-xl font-bold text-white truncate">${escapeHtml(name)}</h3>
                             ${prof.username ? `<p class="mono">@${escapeHtml(prof.username)}</p>` : ''}
+                            ${(prof.public_id ?? currentUser.public_id) ? `<p class="mono mt-1">ID: <b class="text-white">${escapeHtml(prof.public_id ?? currentUser.public_id)}</b> <button class="copy-btn" data-v="${escapeHtml(prof.public_id ?? currentUser.public_id)}" onclick="copyNick(this, this.dataset.v)">${L.copy || '⧉'}</button></p>` : ''}
                         </div>
                         <div>
                             <p class="display text-2xl font-bold text-[#c8ff2e]">${L.level} ${lvl}</p>
@@ -1905,7 +1921,7 @@ body.no-scroll{overflow:hidden}
                 main = list.length ? `<div class="space-y-4 max-h-[60vh] overflow-y-auto pr-1">${list.map(m => `
                     <div class="space-y-2">
                         <div class="flex justify-end"><div class="max-w-[85%] p-3 rounded-2xl bg-[#1c1c1c] border border-white/10 text-xs font-semibold text-white">${escapeHtml(m.message)}</div></div>
-                        <div class="flex justify-start"><div class="max-w-[85%] p-3 rounded-2xl bg-[#c8ff2e] text-black text-xs font-medium leading-relaxed">${formatText(m.reply)}</div></div>
+                        <div class="flex justify-start"><div class="max-w-[85%] p-3 rounded-2xl bg-[#c8ff2e] text-black text-xs font-medium leading-relaxed copyable">${formatText(m.reply)}</div></div>
                         <p class="mono text-center">${fmtDate(m.created_at)}</p>
                     </div>`).join('')}</div>
                     <div class="text-right"><button onclick="clearCabHistory()" class="mono hover:text-white transition">${L.clear}</button></div>` : `<div class="cab-empty">${L.noChat}</div>`;
@@ -2369,18 +2385,20 @@ window.renderGenericResult = function (rawText) {
 };
 
 // ---------- Красивый ИИ-чат ----------
+let chatHist = [];
 const aiBubble = html => `<div class="ai-row"><div class="ai-av">✨</div><div class="ai-bubble md">${html}</div></div>`;
 function addAI(box, text) {
   box.insertAdjacentHTML('beforeend', aiBubble(md(text)));
   stagger(box.lastElementChild.querySelector('.ai-bubble')); renderMath(box.lastElementChild);
 }
 window.openChatView = function () {
-  window.currentActiveView = 'chat'; const t = translations[selectedLang];
+  window.currentActiveView = 'chat'; chatHist = []; const t = translations[selectedLang];
   $('result-container').innerHTML = `
     <div class="w-full flex flex-col h-[68vh] text-left quiz-slide-enter">
       <div class="border-b border-white/10 pb-3 mb-3 flex items-center gap-3"><div class="ai-av">✨</div>
         <div><h3 class="display text-lg font-bold text-white leading-none">${esc(t.modeChat)}</h3><p class="mono mt-1" style="color:var(--accent)">● online</p></div></div>
       <div id="chat-messages" class="flex-grow overflow-y-auto space-y-3 p-3 tile mb-3 flex flex-col"></div>
+      ${currentDocId ? `<label class="mono flex items-center gap-2 mb-2 cursor-pointer"><input type="checkbox" id="chat-use-doc" style="accent-color:#c8ff2e"> 📎 ${selectedLang === 'en' ? 'Use my uploaded material' : selectedLang === 'kz' ? 'Жүктелген материалымды қолдану' : 'Опираться на мой загруженный материал'}</label>` : ''}
       <div class="flex gap-2"><input type="text" id="chat-input" onkeydown="if(event.key==='Enter') sendChatMessage()" placeholder="${esc(t.chatPlaceholder)}" class="field flex-grow">
         <button onclick="sendChatMessage()" class="btn-accent px-6 py-3 text-xs">${esc(t.chatSend)}</button></div>
     </div>`;
@@ -2393,11 +2411,11 @@ window.sendChatMessage = async function () {
   const id = 'typing-' + Date.now();
   box.insertAdjacentHTML('beforeend', `<div id="${id}" class="ai-row"><div class="ai-av">✨</div><div class="ai-bubble"><span class="dots"><i></i><i></i><i></i></span></div></div>`);
   box.scrollTop = box.scrollHeight;
-  const fd = new FormData(); fd.append('message', msg); fd.append('doc_id', currentDocId || 'default'); fd.append('lang', selectedLang);
+  const fd = new FormData(); fd.append('message', msg); fd.append('doc_id', (($('chat-use-doc') && $('chat-use-doc').checked && currentDocId) || 'default')); fd.append('lang', selectedLang); fd.append('history', JSON.stringify(chatHist.slice(-6)));
   let res = null, data = {};
   try { res = await fetch('/api/chat', { method: 'POST', body: fd }); data = await res.json().catch(() => ({})); } catch (e) {}
   $(id) && $(id).remove();
-  if (res && res.ok) { setTokens(data.tokens_left); addAI(box, data.reply); }
+  if (res && res.ok) { setTokens(data.tokens_left); chatHist.push({ m: msg, r: data.reply }); addAI(box, data.reply); }
   else box.insertAdjacentHTML('beforeend', `<div class="ai-row">${errorBox(data.error || 'Error')}</div>`);
   box.scrollTop = box.scrollHeight;
 };
@@ -2778,7 +2796,7 @@ function slideHtml(s, th, i, n, edit, img) {
   }
   const st = `--bg:${th.bg};--bg2:${th.bg2};--tx:${th.tx};--mut:${th.mut};--ac:${th.ac};--ac2:${th.ac2};--fh:'${th.fh}',sans-serif;--fb:'${th.fb}',sans-serif`;
   const ghost = th.deco === 'outline' && ['title', 'closing', 'section'].includes(lay) ? (() => { const w = (s.title.match(/[\p{L}\p{N}]+/gu) || [s.title]).sort((a, b) => b.length - a.length)[0] || ''; return `<div class="sl-ghost" style="font-size:${Math.min(17, 88 / (0.72 * Math.max(4, w.length))).toFixed(1)}cqw">${esc(w)}</div>`; })() : '';
-  return `<div class="sl" style="${st}" data-deco="${th.deco}" data-lay="${lay}" data-ttl="${th.ttl || 'grad'}"><div class="sl-deco"></div>${ghost}<div class="sl-bar"></div><div class="sl-c sl-${lay}${img ? ' has-img' : ''}">${h}</div>${img ? `<div class="a sl-img ${lay === 'title' || lay === 'closing' || lay === 'section' ? 'big' : ''}" style="--d:3"><i class="sl-ph">${esc(s.icon || '✨')}</i><img src="${esc(img)}" alt="" referrerpolicy="no-referrer" onerror="this.remove()"></div>` : ''}<span class="sl-n">${i + 1} / ${n}</span></div>`;
+  return `<div class="sl" style="${st}" data-deco="${th.deco}" data-lay="${lay}" data-ttl="${th.ttl || 'grad'}"><div class="sl-deco"></div>${ghost}<div class="sl-bar"></div><div class="sl-c sl-${lay}${img ? ' has-img' : ''}">${h}</div>${img ? `<div class="a sl-img ${lay === 'title' || lay === 'closing' || lay === 'section' ? 'big' : ''}" style="--d:3"><i class="sl-ph">${esc(s.icon || '✨')}</i><img data-src="${esc(img)}" alt="" referrerpolicy="no-referrer"></div>` : ''}<span class="sl-n">${i + 1} / ${n}</span></div>`;
 }
 const setPath = (s, path, val) => { const k = path.split('.'); let o = s; for (let i = 0; i < k.length - 1; i++) o = o[k[i]]; o[k[k.length - 1]] = val; };
 
@@ -2849,7 +2867,21 @@ window.slGenerate = async function (theme) {
   const l = L(), c = $('result-container'); const steps = [l.g1, l.g2, l.g3, l.g4]; let k = 0;
   c.innerHTML = `<div class="w-full max-w-3xl mx-auto space-y-5 text-center"><div class="grid grid-cols-3 gap-3">${Array.from({ length: 6 }, (_, i) => `<div class="skel" style="animation-delay:${i * 0.15}s"></div>`).join('')}</div><p id="sl-step" class="mono" style="color:var(--accent)">${steps[0]}</p><div class="dots"><i></i><i></i><i></i></div></div>`;
   const t = setInterval(() => { k = (k + 1) % steps.length; const e = $('sl-step'); if (e) e.textContent = steps[k]; }, 2600);
-  const r = await api('/api/slides', 'POST', { prompt: F.prompt, count: F.count, mode: F.mode, style_text: F.styleText, theme: theme || null, lang: selectedLang });
+  // фоновая задача: запрос не висит минутами, страница спрашивает статус
+  let r = await api('/api/slides/start', 'POST', { prompt: F.prompt, count: F.count, mode: F.mode, style_text: F.styleText, theme: theme || null, lang: selectedLang });
+  if (r.ok) {
+    const jid = r.data.job_id, t0 = Date.now(); let fails = 0; r = null;
+    while (Date.now() - t0 < 480000) {
+      await new Promise(x => setTimeout(x, 2500));
+      const p = await api('/api/slides/job/' + jid);
+      if (!p.ok) { if (p.data && p.data.error === 'Network error' && ++fails < 15) continue; r = { ok: false, data: { error: (p.data && p.data.error) || 'Error' } }; break; }
+      fails = 0;
+      if (p.data.status === 'done') { r = { ok: true, data: p.data }; break; }
+      if (p.data.status === 'error') { r = { ok: false, data: { error: p.data.error } }; break; }
+    }
+    if (!r) r = { ok: false, data: { error: 'Timeout' } };
+  }
+  if (!r.ok) refreshProfile();
   clearInterval(t);
   if (!r.ok) { c.innerHTML = errorBox(r.data.error || 'Error') + `<button class="btn-ghost px-5 py-2.5 text-xs mt-3" onclick="openSlidesView()">${l.back}</button>`; return; }
   setTokens(r.data.tokens_left); D = { deck: r.data.deck, i: 0 }; D.deck.imgMode = F.imgMode; D.deck.imgStyle = F.imgStyle;
@@ -3103,7 +3135,7 @@ const POL = {
     ['6. Срок хранения', 'Данные хранятся, пока существует ваш аккаунт. Историю и задачи можно удалить в личном кабинете. При удалении аккаунта все связанные данные удаляются безвозвратно (группы, где вы владелец, передаются другому участнику или удаляются, если он один).'],
     ['7. Безопасность', 'Доступ к базе данных возможен только через наш сервер; сессии защищены подписанным токеном; применяются ограничения частоты запросов. Ни одна система не защищена на 100%, поэтому не загружайте особо чувствительные документы.'],
     ['8. Ваши права', 'Вы вправе: получить копию своих данных, исправить или удалить их, отозвать согласие. В этом окне (после входа) есть кнопки «Скачать мои данные» и «Удалить аккаунт». Отзыв согласия означает прекращение использования Сервиса и удаление аккаунта. По другим вопросам пишите: ' + CONTACT + '.'],
-    ['9. Возраст', 'Сервис рассчитан на школьников и студентов.'],
+    ['9. Возраст', 'Сервис рассчитан на школьников и студентов. Если вам нет 18 лет, пользоваться Сервисом можно с согласия родителей или законных представителей.'],
     ['10. Файлы cookie и localStorage', 'Мы используем только технические данные браузера (вход, язык, последняя презентация). Рекламных и аналитических трекеров нет.'],
     ['11. Условия использования', '<ul><li>Ответы ИИ могут содержать ошибки — проверяйте важные факты. Сервис не заменяет учителя, врача или юриста.</li><li>Соблюдайте правила своей школы или вуза об академической честности. Вы отвечаете за то, как используете созданные материалы.</li><li>Запрещено загружать незаконный контент, нарушать авторские права, пытаться обойти лимиты, взломать сервис или оскорблять участников групп.</li><li>Токены и Premium оплачиваются переводом через Kaspi и активируются вручную; неиспользованные токены не сгорают. Бесплатные токены обновляются ежедневно.</li><li>Мы можем ограничить доступ при нарушении условий и обновлять Сервис.</li></ul>'],
     ['12. Изменения', 'При существенных изменениях мы попросим вас принять новую версию. Актуальная версия всегда доступна по ссылке /privacy.'] ] },
@@ -3116,7 +3148,7 @@ const POL = {
     ['6. Сақтау мерзімі', 'Деректер аккаунтыңыз бар кезде сақталады. Тарих пен тапсырмаларды жеке кабинетте жоюға болады. Аккаунт жойылғанда барлық байланысты деректер қайтарусыз жойылады (сіз иесі болған топтар басқа қатысушыға беріледі немесе қатысушы жалғыз болса, жойылады).'],
     ['7. Қауіпсіздік', 'Дерекқорға тек біздің сервер арқылы қол жеткізіледі; сессиялар қол қойылған токенмен қорғалған; сұраныс жиілігіне шектеу бар. Ешбір жүйе 100% қорғалмаған, сондықтан аса құпия құжаттарды жүктемеңіз.'],
     ['8. Сіздің құқықтарыңыз', 'Сіз: деректеріңіздің көшірмесін алуға, оларды түзетуге немесе жоюға, келісімді қайтарып алуға құқылысыз. Осы терезеде (кіргеннен кейін) «Деректерімді жүктеу» және «Аккаунтты жою» батырмалары бар. Келісімді қайтару — Сервисті пайдалануды тоқтату және аккаунтты жою дегенді білдіреді. Басқа сұрақтар бойынша: ' + CONTACT + '.'],
-    ['9. Жас', 'Сервис мектеп оқушылары мен студенттерге арналған.'],
+    ['9. Жас', 'Сервис мектеп оқушылары мен студенттерге арналған. 18 жасқа толмасаңыз, ата-анаңыздың немесе заңды өкілдеріңіздің келісімімен пайдалана аласыз.'],
     ['10. Cookie және localStorage', 'Біз тек браузердің техникалық деректерін қолданамыз (кіру, тіл, соңғы презентация). Жарнамалық және аналитикалық трекерлер жоқ.'],
     ['11. Пайдалану шарттары', '<ul><li>ЖИ жауаптарында қате болуы мүмкін — маңызды фактілерді тексеріңіз. Сервис мұғалімді, дәрігерді немесе заңгерді алмастырмайды.</li><li>Мектебіңіз немесе ЖОО-ның академиялық адалдық ережелерін сақтаңыз. Жасалған материалдарды қалай қолданатыныңызға өзіңіз жауаптысыз.</li><li>Заңсыз контент жүктеуге, авторлық құқықты бұзуға, лимиттерді айналып өтуге, сервисті бұзуға немесе топ қатысушыларын қорлауға тыйым салынады.</li><li>Токендер мен Premium Kaspi арқылы аударыммен төленеді және қолмен қосылады; пайдаланылмаған токендер жанбайды. Тегін токендер күн сайын жаңарады.</li><li>Шарттар бұзылса, қолжетімділікті шектеуге және Сервисті жаңартуға құқылымыз.</li></ul>'],
     ['12. Өзгерістер', 'Елеулі өзгерістер болса, жаңа нұсқаны қабылдауды сұраймыз. Өзекті нұсқа әрқашан /privacy сілтемесінде қолжетімді.'] ] },
@@ -3129,7 +3161,7 @@ const POL = {
     ['6. Retention', 'Data is kept while your account exists. You can delete history and tasks in your cabinet. When you delete your account, all related data is permanently erased (groups you own pass to another member, or are deleted if you are the only one).'],
     ['7. Security', 'The database is reachable only through our server; sessions are protected by a signed token; rate limits apply. No system is 100% secure, so do not upload highly sensitive documents.'],
     ['8. Your rights', 'You may obtain a copy of your data, correct or delete it, and withdraw consent. This window (when logged in) has “Download my data” and “Delete account” buttons. Withdrawing consent means you stop using the Service and your account is deleted. Other requests: ' + CONTACT + '.'],
-    ['9. Age', 'The Service is meant for school and university students.'],
+    ['9. Age', 'The Service is meant for school and university students. If you are under 18, use it with the consent of your parent or legal guardian.'],
     ['10. Cookies and localStorage', 'We only use technical browser data (login, language, last presentation). There are no advertising or analytics trackers.'],
     ['11. Terms of use', '<ul><li>AI answers can contain mistakes — verify important facts. The Service does not replace a teacher, doctor or lawyer.</li><li>Follow your school’s or university’s academic integrity rules. You are responsible for how you use generated materials.</li><li>Do not upload illegal content, infringe copyright, bypass limits, attack the Service or harass group members.</li><li>Tokens and Premium are paid by Kaspi transfer and activated manually; unused tokens do not expire. Free tokens refresh daily.</li><li>We may restrict access for violations and may update the Service.</li></ul>'],
     ['12. Changes', 'If changes are material, we will ask you to accept the new version. The current version is always available at /privacy.'] ] }
@@ -3163,7 +3195,7 @@ document.addEventListener('click', e => { const t = e.target.closest && e.target
 const _vc = window.verifyCode; window.verifyCode = function () { if (!ticked()) { needConsent(); return; } return _vc.apply(this, arguments); };
 async function recordConsent() {
   const r = await api('/api/consent', 'POST', {});
-  if (r.ok && currentUser) { currentUser.consent_version = CV; persistUser(); const m = $('consent-gate'); if (m) m.remove(); }
+  if (r.ok && currentUser) { currentUser.consent_version = CV; persistUser(); const m = $('consent-gate'); if (m) m.remove(); if (window.maybeTour) window.maybeTour(); }
 }
 function consentGate() {
   if ($('consent-gate')) return; const t = l();
@@ -3212,22 +3244,26 @@ window.hcSend = async function () {
   box.classList.remove('hidden'); $('hc-chips').style.display = 'none';
   box.insertAdjacentHTML('beforeend', `<div class="me-bubble">${esc(msg)}</div>`); inp.value = ''; hcGrow(inp); btn.disabled = true;
   const id = 'hct-' + Date.now(); box.insertAdjacentHTML('beforeend', `<div id="${id}" class="ai-row"><div class="ai-av">✨</div><div class="ai-bubble"><span class="dots"><i></i><i></i><i></i></span></div></div>`); box.scrollTop = box.scrollHeight;
-  const fd = new FormData(); fd.append('message', msg); fd.append('doc_id', currentDocId || 'default'); fd.append('lang', selectedLang);
+  const fd = new FormData(); fd.append('message', msg); fd.append('doc_id', 'default'); fd.append('lang', selectedLang); fd.append('history', JSON.stringify(HCH.slice(-6)));
   let res = null, data = {}; try { res = await fetch('/api/chat', { method: 'POST', body: fd }); data = await res.json().catch(() => ({})); } catch (e) {}
   const t = $(id); if (t) t.remove();
-  if (res && res.ok) { setTokens(data.tokens_left); box.insertAdjacentHTML('beforeend', `<div class="ai-row"><div class="ai-av">✨</div><div class="ai-bubble md">${window.formatText(data.reply)}</div></div>`); try { renderMath(box.lastElementChild); } catch (e) {} }
+  if (res && res.ok) { setTokens(data.tokens_left); HCH.push({ m: msg, r: data.reply }); box.insertAdjacentHTML('beforeend', `<div class="ai-row"><div class="ai-av">✨</div><div class="ai-bubble md">${window.formatText(data.reply)}</div></div>`); try { renderMath(box.lastElementChild); } catch (e) {} }
   else box.insertAdjacentHTML('beforeend', `<div class="ai-row">${errorBox(data.error || l().hcErr)}</div>`);
   box.scrollTop = box.scrollHeight; btn.disabled = false;
 };
 
 // ======================= ГРУППЫ =======================
 const GT = {
-  ru: { title: 'Группы', desc: 'Создайте группу, пригласите друзей по нику Telegram и поделите работу.', create: 'Создать группу', namePh: 'Название группы', mine: 'Мои группы', none: 'Пока нет групп. Создайте первую или примите приглашение.', invites: 'Приглашения', accept: 'Принять', decline: 'Отклонить', from: 'от', members: 'Участники', owner: 'владелец', you: 'вы', invite: 'Пригласить по нику', nickPh: '@ник в Telegram', send: 'Отправить', sent: 'Приглашение отправлено', pushed: 'Уведомление ушло в Telegram', nopush: 'Уведомление в Telegram не доставлено — человек увидит приглашение на сайте', pending: 'Ждут ответа', cancel: 'Отменить', tasks: 'Задачи', taskPh: 'Что нужно сделать?', add: 'Добавить', unassigned: 'Не назначено', assignee: 'Исполнитель', open: 'Открыть', back: 'Назад', del: 'Удалить группу', delQ: 'Удалить группу вместе со всеми задачами?', leave: 'Выйти из группы', leaveQ: 'Выйти из группы?', kickQ: 'Исключить участника?', split: '✨ ИИ поделит работу', splitD: 'Опишите общую цель — ИИ разобьёт её на задачи и раздаст участникам. 1 токен.', splitPh: 'Например: подготовить доклад и презентацию по экологии к пятнице', splitBtn: 'Разделить · 1 токен', splitDone: 'Добавлено задач', open_n: 'в работе', done_n: 'готово', empty: 'Нет задач', delTask: 'Удалить задачу?', err: 'Ошибка', due: 'Срок' },
-  kz: { title: 'Топтар', desc: 'Топ құрып, достарыңызды Telegram ник арқылы шақырып, жұмысты бөлісіңіз.', create: 'Топ құру', namePh: 'Топ атауы', mine: 'Менің топтарым', none: 'Әзірге топ жоқ. Біріншісін құрыңыз немесе шақыруды қабылдаңыз.', invites: 'Шақырулар', accept: 'Қабылдау', decline: 'Бас тарту', from: 'кімнен:', members: 'Қатысушылар', owner: 'иесі', you: 'сіз', invite: 'Ник арқылы шақыру', nickPh: 'Telegram @ник', send: 'Жіберу', sent: 'Шақыру жіберілді', pushed: 'Хабарлама Telegram-ға жіберілді', nopush: 'Telegram-ға жеткізілмеді — адам шақыруды сайттан көреді', pending: 'Жауап күтуде', cancel: 'Болдырмау', tasks: 'Тапсырмалар', taskPh: 'Не істеу керек?', add: 'Қосу', unassigned: 'Тағайындалмаған', assignee: 'Орындаушы', open: 'Ашу', back: 'Артқа', del: 'Топты жою', delQ: 'Топты барлық тапсырмасымен жою керек пе?', leave: 'Топтан шығу', leaveQ: 'Топтан шығасыз ба?', kickQ: 'Қатысушыны шығару керек пе?', split: '✨ ЖИ жұмысты бөледі', splitD: 'Жалпы мақсатты сипаттаңыз — ЖИ тапсырмаларға бөліп, қатысушыларға таратады. 1 токен.', splitPh: 'Мысалы: жұмаға дейін экология бойынша баяндама мен презентация дайындау', splitBtn: 'Бөлу · 1 токен', splitDone: 'Қосылған тапсырма', open_n: 'орындалуда', done_n: 'дайын', empty: 'Тапсырма жоқ', delTask: 'Тапсырманы жою керек пе?', err: 'Қате', due: 'Мерзім' },
-  en: { title: 'Groups', desc: 'Create a group, invite friends by Telegram username and split the work.', create: 'Create group', namePh: 'Group name', mine: 'My groups', none: 'No groups yet. Create one or accept an invitation.', invites: 'Invitations', accept: 'Accept', decline: 'Decline', from: 'from', members: 'Members', owner: 'owner', you: 'you', invite: 'Invite by username', nickPh: 'Telegram @username', send: 'Send', sent: 'Invitation sent', pushed: 'A Telegram notification was sent', nopush: 'Telegram notice not delivered — they will see the invite on the site', pending: 'Waiting for reply', cancel: 'Cancel', tasks: 'Tasks', taskPh: 'What needs to be done?', add: 'Add', unassigned: 'Unassigned', assignee: 'Assignee', open: 'Open', back: 'Back', del: 'Delete group', delQ: 'Delete the group with all its tasks?', leave: 'Leave group', leaveQ: 'Leave this group?', kickQ: 'Remove this member?', split: '✨ AI splits the work', splitD: 'Describe the shared goal — the AI breaks it into tasks and assigns them to members. 1 token.', splitPh: 'e.g. prepare a report and slides about ecology by Friday', splitBtn: 'Split · 1 token', splitDone: 'Tasks added', open_n: 'open', done_n: 'done', empty: 'No tasks', delTask: 'Delete this task?', err: 'Error', due: 'Due' }
+  ru: { title: 'Группы', desc: 'Создайте группу, пригласите друзей по нику Telegram и поделите работу.', create: 'Создать группу', namePh: 'Название группы', mine: 'Мои группы', none: 'Пока нет групп. Создайте первую или примите приглашение.', invites: 'Приглашения', accept: 'Принять', decline: 'Отклонить', from: 'от', members: 'Участники', owner: 'владелец', you: 'вы', invite: 'Пригласить', nickPh: '@ник или ID пользователя', send: 'Отправить', sent: 'Приглашение отправлено', pushed: 'Уведомление ушло в Telegram', nopush: 'Уведомление в Telegram не доставлено — человек увидит приглашение на сайте', pending: 'Ждут ответа', cancel: 'Отменить', tasks: 'Задачи', taskPh: 'Что нужно сделать?', add: 'Добавить', unassigned: 'Не назначено', assignee: 'Исполнитель', open: 'Открыть', back: 'Назад', del: 'Удалить группу', delQ: 'Удалить группу вместе со всеми задачами?', leave: 'Выйти из группы', leaveQ: 'Выйти из группы?', kickQ: 'Исключить участника?', split: '✨ ИИ поделит работу', splitD: 'Опишите общую цель — ИИ разобьёт её на задачи и раздаст участникам. 1 токен.', splitPh: 'Например: подготовить доклад и презентацию по экологии к пятнице', splitBtn: 'Разделить · 1 токен', splitDone: 'Добавлено задач', open_n: 'в работе', done_n: 'готово', empty: 'Нет задач', delTask: 'Удалить задачу?', err: 'Ошибка', due: 'Срок' },
+  kz: { title: 'Топтар', desc: 'Топ құрып, достарыңызды Telegram ник арқылы шақырып, жұмысты бөлісіңіз.', create: 'Топ құру', namePh: 'Топ атауы', mine: 'Менің топтарым', none: 'Әзірге топ жоқ. Біріншісін құрыңыз немесе шақыруды қабылдаңыз.', invites: 'Шақырулар', accept: 'Қабылдау', decline: 'Бас тарту', from: 'кімнен:', members: 'Қатысушылар', owner: 'иесі', you: 'сіз', invite: 'Шақыру', nickPh: '@ник немесе пайдаланушы ID', send: 'Жіберу', sent: 'Шақыру жіберілді', pushed: 'Хабарлама Telegram-ға жіберілді', nopush: 'Telegram-ға жеткізілмеді — адам шақыруды сайттан көреді', pending: 'Жауап күтуде', cancel: 'Болдырмау', tasks: 'Тапсырмалар', taskPh: 'Не істеу керек?', add: 'Қосу', unassigned: 'Тағайындалмаған', assignee: 'Орындаушы', open: 'Ашу', back: 'Артқа', del: 'Топты жою', delQ: 'Топты барлық тапсырмасымен жою керек пе?', leave: 'Топтан шығу', leaveQ: 'Топтан шығасыз ба?', kickQ: 'Қатысушыны шығару керек пе?', split: '✨ ЖИ жұмысты бөледі', splitD: 'Жалпы мақсатты сипаттаңыз — ЖИ тапсырмаларға бөліп, қатысушыларға таратады. 1 токен.', splitPh: 'Мысалы: жұмаға дейін экология бойынша баяндама мен презентация дайындау', splitBtn: 'Бөлу · 1 токен', splitDone: 'Қосылған тапсырма', open_n: 'орындалуда', done_n: 'дайын', empty: 'Тапсырма жоқ', delTask: 'Тапсырманы жою керек пе?', err: 'Қате', due: 'Мерзім' },
+  en: { title: 'Groups', desc: 'Create a group, invite friends by Telegram username and split the work.', create: 'Create group', namePh: 'Group name', mine: 'My groups', none: 'No groups yet. Create one or accept an invitation.', invites: 'Invitations', accept: 'Accept', decline: 'Decline', from: 'from', members: 'Members', owner: 'owner', you: 'you', invite: 'Invite', nickPh: '@username or user ID', send: 'Send', sent: 'Invitation sent', pushed: 'A Telegram notification was sent', nopush: 'Telegram notice not delivered — they will see the invite on the site', pending: 'Waiting for reply', cancel: 'Cancel', tasks: 'Tasks', taskPh: 'What needs to be done?', add: 'Add', unassigned: 'Unassigned', assignee: 'Assignee', open: 'Open', back: 'Back', del: 'Delete group', delQ: 'Delete the group with all its tasks?', leave: 'Leave group', leaveQ: 'Leave this group?', kickQ: 'Remove this member?', split: '✨ AI splits the work', splitD: 'Describe the shared goal — the AI breaks it into tasks and assigns them to members. 1 token.', splitPh: 'e.g. prepare a report and slides about ecology by Friday', splitBtn: 'Split · 1 token', splitDone: 'Tasks added', open_n: 'open', done_n: 'done', empty: 'No tasks', delTask: 'Delete this task?', err: 'Error', due: 'Due' }
 };
+GT.ru.myId = 'Ваш ID'; GT.kz.myId = 'Сіздің ID'; GT.en.myId = 'Your ID';
+GT.ru.copy = '⧉ Копировать'; GT.kz.copy = '⧉ Көшіру'; GT.en.copy = '⧉ Copy';
+GT.ru.idHint = 'Друзья могут пригласить вас по @нику или этому ID.'; GT.kz.idHint = 'Достарыңыз сізді @ник немесе осы ID арқылы шақыра алады.'; GT.en.idHint = 'Friends can invite you by @username or this ID.';
+window.copyMyId = async b => { const ok = await window.copyToClipboard(String(currentUser.public_id)); const o = b.textContent; b.textContent = ok ? '✓' : '✕'; setTimeout(() => { b.textContent = o; }, 1400); };
 const G = () => GT[LG()];
-let GID = null, GD = null;
+let GID = null, GD = null; const HCH = [];
 const gload = () => `<div class="py-12 text-center"><div class="w-10 h-10 border-4 border-[#c8ff2e] border-t-transparent rounded-full animate-spin mx-auto"></div></div>`;
 const nm = u => u.username ? '@' + u.username : u.display_name;
 const gerr = (r) => alert((r.data && r.data.error) || G().err);
@@ -3238,7 +3274,7 @@ window.openGroupsView = async function () {
   const r = await api('/api/groups'); if (!r.ok) { c.innerHTML = errorBox((r.data && r.data.error) || g.err); return; }
   const { groups, invites } = r.data; setBadge(invites.length);
   c.innerHTML = `<div class="w-full space-y-4 text-left quiz-slide-enter">
-    <div class="banner"><h3 class="display text-2xl font-bold text-white">👥 ${g.title}</h3><p class="text-xs text-neutral-400 mt-1">${g.desc}</p></div>
+    <div class="banner"><h3 class="display text-2xl font-bold text-white">👥 ${g.title}</h3><p class="text-xs text-neutral-400 mt-1">${g.desc}</p>${currentUser.public_id ? `<p class="mt-3 text-xs text-neutral-300 flex flex-wrap items-center gap-2">${g.myId}: <b class="text-white text-base">${esc(String(currentUser.public_id))}</b><button class="cp-btn" onclick="copyMyId(this)">${g.copy}</button><span class="text-neutral-500">${g.idHint}</span></p>` : ''}</div>
     ${invites.length ? `<div class="space-y-2"><p class="mono" style="color:#ff8fa0">${g.invites}</p>${invites.map(i => `<div class="tile p-4 flex flex-wrap items-center justify-between gap-3"><div><p class="font-extrabold text-white text-sm">${esc(i.group_name)}</p><p class="text-[11px] text-neutral-400">${g.from} ${i.from ? esc(nm(i.from)) : '—'}</p></div><div class="flex gap-2"><button class="btn-accent px-4 py-2 text-xs" onclick="gAnswer(${i.id},true)">${g.accept}</button><button class="btn-ghost px-4 py-2 text-xs" onclick="gAnswer(${i.id},false)">${g.decline}</button></div></div>`).join('')}</div>` : ''}
     <div class="tile p-4 flex flex-col sm:flex-row gap-2"><input id="g-name" class="field" maxlength="60" placeholder="${g.namePh}" onkeydown="if(event.key==='Enter') gCreate()"><button class="btn-accent px-6 py-3 text-xs shrink-0" onclick="gCreate()">${g.create}</button></div>
     <p class="mono">${g.mine}</p>
@@ -3301,6 +3337,183 @@ const _ld = window.loginDone;
 hcLabels(); if (currentUser) { consentCheck(); pollInvites(); }
 document.addEventListener('visibilitychange', () => { if (!document.hidden) pollInvites(); });
 if (/^\/(privacy|terms)\/?$/.test(location.pathname) || location.hash === '#privacy') setTimeout(openPolicy, 300);
+})();
+</script>
+<script>
+(function () {
+const $ = id => document.getElementById(id), esc = escapeHtml;
+const LG = () => (['ru', 'kz', 'en'].includes(selectedLang) ? selectedLang : 'ru');
+const isMobile = () => matchMedia('(max-width:1023px)').matches;
+
+// ======================= КНОПКА «КОПИРОВАТЬ» ДЛЯ ЛЮБОГО ТЕКСТА ИИ =======================
+const CP = { ru: ['⧉ Копировать', '✓ Скопировано'], kz: ['⧉ Көшіру', '✓ Көшірілді'], en: ['⧉ Copy', '✓ Copied'] };
+const CP_SEL = '.ai-bubble, #result-container .tile.md, .copyable';
+window.copyToClipboard = copyToClipboard;
+async function copyToClipboard(text) {
+  try { await navigator.clipboard.writeText(text); return true; } catch (e) {}
+  try { const t = document.createElement('textarea'); t.value = text; t.style.cssText = 'position:fixed;left:-9999px;top:0;opacity:0'; document.body.appendChild(t); t.focus(); t.select(); const ok = document.execCommand('copy'); t.remove(); return ok; } catch (e) { return false; }
+}
+function plainText(el) {
+  const c = el.cloneNode(true);
+  c.querySelectorAll('.cp-row,.dots,.cb button,.copy-btn').forEach(x => x.remove());
+  c.querySelectorAll('.katex').forEach(k => { const a = k.querySelector('annotation'); k.replaceWith(document.createTextNode(a ? '$' + a.textContent + '$' : k.textContent)); });
+  const host = document.createElement('div'); host.style.cssText = 'position:fixed;left:-9999px;top:0;width:720px;white-space:pre-wrap'; host.appendChild(c); document.body.appendChild(host);
+  const t = (c.innerText || c.textContent || '').replace(/\n{3,}/g, '\n\n').trim(); host.remove(); return t;
+}
+window.copyAI = async function (btn) {
+  const host = btn.closest(CP_SEL); if (!host) return; const ok = await copyToClipboard(plainText(host)), o = CP[LG()][0];
+  btn.textContent = ok ? CP[LG()][1] : '✕'; setTimeout(() => { btn.textContent = o; }, 1600);
+};
+function decorate(root, deep = true) {
+  if (!root || root.nodeType !== 1) return;
+  const list = root.matches && root.matches(CP_SEL) ? [root] : []; if (deep && root.querySelectorAll) list.push(...root.querySelectorAll(CP_SEL));
+  list.forEach(el => {
+    if (el.querySelector(':scope > .cp-row') || el.querySelector('.dots') || el.closest('.cp-skip')) return;
+    if (!el.textContent.trim()) return;
+    el.insertAdjacentHTML('beforeend', `<div class="cp-row"><button type="button" class="cp-btn" onclick="copyAI(this)">${CP[LG()][0]}</button></div>`);
+  });
+}
+// ======================= ОЧЕРЕДЬ КАРТИНОК СЛАЙДОВ =======================
+// Браузер держит всего ~6 соединений на сайт: если 12 картинок грузятся одновременно и медленно, зависает и остальной сайт.
+// Поэтому грузим по 2 штуки, главный слайд — первым, при ошибке пробуем ещё дважды.
+const IQ = { active: 0, max: 2 };
+function imgKick() {
+  const imgs = [...document.querySelectorAll('img[data-src]:not([data-st])')];
+  imgs.sort((a, b) => (b.closest('#sl-main,#pres') ? 1 : 0) - (a.closest('#sl-main,#pres') ? 1 : 0));
+  while (IQ.active < IQ.max && imgs.length) {
+    const im = imgs.shift(); im.dataset.st = '1'; IQ.active++;
+    let freed = false; const free = () => { if (freed) return; freed = true; IQ.active--; imgKick(); };
+    const guard = setTimeout(free, 55000);
+    im.addEventListener('load', () => { clearTimeout(guard); free(); }, { once: true });
+    const onErr = () => {
+      const n = +(im.dataset.r || 0);
+      if (n < 2 && im.isConnected) { im.dataset.r = n + 1; setTimeout(() => { if (im.isConnected) im.src = im.dataset.src + '&r=' + (n + 1); else { clearTimeout(guard); free(); } }, 2500 * (n + 1)); }
+      else { clearTimeout(guard); im.remove(); free(); }
+    };
+    im.addEventListener('error', onErr);
+    im.src = im.dataset.src;
+  }
+}
+let kt = null;
+new MutationObserver(ms => {
+  let img = false;
+  ms.forEach(m => { decorate(m.target, false); m.addedNodes.forEach(n => { decorate(n); if (n.nodeType === 1 && (n.matches('img[data-src]') || n.querySelector('img[data-src]'))) img = true; }); });
+  if (img) { clearTimeout(kt); kt = setTimeout(imgKick, 30); }
+}).observe(document.body, { childList: true, subtree: true });
+decorate(document.body);
+
+// ======================= ОБУЧАЮЩИЙ ТУР =======================
+const TR = {
+  ru: { next: 'Далее', back: 'Назад', skip: 'Пропустить', done: 'Начать!', help: '❓ Как пользоваться сайтом', of: 'из', steps: [
+    ['👋 Добро пожаловать в StudyAI Hub!', 'Это ИИ-помощник для учёбы: чат, тесты, карточки, конспекты, презентации и группы. За 30 секунд покажу, где что находится.'],
+    ['💬 ИИ-чат', 'Напишите вопрос в строку под заголовком. Тему задаёте вы — ИИ сам спросит, что именно разобрать. Каждый ответ стоит 1 токен.'],
+    ['🧭 Разделы', 'Здесь все инструменты: тесты, карточки, конспект, объяснение проще, план подготовки, ИИ-учитель, билеты и презентации. Выбирайте нужный раздел.'],
+    ['📎 Свой материал', 'Загрузите PDF, Word, Excel или TXT — или впишите тему. Тесты, карточки и конспекты ИИ будет делать по вашему материалу.'],
+    ['👥 Группы', 'Создавайте группы, приглашайте друзей по @нику или ID и делите задачи. ИИ может сам разбить общую цель на задачи.'],
+    ['⚡ Токены', 'Каждое действие ИИ тратит токены. Бесплатные обновляются каждый день, а Premium снимает ограничения.'],
+    ['👤 Кабинет', 'В кабинете — ваш ID, уровень, история, задачи и награды. Здесь же можно скачать свои данные.'],
+    ['🚀 Всё готово!', 'Загрузите материал или просто задайте вопрос ИИ. Этот тур всегда можно открыть снова: «Как пользоваться сайтом».'] ] },
+  kz: { next: 'Әрі қарай', back: 'Артқа', skip: 'Өткізу', done: 'Бастау!', help: '❓ Сайтты қалай пайдалану', of: '/', steps: [
+    ['👋 StudyAI Hub-қа қош келдіңіз!', 'Бұл оқуға арналған ЖИ-көмекші: чат, тесттер, карточкалар, конспектілер, презентациялар және топтар. 30 секундта не қайда екенін көрсетемін.'],
+    ['💬 ЖИ-чат', 'Сұрағыңызды тақырыптың астындағы жолға жазыңыз. Тақырыпты өзіңіз қоясыз — ЖИ не талдау керегін өзі сұрайды. Әр жауап — 1 токен.'],
+    ['🧭 Бөлімдер', 'Мұнда барлық құрал: тесттер, карточкалар, конспект, қарапайым түсіндіру, дайындық жоспары, ЖИ-мұғалім, билеттер және презентациялар.'],
+    ['📎 Өз материалыңыз', 'PDF, Word, Excel немесе TXT жүктеңіз — не тақырып жазыңыз. Тесттер, карточкалар мен конспектілерді ЖИ сіздің материалыңыз бойынша жасайды.'],
+    ['👥 Топтар', 'Топ құрып, достарыңызды @ник немесе ID арқылы шақырыңыз да, тапсырмаларды бөлісіңіз. ЖИ жалпы мақсатты тапсырмаларға өзі бөле алады.'],
+    ['⚡ Токендер', 'ЖИ-дің әр әрекеті токен жұмсайды. Тегін токендер күн сайын жаңарады, Premium шектеуді алады.'],
+    ['👤 Кабинет', 'Кабинетте — ID-іңіз, деңгейіңіз, тарих, тапсырмалар және марапаттар. Деректеріңізді де осы жерден жүктеуге болады.'],
+    ['🚀 Бәрі дайын!', 'Материал жүктеңіз немесе ЖИ-ге сұрақ қойыңыз. Бұл турды «Сайтты қалай пайдалану» арқылы қайта ашуға болады.'] ] },
+  en: { next: 'Next', back: 'Back', skip: 'Skip', done: 'Let’s go!', help: '❓ How to use the site', of: 'of', steps: [
+    ['👋 Welcome to StudyAI Hub!', 'Your AI study helper: chat, quizzes, flashcards, summaries, presentations and groups. A 30-second tour of where everything is.'],
+    ['💬 AI chat', 'Type a question in the bar under the headline. You choose the topic — the AI will ask what you want to cover. Each answer costs 1 token.'],
+    ['🧭 Sections', 'All tools live here: quizzes, flashcards, summary, simpler explanation, study plan, AI teacher, tickets and presentations.'],
+    ['📎 Your material', 'Upload a PDF, Word, Excel or TXT file — or type a topic. Quizzes, cards and summaries are built from your material.'],
+    ['👥 Groups', 'Create groups, invite friends by @username or ID and split tasks. The AI can even break a shared goal into tasks.'],
+    ['⚡ Tokens', 'Every AI action spends tokens. Free tokens refresh daily; Premium removes the limits.'],
+    ['👤 Cabinet', 'Your ID, level, history, tasks and rewards are here. You can also download your data.'],
+    ['🚀 You’re all set!', 'Upload a material or just ask the AI something. You can reopen this tour any time: “How to use the site”.'] ] }
+};
+// target: функция, возвращающая элемент; drawer: должен ли на телефоне быть открыт боковой список разделов
+const TSTEPS = [
+  {}, { sel: () => $('hero-chat') },
+  { sel: () => $('side-panel'), drawer: true, work: true },
+  { sel: () => $('btn-upload') && ($('btn-upload').closest('.space-y-3, .space-y-4, div') || $('btn-upload')), drawer: true, work: true },
+  { sel: () => { const b = $('btn-mode-groups'); return b && b.closest('button'); }, drawer: true, work: true },
+  { sel: () => $('user-tokens') && ($('user-tokens').parentElement), work: true },
+  { sel: () => $('nav-profile-btn') },
+  {}
+];
+let TS = null;
+const vis = el => { if (!el) return false; const r = el.getBoundingClientRect(); return r.width > 4 && r.height > 4; };
+function tourClose(mark) {
+  if (!TS) return; TS = null;
+  ['tour-ov', 'tour-hl', 'tour-card'].forEach(i => { const e = $(i); if (e) e.remove(); });
+  if (isMobile()) toggleSide(false);
+  document.body.classList.remove('no-scroll');
+  if (mark && currentUser) { currentUser.onboarded = true; persistUser(); try { localStorage.setItem('tourDone_' + currentUser.id, '1'); } catch (e) {} api('/api/onboarded', 'POST', {}); }
+}
+async function tourShow(i) {
+  if (!TS) return; TS.i = i; const T = TR[LG()], st = TSTEPS[i], tx = T.steps[i], last = i === TSTEPS.length - 1;
+  const mob = isMobile();
+  if (mob) { toggleSide(!!st.drawer); }
+  if (st.work && !(mob && st.drawer)) scrollToSection('workspace-section');
+  await new Promise(r => setTimeout(r, mob && st.drawer ? 420 : (st.work ? 650 : 120)));
+  if (!TS || TS.i !== i) return;
+  let el = st.sel ? st.sel() : null; if (!vis(el)) el = null;
+  if (el && !(mob && st.drawer)) { el.scrollIntoView({ block: 'center', behavior: 'instant' }); await new Promise(r => setTimeout(r, 80)); }
+  else if (el) el.scrollIntoView({ block: 'nearest', behavior: 'instant' });
+  const hl = $('tour-hl'), card = $('tour-card');
+  card.innerHTML = `<div class="tour-dots">${TSTEPS.map((_, k) => `<i class="${k === i ? 'on' : ''}"></i>`).join('')}</div><h4>${esc(tx[0])}</h4><p>${esc(tx[1])}</p>
+    <div class="tour-btns">${i ? `<button class="btn-ghost px-4 py-2 text-xs" id="tour-back">${T.back}</button>` : `<button class="text-xs text-neutral-500 hover:text-white px-1" id="tour-skip">${T.skip}</button>`}<button class="btn-accent px-5 py-2.5 text-xs ml-auto" id="tour-next">${last ? T.done : T.next}</button></div>
+    <p class="mono mt-2" style="font-size:.6rem">${i + 1} ${T.of} ${TSTEPS.length}${i ? ` · <button id="tour-skip2" class="underline">${T.skip}</button>` : ''}</p>`;
+  $('tour-next').onclick = () => last ? tourClose(true) : tourShow(i + 1);
+  if ($('tour-back')) $('tour-back').onclick = () => tourShow(i - 1);
+  ['tour-skip', 'tour-skip2'].forEach(k => { if ($(k)) $(k).onclick = () => tourClose(true); });
+  const vw = innerWidth, vh = innerHeight, cw = card.offsetWidth, ch = card.offsetHeight, pad = 8;
+  if (el) {
+    const r = el.getBoundingClientRect(); Object.assign(hl.style, { left: r.left - pad + 'px', top: r.top - pad + 'px', width: r.width + pad * 2 + 'px', height: r.height + pad * 2 + 'px' }); hl.classList.remove('none');
+    let x, y;
+    if (vw <= 640) { x = 12; y = (r.bottom + ch + 24 < vh) ? r.bottom + pad + 12 : (r.top - ch - 20 > 8 ? r.top - ch - pad - 12 : 12); if (y < 8 || (y + ch > vh - 8)) y = (r.top > vh / 2) ? 12 : vh - ch - 12; }
+    else if (r.right + cw + 24 < vw) { x = r.right + pad + 14; y = Math.min(Math.max(12, r.top), vh - ch - 12); }
+    else if (r.bottom + ch + 24 < vh) { x = Math.min(Math.max(12, r.left), vw - cw - 12); y = r.bottom + pad + 12; }
+    else if (r.top - ch - 24 > 0) { x = Math.min(Math.max(12, r.left), vw - cw - 12); y = r.top - ch - pad - 12; }
+    else { x = (vw - cw) / 2; y = vh - ch - 16; }
+    card.style.left = x + 'px'; card.style.top = y + 'px';
+  } else {
+    Object.assign(hl.style, { left: vw / 2 + 'px', top: vh / 2 + 'px', width: '0px', height: '0px' }); hl.classList.add('none');
+    card.style.left = Math.max(12, (vw - cw) / 2) + 'px'; card.style.top = Math.max(12, (vh - ch) / 2) + 'px';
+  }
+  card.style.opacity = 1;
+}
+window.startTour = function (replay) {
+  if (TS || $('consent-gate')) return; if (!replay && (!currentUser || currentUser.onboarded !== false)) return;
+  if (!replay) { try { if (localStorage.getItem('tourDone_' + currentUser.id)) return; } catch (e) {} }
+  const nm = $('nav-menu'); if (nm) nm.classList.add('off');
+  document.body.insertAdjacentHTML('beforeend', '<div id="tour-ov"></div><div id="tour-hl" class="none"></div><div id="tour-card" style="opacity:0"></div>');
+  TS = { i: 0, replay: !!replay };
+  $('tour-ov').addEventListener('click', e => e.stopPropagation());
+  tourShow(0);
+};
+addEventListener('resize', () => { if (TS) tourShow(TS.i); });
+document.addEventListener('keydown', e => { if (TS && e.key === 'Escape') tourClose(true); });
+// после согласия и входа — показываем тур только новым пользователям
+let tourTimer = null;
+window.maybeTour = maybeTour;
+function maybeTour() { if (!currentUser || currentUser.onboarded !== false || TS) return; clearTimeout(tourTimer); tourTimer = setTimeout(() => startTour(false), 1200); }
+const _ca4 = window.checkAuth; window.checkAuth = function () { _ca4(); hcHelp(); maybeTour(); };
+// ссылка «Как пользоваться» под чатом и в меню
+function hcHelp() {
+  const n = $('hc-note'); if (n && !$('tour-help')) n.insertAdjacentHTML('afterend', '<button id="tour-help" class="mono hover:text-white underline mt-1" onclick="startTour(true)"></button>');
+  const h = $('tour-help'); if (h) h.textContent = TR[LG()].help;
+  const m = $('nav-menu'); if (m && !$('menu-tour')) m.insertAdjacentHTML('beforeend', '<button id="menu-tour" class="mi" onclick="startTour(true)"><span></span><span>→</span></button>');
+  const mt = $('menu-tour'); if (mt) mt.firstElementChild.textContent = TR[LG()].help;
+}
+const _cl4 = window.changeLanguage; window.changeLanguage = function () { _cl4(); hcHelp(); };
+// актуализируем профиль (ID, статус тура, согласие) — у уже вошедших в localStorage этих полей может не быть
+(async function initMe() {
+  hcHelp(); if (!currentUser) return; const r = await api('/api/me'); if (!r.ok) return;
+  ['public_id', 'onboarded', 'consent_version'].forEach(k => { if (r.data[k] !== undefined) currentUser[k] = r.data[k]; }); persistUser();
+  maybeTour();
+})();
 })();
 </script>
 </body>
