@@ -495,6 +495,16 @@ body.no-scroll{overflow:hidden}
 @media (max-width:640px){#tour-card{left:.75rem!important;right:.75rem;width:auto}}
 .caret{display:inline-block;width:.5em;height:1.05em;margin-left:2px;vertical-align:-.15em;background:var(--accent);border-radius:2px;animation:caretBlink 1s steps(2,start) infinite}
 @keyframes caretBlink{to{visibility:hidden}}
+/* ===== красивое оформление ответов ИИ: разделы, вложенные списки, подписи ===== */
+.md li > ul, .md li > ol { margin: .35em 0 .15em; }
+.md ol > li.has-sub { margin: 1em 0 .45em; }
+.md ol > li.has-sub > .li-t { font-weight: 800; color: #fff; font-size: 1rem; font-family: 'Inter Tight', sans-serif; }
+.md ul ul > li::before { background: transparent; border: 2px solid var(--cyan); width: .4rem; height: .4rem; }
+.md ul ul ul > li::before { border-radius: 2px; border-color: var(--gold); }
+.md ol ol > li::before { background: rgba(255,255,255,.1); color: var(--cyan); }
+.md .lbl { color: var(--accent); font-weight: 800; }
+.md li.has-sub > ul, .md li.has-sub > ol { border-left: 1px solid rgba(255,255,255,.08); margin-left: -.2rem; padding-left: .2rem; }
+.ai-bubble.md > * { animation: none !important; }
     </style>
 </head>
 <body class="min-h-screen flex flex-col">
@@ -2360,19 +2370,44 @@ function md(raw) {
   const blocks = [];
   const s = String(raw == null ? '' : raw).replace(/\r/g, '')
     .replace(/```([\w+#-]*)[ \t]*\n?([\s\S]*?)```/g, (m, lg, code) => { blocks.push({ lg, code: code.replace(/\n+$/, '') }); return '\n\u0000' + (blocks.length - 1) + '\u0000\n'; });
-  const inl = t => t.replace(/`([^`\n]+)`/g, '<code class="ic">$1</code>').replace(/\*\*([^*\n]+)\*\*/g, '<strong>$1</strong>')
+  const inl = t => t.replace(/`([^`\n]+)`/g, '<code class="ic">$1</code>')
+    .replace(/\*\*([^*\n]{1,48}:)\*\*/g, '<strong class="lbl">$1</strong>').replace(/\*\*([^*\n]{1,48})\*\*:/g, '<strong class="lbl">$1:</strong>')
+    .replace(/\*\*([^*\n]+)\*\*/g, '<strong>$1</strong>')
     .replace(/(^|[\s(])\*([^*\n]+)\*(?=[\s).,!?:;]|$)/g, '$1<em>$2</em>');
-  const out = []; let list = null, para = [];
+  // «Ответ: …» → подпись выделяется цветом (если ИИ не выделил её сам)
+  const lbl = t => t.replace(/^([^:<>\n*]{2,30}?):(\s|$)/, (m, a, sp) => (a.trim().split(/\s+/).length > 4 || /^https?$/i.test(a)) ? m : `<span class="lbl">${a}:</span>${sp}`);
+  const out = []; let items = null, para = [], gap = false, adopt = null;
   const flushP = () => { if (para.length) { out.push('<div class="md-p">' + inl(para.join('<br>')) + '</div>'); para = []; } };
-  const flushL = () => { if (list) { out.push(`<${list.t}>${list.items.map(i => '<li>' + inl(i) + '</li>').join('')}</${list.t}>`); list = null; } };
+  const render = nodes => {
+    let html = '', i = 0;
+    while (i < nodes.length) {
+      const t = nodes[i].t; let j = i, lis = '';
+      while (j < nodes.length && nodes[j].t === t) { const n = nodes[j]; const kids = n.kids.length ? render(n.kids) : ''; lis += `<li${kids ? ' class="has-sub"' : ''}><span class="li-t">${inl(lbl(n.text))}</span>${kids}</li>`; j++; }
+      html += t === 'ol' ? `<ol style="counter-reset:n ${Math.max(0, nodes[i].num - 1)}">${lis}</ol>` : `<ul>${lis}</ul>`;
+      i = j;
+    }
+    return html;
+  };
+  const flushL = () => {
+    if (!items) return; const root = { ind: -1, kids: [] }, st = [root];
+    for (const it of items) { while (st[st.length - 1].ind >= it.ind) st.pop(); st[st.length - 1].kids.push(it); st.push(it); }
+    out.push(render(root.kids)); items = null; adopt = null; gap = false;
+  };
+  const indent = x => x.replace(/\t/g, '    ').length;
+  const push = (t, ws, num, text) => {
+    flushP(); let ind = indent(ws);
+    if (t === 'ol') adopt = ind; else if (adopt !== null && ind === adopt) ind = adopt + 1;   // «1. Раздел» и «- пункт» без отступа → пункт вложен в раздел
+    (items = items || []).push({ ind, t, num, text, kids: [] }); gap = false;
+  };
   for (const line of esc(s).split('\n')) {
     let m;
+    if (!line.trim()) { if (items) gap = true; else flushP(); continue; }
     if ((m = line.match(/^\u0000(\d+)\u0000$/))) { flushP(); flushL(); const b = blocks[+m[1]]; out.push(`<div class="cb"><div class="cb-h"><span>${esc(b.lg || 'code')}</span><button onclick="copyCode(this)">copy</button></div><pre><code>${esc(b.code)}</code></pre></div>`); }
     else if ((m = line.match(/^\s{0,3}(#{1,4})\s+(.+)$/))) { flushP(); flushL(); out.push(`<h${m[1].length}>${inl(m[2])}</h${m[1].length}>`); }
     else if (/^\s*(-{3,}|\*{3,}|_{3,})\s*$/.test(line)) { flushP(); flushL(); out.push('<hr>'); }
-    else if ((m = line.match(/^\s*[-*•]\s+(.+)$/))) { flushP(); if (!list || list.t !== 'ul') { flushL(); list = { t: 'ul', items: [] }; } list.items.push(m[1]); }
-    else if ((m = line.match(/^\s*\d+[.)]\s+(.+)$/))) { flushP(); if (!list || list.t !== 'ol') { flushL(); list = { t: 'ol', items: [] }; } list.items.push(m[1]); }
-    else if (!line.trim()) { flushP(); flushL(); }
+    else if ((m = line.match(/^(\s*)[-*•–]\s+(.+)$/))) push('ul', m[1], 0, m[2]);
+    else if ((m = line.match(/^(\s*)(\d+)[.)]\s+(.+)$/))) push('ol', m[1], +m[2], m[3]);
+    else if (items && !gap && /^\s{2,}/.test(line)) items[items.length - 1].text += '<br>' + line.trim();
     else { flushL(); para.push(line.trim()); }
   }
   flushP(); flushL(); return out.join('');
