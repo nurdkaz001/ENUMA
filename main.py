@@ -22,7 +22,7 @@ import httpx
 import jwt
 from fastapi import Body, Depends, FastAPI, File, Form, Header, HTTPException, Request, UploadFile
 from fastapi.exceptions import RequestValidationError
-from fastapi.responses import HTMLResponse, JSONResponse, Response
+from fastapi.responses import HTMLResponse, JSONResponse, Response, StreamingResponse
 from pydantic import BaseModel, Field
 import openpyxl
 from docx import Document
@@ -530,9 +530,7 @@ def generate_content(
     return {"result": result, "tokens_left": left, "history_id": hid}
 
 
-@app.post("/api/chat")
-def chat(message: str = Form(...), doc_id: str = Form("default"), lang: str = Form("kz"), history: str = Form(""),
-         user: dict = Depends(current_user)):
+def _chat_prompt(message: str, doc_id: str, lang: str, history: str, user: dict) -> tuple[str, str]:
     message = message.strip()[:2000]
     if not message:
         raise HTTPException(400, "Пустое сообщение.")
@@ -554,13 +552,85 @@ def chat(message: str = Form(...), doc_id: str = Form("default"), lang: str = Fo
         + (f"Предыдущий диалог:\n{dialog}\n\n" if dialog else "")
         + f"Студент: {message}\nНаставник:"
     )
-    reply, left = paid(user, lambda: ask_ai(prompt))
+    return message, prompt
+
+
+def _save_chat(user: dict, doc_id: str, message: str, reply: str) -> None:
     try:
-        sb.table("chat_messages").insert({"user_id": user["id"], "doc_id": doc_id,
-                                          "message": message, "reply": reply}).execute()
+        sb.table("chat_messages").insert({"user_id": user["id"], "doc_id": doc_id, "message": message, "reply": reply}).execute()
     except Exception:
         log.exception("chat save failed")
+
+
+@app.post("/api/chat")
+def chat(message: str = Form(...), doc_id: str = Form("default"), lang: str = Form("kz"), history: str = Form(""),
+         user: dict = Depends(current_user)):
+    message, prompt = _chat_prompt(message, doc_id, lang, history, user)
+    reply, left = paid(user, lambda: ask_ai(prompt))
+    _save_chat(user, doc_id, message, reply)
     return {"reply": reply, "tokens_left": left}
+
+
+def _sse(obj: dict) -> str:
+    return "data: " + json.dumps(obj, ensure_ascii=False) + "\n\n"
+
+
+@app.post("/api/chat/stream")
+def chat_stream(message: str = Form(...), doc_id: str = Form("default"), lang: str = Form("kz"), history: str = Form(""),
+                user: dict = Depends(current_user)):
+    """Чат с потоковым выводом (SSE): текст приходит кусками, как в ChatGPT. Токен списывается заранее и возвращается при ошибке."""
+    message, prompt = _chat_prompt(message, doc_id, lang, history, user)
+    left = spend_token(user["id"])                      # 402 вернётся обычным JSON ещё до начала потока
+
+    def gen():
+        parts: list[str] = []
+        failed = False
+        try:
+            with httpx.stream(
+                "POST", f"{DEEPSEEK_BASE_URL}/chat/completions",
+                headers={"Authorization": f"Bearer {DEEPSEEK_API_KEY}"},
+                json={"model": DEEPSEEK_MODEL, "messages": [{"role": "user", "content": prompt}],
+                      "max_tokens": 4000, "temperature": 0.7, "stream": True},
+                timeout=httpx.Timeout(90.0, connect=10.0),
+            ) as r:
+                if r.status_code != 200:
+                    r.read()
+                    log.error("deepseek stream status %s", r.status_code)
+                    raise RuntimeError("bad status")
+                for line in r.iter_lines():
+                    if not line.startswith("data:"):
+                        continue
+                    data = line[5:].strip()
+                    if data == "[DONE]":
+                        break
+                    try:
+                        piece = json.loads(data)["choices"][0]["delta"].get("content")
+                    except Exception:
+                        continue
+                    if piece:
+                        parts.append(piece)
+                        yield _sse({"d": piece})
+        except GeneratorExit:                           # пользователь закрыл вкладку / остановил ответ
+            failed = not parts
+            raise
+        except Exception:
+            log.exception("chat stream failed")
+            failed = not parts
+            if failed:
+                yield _sse({"error": "ИИ сейчас недоступен, попробуйте ещё раз. Токен возвращён."})
+        finally:
+            reply = "".join(parts).strip()
+            if reply:
+                _save_chat(user, doc_id, message, reply)
+            else:
+                refund_token(user["id"])
+        if "".join(parts).strip():
+            yield _sse({"done": True, "tokens_left": left})
+        elif not failed:                                # поток закончился, но текста нет
+            yield _sse({"error": "ИИ вернул пустой ответ. Токен возвращён, попробуйте ещё раз."})
+
+    return StreamingResponse(gen(), media_type="text/event-stream",
+                             headers={"Cache-Control": "no-cache, no-transform", "X-Accel-Buffering": "no", "Connection": "keep-alive"})
 
 
 @app.post("/api/ai-teacher")
