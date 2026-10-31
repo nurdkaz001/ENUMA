@@ -493,6 +493,8 @@ body.no-scroll{overflow:hidden}
 .tour-dots i.on{background:var(--accent);width:1.1rem}
 .tour-btns{display:flex;align-items:center;gap:.5rem;margin-top:.9rem}
 @media (max-width:640px){#tour-card{left:.75rem!important;right:.75rem;width:auto}}
+.caret{display:inline-block;width:.5em;height:1.05em;margin-left:2px;vertical-align:-.15em;background:var(--accent);border-radius:2px;animation:caretBlink 1s steps(2,start) infinite}
+@keyframes caretBlink{to{visibility:hidden}}
     </style>
 </head>
 <body class="min-h-screen flex flex-col">
@@ -2404,20 +2406,15 @@ window.openChatView = function () {
     </div>`;
   addAI($('chat-messages'), t.chatWelcome);
 };
+let chatBusy = false;
 window.sendChatMessage = async function () {
   if (!currentUser) return checkAuth();
-  const input = $('chat-input'), msg = input.value.trim(), box = $('chat-messages'); if (!msg) return;
-  box.insertAdjacentHTML('beforeend', `<div class="me-bubble">${esc(msg)}</div>`); input.value = '';
-  const id = 'typing-' + Date.now();
-  box.insertAdjacentHTML('beforeend', `<div id="${id}" class="ai-row"><div class="ai-av">✨</div><div class="ai-bubble"><span class="dots"><i></i><i></i><i></i></span></div></div>`);
-  box.scrollTop = box.scrollHeight;
-  const fd = new FormData(); fd.append('message', msg); fd.append('doc_id', (($('chat-use-doc') && $('chat-use-doc').checked && currentDocId) || 'default')); fd.append('lang', selectedLang); fd.append('history', JSON.stringify(chatHist.slice(-6)));
-  let res = null, data = {};
-  try { res = await fetch('/api/chat', { method: 'POST', body: fd }); data = await res.json().catch(() => ({})); } catch (e) {}
-  $(id) && $(id).remove();
-  if (res && res.ok) { setTokens(data.tokens_left); chatHist.push({ m: msg, r: data.reply }); addAI(box, data.reply); }
-  else box.insertAdjacentHTML('beforeend', `<div class="ai-row">${errorBox(data.error || 'Error')}</div>`);
-  box.scrollTop = box.scrollHeight;
+  const input = $('chat-input'), msg = input.value.trim(), box = $('chat-messages'); if (!msg || chatBusy) return;
+  chatBusy = true; box.insertAdjacentHTML('beforeend', `<div class="me-bubble">${esc(msg)}</div>`); input.value = ''; box.scrollTop = box.scrollHeight;
+  const docId = ($('chat-use-doc') && $('chat-use-doc').checked && currentDocId) || 'default';
+  const r = await window.streamChat(box, msg, docId, chatHist.slice(-6));
+  if (r) chatHist.push({ m: msg, r: r.reply });
+  chatBusy = false;
 };
 
 // ---------- Карточки: переворот, колода, «знаю / ещё раз» ----------
@@ -3242,14 +3239,10 @@ window.hcSend = async function () {
   if (!currentUser) return checkAuth();
   const inp = $('hc-input'), msg = inp.value.trim(), box = $('hc-messages'), btn = $('hc-send'); if (!msg || btn.disabled) return;
   box.classList.remove('hidden'); $('hc-chips').style.display = 'none';
-  box.insertAdjacentHTML('beforeend', `<div class="me-bubble">${esc(msg)}</div>`); inp.value = ''; hcGrow(inp); btn.disabled = true;
-  const id = 'hct-' + Date.now(); box.insertAdjacentHTML('beforeend', `<div id="${id}" class="ai-row"><div class="ai-av">✨</div><div class="ai-bubble"><span class="dots"><i></i><i></i><i></i></span></div></div>`); box.scrollTop = box.scrollHeight;
-  const fd = new FormData(); fd.append('message', msg); fd.append('doc_id', 'default'); fd.append('lang', selectedLang); fd.append('history', JSON.stringify(HCH.slice(-6)));
-  let res = null, data = {}; try { res = await fetch('/api/chat', { method: 'POST', body: fd }); data = await res.json().catch(() => ({})); } catch (e) {}
-  const t = $(id); if (t) t.remove();
-  if (res && res.ok) { setTokens(data.tokens_left); HCH.push({ m: msg, r: data.reply }); box.insertAdjacentHTML('beforeend', `<div class="ai-row"><div class="ai-av">✨</div><div class="ai-bubble md">${window.formatText(data.reply)}</div></div>`); try { renderMath(box.lastElementChild); } catch (e) {} }
-  else box.insertAdjacentHTML('beforeend', `<div class="ai-row">${errorBox(data.error || l().hcErr)}</div>`);
-  box.scrollTop = box.scrollHeight; btn.disabled = false;
+  box.insertAdjacentHTML('beforeend', `<div class="me-bubble">${esc(msg)}</div>`); inp.value = ''; hcGrow(inp); btn.disabled = true; box.scrollTop = box.scrollHeight;
+  const r = await window.streamChat(box, msg, 'default', HCH.slice(-6));
+  if (r) HCH.push({ m: msg, r: r.reply });
+  btn.disabled = false;
 };
 
 // ======================= ГРУППЫ =======================
@@ -3514,6 +3507,53 @@ const _cl4 = window.changeLanguage; window.changeLanguage = function () { _cl4()
   ['public_id', 'onboarded', 'consent_version'].forEach(k => { if (r.data[k] !== undefined) currentUser[k] = r.data[k]; }); persistUser();
   maybeTour();
 })();
+})();
+</script>
+<script>
+// ======================= ПОТОКОВЫЙ ВЫВОД ОТВЕТА ИИ (как в ChatGPT) =======================
+(function () {
+const sleep = ms => new Promise(r => setTimeout(r, ms));
+// Рисует ответ ИИ в box по мере поступления. Возвращает {reply} или null при ошибке.
+window.streamChat = async function (box, msg, docId, hist) {
+  const row = document.createElement('div'); row.className = 'ai-row';
+  row.innerHTML = '<div class="ai-av">✨</div><div class="ai-bubble md cp-skip"><span class="dots"><i></i><i></i><i></i></span></div>';
+  box.appendChild(row); const bub = row.querySelector('.ai-bubble');
+  const stick = () => { if (box.scrollHeight - box.scrollTop - box.clientHeight < 140) box.scrollTop = box.scrollHeight; };
+  box.scrollTop = box.scrollHeight;
+  const fail = text => { row.remove(); box.insertAdjacentHTML('beforeend', `<div class="ai-row">${errorBox(text || 'Error')}</div>`); box.scrollTop = box.scrollHeight; return null; };
+
+  const fd = new FormData(); fd.append('message', msg); fd.append('doc_id', docId || 'default'); fd.append('lang', selectedLang); fd.append('history', JSON.stringify(hist || []));
+  let res = null; try { res = await fetch('/api/chat/stream', { method: 'POST', body: fd }); } catch (e) {}
+  if (!res || !res.ok || !res.body) { let err = 'Error'; try { err = (await res.json()).error || err; } catch (e) {} return fail(err); }
+
+  let acc = '', shown = 0, err = null, left = null, buf = '';
+  // «печатная машинка»: показываем текст порциями, догоняя то, что уже пришло по сети
+  const tick = setInterval(() => {
+    if (shown >= acc.length) return;
+    shown = Math.min(acc.length, shown + Math.max(2, Math.ceil((acc.length - shown) / 10)));
+    bub.innerHTML = window.formatText(acc.slice(0, shown)) + '<span class="caret"></span>'; stick();
+  }, 30);
+  try {
+    const rd = res.body.getReader(), dec = new TextDecoder();
+    while (true) {
+      const { value, done } = await rd.read(); if (done) break;
+      buf += dec.decode(value, { stream: true });
+      let i; while ((i = buf.indexOf('\n\n')) >= 0) {
+        const ev = buf.slice(0, i); buf = buf.slice(i + 2); if (!ev.startsWith('data:')) continue;
+        let o; try { o = JSON.parse(ev.slice(5)); } catch (e) { continue; }
+        if (o.d) acc += o.d; else if (o.error) err = o.error; else if (o.done) left = o.tokens_left;
+      }
+    }
+  } catch (e) { /* обрыв сети: покажем то, что успели получить */ }
+  while (shown < acc.length) await sleep(30);
+  clearInterval(tick);
+  if (!acc.trim()) return fail(err || 'Error');
+  bub.classList.remove('cp-skip');
+  bub.innerHTML = window.formatText(acc);                 // финальная отрисовка → MutationObserver добавит «Копировать»
+  try { renderMath(bub); } catch (e) {}
+  if (left != null) setTokens(left); else if (typeof refreshProfile === 'function') refreshProfile();
+  stick(); return { reply: acc };
+};
 })();
 </script>
 </body>
