@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>StudyAI Hub — ИИ Наставник</title>
+    <title>EnumaAI Hub — ИИ Наставник</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;800&family=Space+Grotesk:wght@500;700&family=Montserrat:wght@500;700;800&family=Manrope:wght@500;700;800&family=Unbounded:wght@500;700&family=Lora:ital,wght@0,500;1,500&family=Oswald:wght@500;700&family=Comfortaa:wght@500;700&family=Rubik:wght@500;700;800&display=swap" rel="stylesheet">
@@ -523,7 +523,9 @@ body.no-scroll{overflow:hidden}
 .cr-card{position:relative;overflow:hidden;border:1px solid var(--line);border-radius:2rem;background:linear-gradient(145deg,#141414,#0d0d0d);padding:2rem}
 .cr-card::before{content:"";position:absolute;width:26rem;height:26rem;right:-9rem;top:-12rem;background:radial-gradient(circle,rgba(200,255,46,.16),transparent 65%);pointer-events:none}
 .cr-card::after{content:"";position:absolute;width:20rem;height:20rem;left:-8rem;bottom:-12rem;background:radial-gradient(circle,rgba(80,200,255,.10),transparent 65%);pointer-events:none}
-.cr-av{flex:none;width:7.5rem;height:7.5rem;border-radius:2rem;background:linear-gradient(135deg,var(--accent),#5fe0ff);color:#0a0a0a;display:flex;align-items:center;justify-content:center;font-weight:900;font-size:2.6rem;letter-spacing:-.04em;transform:rotate(-4deg);box-shadow:0 18px 50px rgba(200,255,46,.18)}
+.cr-av{position:relative;flex:none;width:8.5rem;height:8.5rem;border-radius:2.1rem;padding:3px;background:linear-gradient(135deg,var(--accent),#5fe0ff);color:#0a0a0a;display:flex;align-items:center;justify-content:center;font-weight:900;font-size:2.6rem;letter-spacing:-.04em;transform:rotate(-3deg);box-shadow:0 18px 50px rgba(200,255,46,.2);overflow:hidden;isolation:isolate}
+.cr-av>span{position:absolute;inset:3px;border-radius:calc(2.1rem - 3px);background:linear-gradient(135deg,var(--accent),#5fe0ff);display:flex;align-items:center;justify-content:center}
+.cr-vid{position:relative;z-index:1;width:100%;height:100%;object-fit:cover;border-radius:calc(2.1rem - 3px);display:block;transform:scale(1.04)}
 .cr-tag{display:inline-flex;align-items:center;gap:.4rem;padding:.4rem .85rem;border:1px solid var(--line);border-radius:999px;font-size:.72rem;font-weight:700;color:#cfcfc8;background:rgba(255,255,255,.02)}
 .cr-soc{display:flex;align-items:center;gap:.75rem;padding:.8rem 1.1rem;border:1px solid var(--line);border-radius:1.1rem;background:#101010;color:#fff;transition:.2s;min-width:0}
 .cr-soc:hover{border-color:var(--accent);transform:translateY(-2px)}
@@ -531,7 +533,7 @@ body.no-scroll{overflow:hidden}
 .cr-soc small{display:block;font-size:.62rem;color:#7d7d77;font-weight:700;letter-spacing:.08em;text-transform:uppercase}
 .cr-soc b{display:block;font-size:.9rem}
 .soon-pill{display:inline-block;padding:.3rem .8rem;border-radius:999px;border:1px solid rgba(255,196,60,.5);color:var(--gold);font-size:.7rem;font-weight:800;letter-spacing:.12em;text-transform:uppercase}
-@media (max-width:640px){.cr-card{padding:1.3rem}.cr-av{width:5.5rem;height:5.5rem;font-size:2rem;border-radius:1.5rem}}
+@media (max-width:640px){.cr-card{padding:1.3rem}.cr-av{width:6.5rem;height:6.5rem;font-size:2rem;border-radius:1.6rem}.cr-av>span,.cr-vid{border-radius:calc(1.6rem - 3px)}}
     </style>
 </head>
 <body class="min-h-screen flex flex-col">
@@ -548,7 +550,7 @@ body.no-scroll{overflow:hidden}
         <div class="mx-auto max-w-6xl flex items-center justify-between rounded-full border border-white/10 bg-[#0a0a0a]/70 backdrop-blur-xl pl-5 pr-2 py-2">
             <a href="#home" class="flex items-center space-x-2.5" onclick="scrollToSection('home'); return false;">
                 <span class="w-2.5 h-2.5 rounded-full bg-[#c8ff2e]"></span>
-                <span class="display text-base font-bold text-white">StudyAI</span>
+                <span class="display text-base font-bold text-white">EnumaAI</span>
             </a>
 
             <nav class="hidden md:flex items-center space-x-1 text-sm font-semibold text-neutral-300">
@@ -632,7 +634,7 @@ body.no-scroll{overflow:hidden}
                 <span id="hero-kicker">ЖИ оқу платформасы · 2026</span>
             </p>
             <h1 class="hero-title display text-white flex flex-wrap items-center gap-x-5 gap-y-1">
-                <span id="hero-word-1">study</span>
+                <span id="hero-word-1">enuma</span>
                 <span class="chip-play animate-float"><span class="tri">▶</span>AI</span>
                 <span id="hero-word-2" class="text-neutral-500">platform</span>
             </h1>
@@ -758,9 +760,12 @@ body.no-scroll{overflow:hidden}
             <h2 class="mono lg:text-[1.1rem] text-neutral-400" data-cr="kicker">Создатель</h2>
             <div class="cr-card">
                 <div class="relative z-10 flex flex-col sm:flex-row gap-6 sm:gap-8 sm:items-center">
-                    <div class="cr-av display" aria-hidden="true">АН</div>
+                    <div class="cr-av display" aria-hidden="true"><span>АН</span>
+                        <video class="cr-vid" autoplay loop muted playsinline preload="auto" poster="/static/creator.jpg" disablepictureinpicture>
+                            <source src="/static/creator.mp4" type="video/mp4" onerror="this.closest('video').remove()">
+                        </video></div>
                     <div class="min-w-0">
-                        <p class="mono" style="color:var(--accent)" data-cr="role">Создатель StudyAI Hub</p>
+                        <p class="mono" style="color:var(--accent)" data-cr="role">Создатель EnumaAI Hub</p>
                         <h3 class="display text-3xl lg:text-5xl font-bold text-white leading-[1.05] mt-2" data-cr="name">Ауезхан Нурдаулет</h3>
                         <p class="text-sm text-neutral-400 mt-2" data-cr="sub">Студент ЕНУ · Факультет информационных технологий</p>
                     </div>
@@ -788,7 +793,7 @@ body.no-scroll{overflow:hidden}
             <h2 class="display text-4xl lg:text-6xl font-bold text-white lg:text-[1.1rem]" id="about-title">about</h2>
             <div class="space-y-10">
                 <p id="about-text" class="display text-2xl lg:text-4xl font-semibold text-white leading-[1.15]">
-                    StudyAI Hub — ЖИ-наставник.
+                    EnumaAI Hub — ЖИ-наставник.
                 </p>
                 <div class="flex flex-wrap gap-3">
                     <span class="mono border border-white/10 rounded-full px-4 py-2">PDF → Quiz</span>
@@ -809,7 +814,7 @@ body.no-scroll{overflow:hidden}
                 <button onclick="openCabinet()" class="btn-ghost px-8 py-4 text-sm" id="footer-cabinet">Кабинет</button>
             </div>
             <div class="flex items-center justify-between pt-8 border-t border-white/10">
-                <span class="mono">© 2026 StudyAI Hub</span>
+                <span class="mono">© 2026 EnumaAI Hub</span>
                 <span class="flex gap-4"><button class="mono hover:text-white transition" onclick="openPolicy()" id="foot-privacy">Политика конфиденциальности</button></span>
                 <a href="#home" onclick="scrollToSection('home'); return false;" class="mono hover:text-white transition">↑ top</a>
             </div>
@@ -858,8 +863,8 @@ body.no-scroll{overflow:hidden}
             kz: {
                 navWork: "work", navAbout: "about", navContact: "contact", navProfileBtn: "Кабинет",
                 heroKicker: "ЖИ оқу платформасы · 2026",
-                heroWord1: "study", heroWord2: "platform", heroSubtitle: "2026 жылғы жасанды интеллектпен білім алу жолыңыз", heroBtnStart: "Оқуды бастау 🚀",
-                aboutText: "StudyAI Hub — PDF мен тақырыпты тест, карточка, конспект және ойынға айналдыратын ЖИ-наставник. Түсіну, қайталау және жоспарлау — бәрі бір жерде.",
+                heroWord1: "enuma", heroWord2: "platform", heroSubtitle: "2026 жылғы жасанды интеллектпен білім алу жолыңыз", heroBtnStart: "Оқуды бастау 🚀",
+                aboutText: "EnumaAI Hub — PDF мен тақырыпты тест, карточка, конспект және ойынға айналдыратын ЖИ-наставник. Түсіну, қайталау және жоспарлау — бәрі бір жерде.",
                 footerCta: "Бірге үйренейік!", footerBtn: "Telegram-да ашу",
                 sec1: "1. Материал", sec2: "2. Оқу режимдері", sec3: "3. Арнайы бөлімдер",
                 topicPlaceholder: "Немесе тақырып (мысалы: Алгебра)", uploadBtn: "🚀 ЖИ белсендіру",
@@ -889,8 +894,8 @@ body.no-scroll{overflow:hidden}
             ru: {
                 navWork: "work", navAbout: "about", navContact: "contact", navProfileBtn: "Кабинет",
                 heroKicker: "ИИ-платформа для учёбы · 2026",
-                heroWord1: "study", heroWord2: "platform", heroSubtitle: "Ваш путь к знаниям с искусственным интеллектом 2026 года", heroBtnStart: "Начать обучение 🚀",
-                aboutText: "StudyAI Hub — ИИ-наставник, который превращает PDF и темы в тесты, карточки, конспекты и игры. Понимать, повторять и планировать — всё в одном месте.",
+                heroWord1: "enuma", heroWord2: "platform", heroSubtitle: "Ваш путь к знаниям с искусственным интеллектом 2026 года", heroBtnStart: "Начать обучение 🚀",
+                aboutText: "EnumaAI Hub — ИИ-наставник, который превращает PDF и темы в тесты, карточки, конспекты и игры. Понимать, повторять и планировать — всё в одном месте.",
                 footerCta: "Давайте учиться вместе!", footerBtn: "Открыть в Telegram",
                 sec1: "1. Материал", sec2: "2. Режимы обучения", sec3: "3. Специальные разделы",
                 topicPlaceholder: "Или тема (напр: Алгебра)", uploadBtn: "🚀 Активировать ИИ",
@@ -919,9 +924,9 @@ body.no-scroll{overflow:hidden}
             },
             en: {
                 navWork: "work", navAbout: "about", navContact: "contact", navProfileBtn: "Cabinet",
-                heroKicker: "AI study platform · 2026",
-                heroWord1: "study", heroWord2: "platform", heroSubtitle: "Your path to knowledge with artificial intelligence in 2026", heroBtnStart: "Start Learning 🚀",
-                aboutText: "StudyAI Hub is an AI mentor that turns PDFs and topics into quizzes, flashcards, summaries and games. Understand, review and plan — all in one place.",
+                heroKicker: "AI Enuma platform · 2026",
+                heroWord1: "enuma", heroWord2: "platform", heroSubtitle: "Your path to knowledge with artificial intelligence in 2026", heroBtnStart: "Start Learning 🚀",
+                aboutText: "EnumaAI Hub is an AI mentor that turns PDFs and topics into quizzes, flashcards, summaries and games. Understand, review and plan — all in one place.",
                 footerCta: "Let's learn something amazing together!", footerBtn: "Open in Telegram",
                 sec1: "1. Material", sec2: "2. Study Modes", sec3: "3. Special Sections",
                 topicPlaceholder: "Or topic (e.g. Algebra)", uploadBtn: "🚀 Activate AI",
@@ -3208,7 +3213,7 @@ window.renderPricing();
 <script>
 (function () {
 const $ = id => document.getElementById(id), esc = escapeHtml, CV = '2026-10-29';
-const OPERATOR = 'Администрация StudyAI Hub', CONTACT = '@enuuma_bot';   // ← при необходимости укажите своё имя/ИП и контакт
+const OPERATOR = 'Администрация EnumaAI Hub', CONTACT = '@enuuma_bot';   // ← при необходимости укажите своё имя/ИП и контакт
 const LG = () => (['ru', 'kz', 'en'].includes(selectedLang) ? selectedLang : 'ru');
 
 // ======================= ТЕКСТЫ =======================
@@ -3233,7 +3238,7 @@ const l = () => U[LG()];
 
 const POL = {
   ru: { t: 'Политика конфиденциальности и Условия использования', s: [
-    ['1. Кто мы', `Сервис StudyAI Hub (далее — «Сервис») управляется: ${OPERATOR}. Контакт по вопросам данных: ${CONTACT} в Telegram. Политика составлена с учётом Закона Республики Казахстан «О персональных данных и их защите» № 94-V.`],
+    ['1. Кто мы', `Сервис EnumaAI Hub (далее — «Сервис») управляется: ${OPERATOR}. Контакт по вопросам данных: ${CONTACT} в Telegram. Политика составлена с учётом Закона Республики Казахстан «О персональных данных и их защите» № 94-V.`],
     ['2. Какие данные мы собираем', '<ul><li><b>Аккаунт:</b> Telegram ID, ник (username) и имя из Telegram — для входа через бота. Пароль не используется.</li><li><b>Материалы:</b> файлы и тексты, которые вы загружаете (PDF, Word, Excel, TXT), и извлечённый из них текст.</li><li><b>Результаты работы:</b> тесты, карточки, конспекты, презентации, билеты, история чата с ИИ.</li><li><b>Учебная активность:</b> задачи планера, XP, токены, подписка.</li><li><b>Группы:</b> названия групп, участники, приглашения и задачи.</li><li><b>Технические данные:</b> IP-адрес (для защиты от злоупотреблений и ограничения частоты запросов), данные в localStorage браузера (токен входа, язык, последняя презентация).</li></ul>'],
     ['3. Зачем мы это используем', 'Чтобы вы могли войти, пользоваться ИИ-функциями, сохранять историю, получать напоминания в Telegram, работать в группах, учитывать токены и подписку, а также защищать сервис от злоупотреблений. Мы не продаём ваши данные и не показываем рекламу.'],
     ['4. Кому передаются данные', '<ul><li><b>Supabase</b> — хранение базы данных.</li><li><b>DeepSeek</b> (ИИ-провайдер) — ваши запросы и тексты материалов отправляются для генерации ответов. Серверы провайдера могут находиться за пределами Казахстана (трансграничная передача). Не отправляйте в чат и материалы чужие персональные, финансовые и иные конфиденциальные сведения.</li><li><b>Telegram</b> — вход, коды, уведомления о приглашениях и напоминания.</li><li><b>Сервисы картинок</b> (Pollinations, LoremFlickr) — получают только текстовое описание иллюстрации, без личных данных.</li><li><b>Google Fonts и CDN</b> — шрифты и библиотеки; при загрузке они видят ваш IP.</li></ul>'],
@@ -3246,7 +3251,7 @@ const POL = {
     ['11. Условия использования', '<ul><li>Ответы ИИ могут содержать ошибки — проверяйте важные факты. Сервис не заменяет учителя, врача или юриста.</li><li>Соблюдайте правила своей школы или вуза об академической честности. Вы отвечаете за то, как используете созданные материалы.</li><li>Запрещено загружать незаконный контент, нарушать авторские права, пытаться обойти лимиты, взломать сервис или оскорблять участников групп.</li><li>Токены и Premium оплачиваются переводом через Kaspi и активируются вручную; неиспользованные токены не сгорают. Бесплатные токены обновляются ежедневно.</li><li>Мы можем ограничить доступ при нарушении условий и обновлять Сервис.</li></ul>'],
     ['12. Изменения', 'При существенных изменениях мы попросим вас принять новую версию. Актуальная версия всегда доступна по ссылке /privacy.'] ] },
   kz: { t: 'Құпиялылық саясаты және Пайдалану шарттары', s: [
-    ['1. Біз кімбіз', `StudyAI Hub сервисін (бұдан әрі — «Сервис») басқарады: ${OPERATOR}. Деректер мәселесі бойынша байланыс: Telegram-да ${CONTACT}. Саясат «Дербес деректер және оларды қорғау туралы» Қазақстан Республикасының № 94-V Заңын ескере отырып жасалған.`],
+    ['1. Біз кімбіз', `EnumaAI Hub сервисін (бұдан әрі — «Сервис») басқарады: ${OPERATOR}. Деректер мәселесі бойынша байланыс: Telegram-да ${CONTACT}. Саясат «Дербес деректер және оларды қорғау туралы» Қазақстан Республикасының № 94-V Заңын ескере отырып жасалған.`],
     ['2. Қандай деректерді жинаймыз', '<ul><li><b>Аккаунт:</b> Telegram ID, ник (username) және Telegram-дағы аты — бот арқылы кіру үшін. Құпиясөз қолданылмайды.</li><li><b>Материалдар:</b> жүктеген файлдарыңыз бен мәтіндеріңіз (PDF, Word, Excel, TXT) және олардан алынған мәтін.</li><li><b>Жұмыс нәтижелері:</b> тесттер, карточкалар, конспектілер, презентациялар, билеттер, ЖИ-мен чат тарихы.</li><li><b>Оқу белсенділігі:</b> жоспарлаушы тапсырмалары, XP, токендер, жазылым.</li><li><b>Топтар:</b> топ атаулары, қатысушылар, шақырулар және тапсырмалар.</li><li><b>Техникалық деректер:</b> IP-мекенжай (теріс пайдаланудан қорғау және сұраныс жиілігін шектеу үшін), браузер localStorage деректері (кіру токені, тіл, соңғы презентация).</li></ul>'],
     ['3. Не үшін қолданамыз', 'Кіруіңіз, ЖИ-функцияларды пайдалануыңыз, тарихты сақтауыңыз, Telegram-да еске салғыштар алуыңыз, топтарда жұмыс істеуіңіз, токендер мен жазылымды есепке алуыңыз және сервисті теріс пайдаланудан қорғау үшін. Деректеріңізді сатпаймыз, жарнама көрсетпейміз.'],
     ['4. Деректер кімге беріледі', '<ul><li><b>Supabase</b> — дерекқорды сақтау.</li><li><b>DeepSeek</b> (ЖИ-провайдер) — жауап жасау үшін сұраныстарыңыз бен материал мәтіндері жіберіледі. Провайдер серверлері Қазақстаннан тыс жерде болуы мүмкін (трансшекаралық беру). Чатқа және материалдарға басқа адамдардың жеке, қаржылық және өзге құпия мәліметтерін жүктемеңіз.</li><li><b>Telegram</b> — кіру, кодтар, шақыру хабарламалары және еске салғыштар.</li><li><b>Сурет сервистері</b> (Pollinations, LoremFlickr) — тек иллюстрацияның мәтіндік сипаттамасын алады, жеке деректерсіз.</li><li><b>Google Fonts және CDN</b> — қаріптер мен кітапханалар; жүктеу кезінде IP-ңызды көреді.</li></ul>'],
@@ -3259,7 +3264,7 @@ const POL = {
     ['11. Пайдалану шарттары', '<ul><li>ЖИ жауаптарында қате болуы мүмкін — маңызды фактілерді тексеріңіз. Сервис мұғалімді, дәрігерді немесе заңгерді алмастырмайды.</li><li>Мектебіңіз немесе ЖОО-ның академиялық адалдық ережелерін сақтаңыз. Жасалған материалдарды қалай қолданатыныңызға өзіңіз жауаптысыз.</li><li>Заңсыз контент жүктеуге, авторлық құқықты бұзуға, лимиттерді айналып өтуге, сервисті бұзуға немесе топ қатысушыларын қорлауға тыйым салынады.</li><li>Токендер мен Premium Kaspi арқылы аударыммен төленеді және қолмен қосылады; пайдаланылмаған токендер жанбайды. Тегін токендер күн сайын жаңарады.</li><li>Шарттар бұзылса, қолжетімділікті шектеуге және Сервисті жаңартуға құқылымыз.</li></ul>'],
     ['12. Өзгерістер', 'Елеулі өзгерістер болса, жаңа нұсқаны қабылдауды сұраймыз. Өзекті нұсқа әрқашан /privacy сілтемесінде қолжетімді.'] ] },
   en: { t: 'Privacy Policy and Terms of Use', s: [
-    ['1. Who we are', `StudyAI Hub (the “Service”) is operated by: ${OPERATOR}. Contact for data questions: ${CONTACT} on Telegram. This policy takes into account the Law of the Republic of Kazakhstan “On Personal Data and Their Protection” No. 94-V.`],
+    ['1. Who we are', `EnumaAI Hub (the “Service”) is operated by: ${OPERATOR}. Contact for data questions: ${CONTACT} on Telegram. This policy takes into account the Law of the Republic of Kazakhstan “On Personal Data and Their Protection” No. 94-V.`],
     ['2. Data we collect', '<ul><li><b>Account:</b> Telegram ID, username and display name from Telegram — for bot-based login. No passwords are used.</li><li><b>Materials:</b> files and texts you upload (PDF, Word, Excel, TXT) and the text extracted from them.</li><li><b>Your results:</b> quizzes, flashcards, summaries, presentations, tickets, AI chat history.</li><li><b>Learning activity:</b> planner tasks, XP, tokens, subscription.</li><li><b>Groups:</b> group names, members, invitations and tasks.</li><li><b>Technical data:</b> IP address (abuse protection and rate limiting) and browser localStorage (login token, language, last presentation).</li></ul>'],
     ['3. Why we use it', 'To let you log in, use AI features, keep your history, get Telegram reminders, work in groups, account for tokens and subscriptions, and protect the Service from abuse. We do not sell your data and show no ads.'],
     ['4. Who receives data', '<ul><li><b>Supabase</b> — database hosting.</li><li><b>DeepSeek</b> (AI provider) — your requests and material texts are sent to generate answers. The provider’s servers may be outside Kazakhstan (cross-border transfer). Do not put other people’s personal, financial or otherwise confidential information into the chat or materials.</li><li><b>Telegram</b> — login, codes, invitation notices and reminders.</li><li><b>Image services</b> (Pollinations, LoremFlickr) — receive only a text description of the illustration, no personal data.</li><li><b>Google Fonts and CDNs</b> — fonts and libraries; they see your IP when loading.</li></ul>'],
@@ -3284,7 +3289,7 @@ window.openPolicy = function () {
 window.closePolicy = () => { const e = $('pol'); if (e) e.remove(); };
 window.exportMyData = async function () {
   const res = await fetch('/api/me/export').catch(() => null); if (!res || !res.ok) return alert(l().hcErr);
-  const a = document.createElement('a'); a.href = URL.createObjectURL(await res.blob()); a.download = 'studyai_my_data.json'; document.body.appendChild(a); a.click(); a.remove();
+  const a = document.createElement('a'); a.href = URL.createObjectURL(await res.blob()); a.download = 'enuma_my_data.json'; document.body.appendChild(a); a.click(); a.remove();
 };
 window.deleteMyAccount = async function () {
   if (!confirm(l().delQ)) return; const r = await api('/api/me', 'DELETE'); if (!r.ok) return alert((r.data && r.data.error) || l().hcErr);
@@ -3508,7 +3513,7 @@ decorate(document.body);
 // ======================= ОБУЧАЮЩИЙ ТУР =======================
 const TR = {
   ru: { next: 'Далее', back: 'Назад', skip: 'Пропустить', done: 'Начать!', help: '❓ Как пользоваться сайтом', of: 'из', steps: [
-    ['👋 Добро пожаловать в StudyAI Hub!', 'Это ИИ-помощник для учёбы: чат, тесты, карточки, конспекты, презентации и группы. За 30 секунд покажу, где что находится.'],
+    ['👋 Добро пожаловать в EnumaAI Hub!', 'Это ИИ-помощник для учёбы: чат, тесты, карточки, конспекты, презентации и группы. За 30 секунд покажу, где что находится.'],
     ['💬 ИИ-чат', 'Напишите вопрос в строку под заголовком. Тему задаёте вы — ИИ сам спросит, что именно разобрать. Каждый ответ стоит 1 токен.'],
     ['🧭 Разделы', 'Здесь все инструменты: тесты, карточки, конспект, объяснение проще, план подготовки, ИИ-учитель, билеты и презентации. Выбирайте нужный раздел.'],
     ['📎 Свой материал', 'Загрузите PDF, Word, Excel или TXT — или впишите тему. Тесты, карточки и конспекты ИИ будет делать по вашему материалу.'],
@@ -3517,7 +3522,7 @@ const TR = {
     ['👤 Кабинет', 'В кабинете — ваш ID, уровень, история, задачи и награды. Здесь же можно скачать свои данные.'],
     ['🚀 Всё готово!', 'Загрузите материал или просто задайте вопрос ИИ. Этот тур всегда можно открыть снова: «Как пользоваться сайтом».'] ] },
   kz: { next: 'Әрі қарай', back: 'Артқа', skip: 'Өткізу', done: 'Бастау!', help: '❓ Сайтты қалай пайдалану', of: '/', steps: [
-    ['👋 StudyAI Hub-қа қош келдіңіз!', 'Бұл оқуға арналған ЖИ-көмекші: чат, тесттер, карточкалар, конспектілер, презентациялар және топтар. 30 секундта не қайда екенін көрсетемін.'],
+    ['👋 EnumaAI Hub-қа қош келдіңіз!', 'Бұл оқуға арналған ЖИ-көмекші: чат, тесттер, карточкалар, конспектілер, презентациялар және топтар. 30 секундта не қайда екенін көрсетемін.'],
     ['💬 ЖИ-чат', 'Сұрағыңызды тақырыптың астындағы жолға жазыңыз. Тақырыпты өзіңіз қоясыз — ЖИ не талдау керегін өзі сұрайды. Әр жауап — 1 токен.'],
     ['🧭 Бөлімдер', 'Мұнда барлық құрал: тесттер, карточкалар, конспект, қарапайым түсіндіру, дайындық жоспары, ЖИ-мұғалім, билеттер және презентациялар.'],
     ['📎 Өз материалыңыз', 'PDF, Word, Excel немесе TXT жүктеңіз — не тақырып жазыңыз. Тесттер, карточкалар мен конспектілерді ЖИ сіздің материалыңыз бойынша жасайды.'],
@@ -3526,7 +3531,7 @@ const TR = {
     ['👤 Кабинет', 'Кабинетте — ID-іңіз, деңгейіңіз, тарих, тапсырмалар және марапаттар. Деректеріңізді де осы жерден жүктеуге болады.'],
     ['🚀 Бәрі дайын!', 'Материал жүктеңіз немесе ЖИ-ге сұрақ қойыңыз. Бұл турды «Сайтты қалай пайдалану» арқылы қайта ашуға болады.'] ] },
   en: { next: 'Next', back: 'Back', skip: 'Skip', done: 'Let’s go!', help: '❓ How to use the site', of: 'of', steps: [
-    ['👋 Welcome to StudyAI Hub!', 'Your AI study helper: chat, quizzes, flashcards, summaries, presentations and groups. A 30-second tour of where everything is.'],
+    ['👋 Welcome to EnumaAI Hub!', 'Your AI study helper: chat, quizzes, flashcards, summaries, presentations and groups. A 30-second tour of where everything is.'],
     ['💬 AI chat', 'Type a question in the bar under the headline. You choose the topic — the AI will ask what you want to cover. Each answer costs 1 token.'],
     ['🧭 Sections', 'All tools live here: quizzes, flashcards, summary, simpler explanation, study plan, AI teacher, tickets and presentations.'],
     ['📎 Your material', 'Upload a PDF, Word, Excel or TXT file — or type a topic. Quizzes, cards and summaries are built from your material.'],
@@ -3757,14 +3762,14 @@ window.openEntView = function () {
 
 // ======================= ПРОФИЛЬ СОЗДАТЕЛЯ: тексты на 3 языках =======================
 const CR = {
-  ru: { kicker: 'Создатель', role: 'Создатель StudyAI Hub', name: 'Ауезхан Нурдаулет', sub: 'Студент ЕНУ · Факультет информационных технологий',
-    bio: 'Привет! Я Ауезхан — студент факультета информационных технологий ЕНУ. Увлекаюсь разработкой и программированием, постоянно учусь и создаю цифровые продукты. StudyAI Hub — мой проект: платформа, где ИИ помогает учиться проще, быстрее и интереснее.',
+  ru: { kicker: 'Создатель', role: 'Создатель EnumaAI Hub', name: 'Ауезхан Нурдаулет', sub: 'Студент ЕНУ · Факультет информационных технологий',
+    bio: 'Привет! Я Ауезхан — студент факультета информационных технологий ЕНУ. Увлекаюсь разработкой и программированием, постоянно учусь и создаю цифровые продукты. EnumaAI Hub — мой проект: платформа, где ИИ помогает учиться проще, быстрее и интереснее.',
     t1: '🎓 ЕНУ', t2: '💻 Информационные технологии', t3: '⚙️ Разработка', t4: '🧠 Программирование', menu: 'Создатель', ent: '🎯 Подготовка к ЕНТ', soon: 'СКОРО' },
-  kz: { kicker: 'Жасаушы', role: 'StudyAI Hub жасаушысы', name: 'Ауезхан Нурдаулет', sub: 'ЕҰУ студенті · Ақпараттық технологиялар факультеті',
-    bio: 'Сәлем! Мен Ауезхан — ЕҰУ ақпараттық технологиялар факультетінің студентімін. Әзірлеу мен бағдарламалауға құмармын, үнемі үйреніп, цифрлық өнімдер жасаймын. StudyAI Hub — менің жобам: жасанды интеллект оқуды жеңілдететін, жылдамдататын әрі қызықты ететін платформа.',
+  kz: { kicker: 'Жасаушы', role: 'EnumaAI Hub жасаушысы', name: 'Ауезхан Нурдаулет', sub: 'ЕҰУ студенті · Ақпараттық технологиялар факультеті',
+    bio: 'Сәлем! Мен Ауезхан — ЕҰУ ақпараттық технологиялар факультетінің студентімін. Әзірлеу мен бағдарламалауға құмармын, үнемі үйреніп, цифрлық өнімдер жасаймын. EnumaAI Hub — менің жобам: жасанды интеллект оқуды жеңілдететін, жылдамдататын әрі қызықты ететін платформа.',
     t1: '🎓 ЕҰУ', t2: '💻 Ақпараттық технологиялар', t3: '⚙️ Әзірлеу', t4: '🧠 Бағдарламалау', menu: 'Жасаушы', ent: '🎯 ҰБТ-ға дайындық', soon: 'ЖАҚЫНДА' },
-  en: { kicker: 'Creator', role: 'Creator of StudyAI Hub', name: 'Auezkhan Nurdaulet', sub: 'ENU student · Faculty of Information Technology',
-    bio: 'Hi! I’m Auezkhan — an Information Technology student at ENU. I’m passionate about software development and programming, always learning and building digital products. StudyAI Hub is my project: a platform where AI makes studying easier, faster and more engaging.',
+  en: { kicker: 'Creator', role: 'Creator of EnumaAI Hub', name: 'Auezkhan Nurdaulet', sub: 'ENU student · Faculty of Information Technology',
+    bio: 'Hi! I’m Auezkhan — an Information Technology student at ENU. I’m passionate about software development and programming, always learning and building digital products. EnumaAI Hub is my project: a platform where AI makes studying easier, faster and more engaging.',
     t1: '🎓 ENU', t2: '💻 Information Technology', t3: '⚙️ Development', t4: '🧠 Programming', menu: 'Creator', ent: '🎯 UNT preparation', soon: 'SOON' }
 };
 function v6Labels() {
@@ -3779,6 +3784,7 @@ function v6Labels() {
 const _cl6 = window.changeLanguage; window.changeLanguage = function () { _cl6(); v6Labels(); };
 const _ca6 = window.checkAuth; window.checkAuth = function () { _ca6(); v6Labels(); };
 v6Labels();
+if (matchMedia('(prefers-reduced-motion: reduce)').matches) document.querySelectorAll('.cr-vid').forEach(v => { v.removeAttribute('autoplay'); v.pause(); });
 })();
 </script>
 </body>
