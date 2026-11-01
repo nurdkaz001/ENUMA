@@ -505,6 +505,33 @@ body.no-scroll{overflow:hidden}
 .md .lbl { color: var(--accent); font-weight: 800; }
 .md li.has-sub > ul, .md li.has-sub > ol { border-left: 1px solid rgba(255,255,255,.08); margin-left: -.2rem; padding-left: .2rem; }
 .ai-bubble.md > * { animation: none !important; }
+/* ===== v6: фото в чате, ЕНТ, создатель ===== */
+.hc-bar{padding-left:.5rem}
+.hc-attach,.chat-attach{flex:none;width:2.5rem;height:2.5rem;border-radius:999px;border:1px solid var(--line);color:#bdbdb6;display:flex;align-items:center;justify-content:center;background:transparent;transition:.2s}
+.hc-attach:hover,.chat-attach:hover{border-color:var(--accent);color:var(--accent)}
+.hc-attach svg,.chat-attach svg{width:1.15rem;height:1.15rem}
+.img-prev{display:flex;gap:.5rem;flex-wrap:wrap;margin-bottom:.6rem}
+.img-prev.hidden{display:none!important}
+.img-prev .ip{position:relative;width:4.2rem;height:4.2rem;border-radius:.9rem;overflow:hidden;border:1px solid var(--line)}
+.img-prev .ip img{width:100%;height:100%;object-fit:cover;display:block}
+.img-prev .ip button{position:absolute;top:.2rem;right:.2rem;width:1.3rem;height:1.3rem;border-radius:99px;background:rgba(0,0,0,.75);color:#fff;font-size:.65rem;line-height:1}
+.drop-on{outline:2px dashed var(--accent);outline-offset:6px;border-radius:1.5rem;position:relative}
+.drop-on::after{content:attr(data-drop);position:absolute;inset:0;display:flex;align-items:center;justify-content:center;background:rgba(10,10,10,.82);color:var(--accent);font-weight:800;border-radius:1.5rem;z-index:5;pointer-events:none}
+.me-imgs{display:flex;gap:.4rem;flex-wrap:wrap;margin-bottom:.4rem}
+.me-imgs img{width:7rem;max-width:42vw;border-radius:.8rem;display:block}
+/* создатель */
+.cr-card{position:relative;overflow:hidden;border:1px solid var(--line);border-radius:2rem;background:linear-gradient(145deg,#141414,#0d0d0d);padding:2rem}
+.cr-card::before{content:"";position:absolute;width:26rem;height:26rem;right:-9rem;top:-12rem;background:radial-gradient(circle,rgba(200,255,46,.16),transparent 65%);pointer-events:none}
+.cr-card::after{content:"";position:absolute;width:20rem;height:20rem;left:-8rem;bottom:-12rem;background:radial-gradient(circle,rgba(80,200,255,.10),transparent 65%);pointer-events:none}
+.cr-av{flex:none;width:7.5rem;height:7.5rem;border-radius:2rem;background:linear-gradient(135deg,var(--accent),#5fe0ff);color:#0a0a0a;display:flex;align-items:center;justify-content:center;font-weight:900;font-size:2.6rem;letter-spacing:-.04em;transform:rotate(-4deg);box-shadow:0 18px 50px rgba(200,255,46,.18)}
+.cr-tag{display:inline-flex;align-items:center;gap:.4rem;padding:.4rem .85rem;border:1px solid var(--line);border-radius:999px;font-size:.72rem;font-weight:700;color:#cfcfc8;background:rgba(255,255,255,.02)}
+.cr-soc{display:flex;align-items:center;gap:.75rem;padding:.8rem 1.1rem;border:1px solid var(--line);border-radius:1.1rem;background:#101010;color:#fff;transition:.2s;min-width:0}
+.cr-soc:hover{border-color:var(--accent);transform:translateY(-2px)}
+.cr-soc svg{width:1.4rem;height:1.4rem;flex:none}
+.cr-soc small{display:block;font-size:.62rem;color:#7d7d77;font-weight:700;letter-spacing:.08em;text-transform:uppercase}
+.cr-soc b{display:block;font-size:.9rem}
+.soon-pill{display:inline-block;padding:.3rem .8rem;border-radius:999px;border:1px solid rgba(255,196,60,.5);color:var(--gold);font-size:.7rem;font-weight:800;letter-spacing:.12em;text-transform:uppercase}
+@media (max-width:640px){.cr-card{padding:1.3rem}.cr-av{width:5.5rem;height:5.5rem;font-size:2rem;border-radius:1.5rem}}
     </style>
 </head>
 <body class="min-h-screen flex flex-col">
@@ -527,6 +554,7 @@ body.no-scroll{overflow:hidden}
             <nav class="hidden md:flex items-center space-x-1 text-sm font-semibold text-neutral-300">
                 <a href="#work" onclick="scrollToSection('workspace-section'); return false;" class="px-4 py-2 rounded-full hover:bg-white/10 hover:text-white transition" id="nav-work">work</a>
                 <a href="#about" onclick="scrollToSection('about'); return false;" class="px-4 py-2 rounded-full hover:bg-white/10 hover:text-white transition" id="nav-about">about</a>
+                <a href="#creator" onclick="scrollToSection('creator'); return false;" class="px-4 py-2 rounded-full hover:bg-white/10 hover:text-white transition" id="nav-creator">Создатель</a>
                 <a href="#pricing" onclick="scrollToSection('pricing'); return false;" class="px-4 py-2 rounded-full hover:bg-white/10 hover:text-white transition" id="nav-pricing" style="color:var(--accent)">⚡ tokens</a>
                 <a href="#contact" onclick="scrollToSection('contact'); return false;" class="px-4 py-2 rounded-full hover:bg-white/10 hover:text-white transition" id="nav-contact">contact</a>
             </nav>
@@ -545,6 +573,7 @@ body.no-scroll{overflow:hidden}
     <div id="nav-menu" class="off md:hidden" onclick="event.stopPropagation()">
         <a href="#work" onclick="navGo('workspace-section'); return false;"><span>🧠 <span data-i="work">Платформа</span></span><span>→</span></a>
         <button class="mi" onclick="navGo('workspace-section'); openGroupsView()"><span>👥 <span data-i="groups">Группы</span></span><span id="g-badge-menu" class="g-badge hidden"></span></button>
+        <a href="#creator" onclick="navGo('creator'); return false;"><span>👤 <span data-i="creator">Создатель</span></span><span>→</span></a>
         <a href="#pricing" onclick="navGo('pricing'); return false;" style="color:var(--accent)"><span>⚡ <span data-i="tokens">Токены</span></span><span>→</span></a>
         <a href="#about" onclick="navGo('about'); return false;"><span>ℹ️ <span data-i="about">О нас</span></span><span>→</span></a>
         <a href="#contact" onclick="navGo('contact'); return false;"><span>✉️ <span data-i="contact">Контакты</span></span><span>→</span></a>
@@ -609,7 +638,9 @@ body.no-scroll{overflow:hidden}
             </h1>
             <div id="hero-chat" class="hc mt-8 md:mt-10">
                 <div id="hc-messages" class="hc-msgs hidden"></div>
+                <div id="hc-prev" class="img-prev hidden"></div>
                 <div class="hc-bar">
+                    <button type="button" class="hc-attach" onclick="pickImg('hc')" aria-label="Attach photo"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="16" rx="3"/><circle cx="9" cy="10" r="1.6"/><path d="m21 16-5-5-8 8"/></svg></button><input type="file" id="hc-file" accept="image/*" multiple hidden>
                     <textarea id="hc-input" rows="1" placeholder="Спросите ИИ о чём угодно…" oninput="hcGrow(this)" onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();hcSend();}"></textarea>
                     <button id="hc-send" class="hc-send" onclick="hcSend()" aria-label="Send">↑</button>
                 </div>
@@ -676,6 +707,7 @@ body.no-scroll{overflow:hidden}
                         <button onclick="openCareerView()" class="mode-row accent"><span class="num">10</span><span id="btn-mode-career">🎓 11 сынып: түсу кеңесі</span><span class="arrow">NEW</span></button>
                         <button onclick="openSlidesView()" class="mode-row accent"><span class="num">11</span><span id="btn-mode-slides">🎞️ ЖИ-презентациялар</span><span class="arrow">NEW</span></button>
                         <button onclick="openGroupsView()" class="mode-row accent"><span class="num">12</span><span id="btn-mode-groups">👥 Группы</span><span class="arrow"><span id="g-badge-side" class="g-badge hidden"></span><span id="g-new">NEW</span></span></button>
+                        <button onclick="openEntView()" class="mode-row" style="opacity:.6"><span class="num">13</span><span id="btn-mode-ent">🎯 Подготовка к ЕНТ</span><span class="arrow" style="color:var(--gold)" id="ent-soon">СКОРО</span></button>
                     </div>
                 </div>
 
@@ -720,6 +752,37 @@ body.no-scroll{overflow:hidden}
     </section>
 
     <!-- ABOUT -->
+    <!-- CREATOR -->
+    <section id="creator" class="w-full max-w-6xl mx-auto px-4 lg:px-12 py-16 scroll-mt-24 border-t border-white/10">
+        <div class="grid lg:grid-cols-[200px_1fr] gap-8">
+            <h2 class="mono lg:text-[1.1rem] text-neutral-400" data-cr="kicker">Создатель</h2>
+            <div class="cr-card">
+                <div class="relative z-10 flex flex-col sm:flex-row gap-6 sm:gap-8 sm:items-center">
+                    <div class="cr-av display" aria-hidden="true">АН</div>
+                    <div class="min-w-0">
+                        <p class="mono" style="color:var(--accent)" data-cr="role">Создатель StudyAI Hub</p>
+                        <h3 class="display text-3xl lg:text-5xl font-bold text-white leading-[1.05] mt-2" data-cr="name">Ауезхан Нурдаулет</h3>
+                        <p class="text-sm text-neutral-400 mt-2" data-cr="sub">Студент ЕНУ · Факультет информационных технологий</p>
+                    </div>
+                </div>
+                <p class="relative z-10 text-neutral-300 leading-relaxed text-base lg:text-lg mt-7 max-w-3xl" data-cr="bio"></p>
+                <div class="relative z-10 flex flex-wrap gap-2 mt-6">
+                    <span class="cr-tag" data-cr="t1">🎓 ЕНУ</span><span class="cr-tag" data-cr="t2">💻 Информационные технологии</span><span class="cr-tag" data-cr="t3">⚙️ Разработка</span><span class="cr-tag" data-cr="t4">🧠 Программирование</span>
+                </div>
+                <div class="relative z-10 grid sm:grid-cols-2 gap-3 mt-7 max-w-xl">
+                    <a class="cr-soc" href="https://www.instagram.com/auezkhannb" target="_blank" rel="noopener noreferrer">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="5"/><circle cx="12" cy="12" r="4"/><circle cx="17.5" cy="6.5" r="1" fill="currentColor" stroke="none"/></svg>
+                        <span class="min-w-0"><small>Instagram</small><b class="truncate">@auezkhannb</b></span>
+                    </a>
+                    <a class="cr-soc" href="https://www.tiktok.com/@auezkhannb" target="_blank" rel="noopener noreferrer">
+                        <svg viewBox="0 0 24 24" fill="currentColor"><path d="M16.6 2h-3.2v12.4a2.7 2.7 0 1 1-2.7-2.7c.3 0 .6 0 .8.1V8.5a6 6 0 1 0 5.1 5.9V8.1a7.3 7.3 0 0 0 4.2 1.3V6.2A4.3 4.3 0 0 1 16.6 2z"/></svg>
+                        <span class="min-w-0"><small>TikTok</small><b class="truncate">@auezkhannb</b></span>
+                    </a>
+                </div>
+            </div>
+        </div>
+    </section>
+
     <section id="about" class="w-full max-w-6xl mx-auto px-6 lg:px-12 py-20 scroll-mt-24 border-t border-white/10">
         <div class="grid lg:grid-cols-[200px_1fr] gap-8">
             <h2 class="display text-4xl lg:text-6xl font-bold text-white lg:text-[1.1rem]" id="about-title">about</h2>
@@ -2431,12 +2494,13 @@ function addAI(box, text) {
 window.openChatView = function () {
   window.currentActiveView = 'chat'; chatHist = []; const t = translations[selectedLang];
   $('result-container').innerHTML = `
-    <div class="w-full flex flex-col h-[68vh] text-left quiz-slide-enter">
+    <div id="chat-wrap" class="w-full flex flex-col h-[68vh] text-left quiz-slide-enter">
       <div class="border-b border-white/10 pb-3 mb-3 flex items-center gap-3"><div class="ai-av">✨</div>
         <div><h3 class="display text-lg font-bold text-white leading-none">${esc(t.modeChat)}</h3><p class="mono mt-1" style="color:var(--accent)">● online</p></div></div>
       <div id="chat-messages" class="flex-grow overflow-y-auto space-y-3 p-3 tile mb-3 flex flex-col"></div>
       ${currentDocId ? `<label class="mono flex items-center gap-2 mb-2 cursor-pointer"><input type="checkbox" id="chat-use-doc" style="accent-color:#c8ff2e"> 📎 ${selectedLang === 'en' ? 'Use my uploaded material' : selectedLang === 'kz' ? 'Жүктелген материалымды қолдану' : 'Опираться на мой загруженный материал'}</label>` : ''}
-      <div class="flex gap-2"><input type="text" id="chat-input" onkeydown="if(event.key==='Enter') sendChatMessage()" placeholder="${esc(t.chatPlaceholder)}" class="field flex-grow">
+      <div id="chat-prev" class="img-prev hidden"></div>
+      <div class="flex gap-2 items-center"><button type="button" class="chat-attach" onclick="pickImg('ws')" aria-label="Attach photo"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="16" rx="3"/><circle cx="9" cy="10" r="1.6"/><path d="m21 16-5-5-8 8"/></svg></button><input type="file" id="chat-file" accept="image/*" multiple hidden><input type="text" id="chat-input" onkeydown="if(event.key==='Enter') sendChatMessage()" placeholder="${esc(t.chatPlaceholder)}" class="field flex-grow">
         <button onclick="sendChatMessage()" class="btn-accent px-6 py-3 text-xs">${esc(t.chatSend)}</button></div>
     </div>`;
   addAI($('chat-messages'), t.chatWelcome);
@@ -2444,11 +2508,12 @@ window.openChatView = function () {
 let chatBusy = false;
 window.sendChatMessage = async function () {
   if (!currentUser) return checkAuth();
-  const input = $('chat-input'), msg = input.value.trim(), box = $('chat-messages'); if (!msg || chatBusy) return;
-  chatBusy = true; box.insertAdjacentHTML('beforeend', `<div class="me-bubble">${esc(msg)}</div>`); input.value = ''; box.scrollTop = box.scrollHeight;
+  const input = $('chat-input'), box = $('chat-messages'); if (!input || chatBusy) return;
+  const msg = input.value.trim(); if (!msg && !IMG_HAS('ws')) return;
+  chatBusy = true; const imgs = takeImgs('ws'); box.insertAdjacentHTML('beforeend', imgsBubble(imgs, msg)); input.value = ''; box.scrollTop = box.scrollHeight;
   const docId = ($('chat-use-doc') && $('chat-use-doc').checked && currentDocId) || 'default';
-  const r = await window.streamChat(box, msg, docId, chatHist.slice(-6));
-  if (r) chatHist.push({ m: msg, r: r.reply });
+  const r = await window.streamChat(box, msg, docId, chatHist.slice(-6), imgs.map(x => x.blob));
+  if (r) chatHist.push({ m: (imgs.length ? '[фото] ' : '') + (msg || ''), r: r.reply }); else if (imgs.length) restoreImgs('ws', imgs);
   chatBusy = false;
 };
 
@@ -3140,17 +3205,17 @@ const LG = () => (['ru', 'kz', 'en'].includes(selectedLang) ? selectedLang : 'ru
 // ======================= ТЕКСТЫ =======================
 const U = {
   ru: { work: 'Платформа', groups: 'Группы', tokens: 'Токены', about: 'О нас', contact: 'Контакты', privacy: 'Политика конфиденциальности', sections: 'Разделы',
-    chatPh: 'Спросите ИИ о чём угодно…', chips: ['Объясни тему простыми словами', 'Составь план подготовки к экзамену', 'Реши задачу по шагам'], hcNote: 'Каждый ответ — 1 токен. Чат учитывает загруженный материал.', hcErr: 'Ошибка',
+    chatPh: 'Спросите ИИ о чём угодно…', chips: ['Объясни тему простыми словами', 'Составь план подготовки к экзамену', 'Реши задачу по шагам'], hcNote: 'Каждый ответ — 1 токен. Фото можно прикрепить, перетащить или вставить (Ctrl+V).', hcErr: 'Ошибка',
     cTxt: 'Я прочитал(а) и принимаю <a href="#" onclick="openPolicy();return false">Политику конфиденциальности и Условия</a>, даю согласие на обработку моих персональных данных, включая передачу моих запросов и текстов ИИ-провайдеру. Мне есть 18 лет либо согласие дали родители/законные представители.',
     cNeed: 'Поставьте галочку согласия, чтобы войти', cTitle: 'Согласие на обработку данных', cDesc: 'Мы обновили Политику конфиденциальности. Чтобы продолжить пользоваться сервисом, примите её.', cOk: 'Принимаю и продолжаю', cOut: 'Выйти',
     close: 'Закрыть', export: '⬇ Скачать мои данные', del: '🗑 Удалить аккаунт', delQ: 'Удалить аккаунт и все данные безвозвратно? Это действие нельзя отменить.', delOk: 'Аккаунт удалён.', version: 'Версия' },
   kz: { work: 'Платформа', groups: 'Топтар', tokens: 'Токендер', about: 'Біз туралы', contact: 'Байланыс', privacy: 'Құпиялылық саясаты', sections: 'Бөлімдер',
-    chatPh: 'ЖИ-дан кез келген нәрсені сұраңыз…', chips: ['Тақырыпты қарапайым тілмен түсіндір', 'Емтиханға дайындық жоспарын құр', 'Есепті қадам-қадаммен шеш'], hcNote: 'Әр жауап — 1 токен. Чат жүктелген материалды ескереді.', hcErr: 'Қате',
+    chatPh: 'ЖИ-дан кез келген нәрсені сұраңыз…', chips: ['Тақырыпты қарапайым тілмен түсіндір', 'Емтиханға дайындық жоспарын құр', 'Есепті қадам-қадаммен шеш'], hcNote: 'Әр жауап — 1 токен. Фотоны қосуға, сүйреп әкелуге немесе қоюға (Ctrl+V) болады.', hcErr: 'Қате',
     cTxt: 'Мен <a href="#" onclick="openPolicy();return false">Құпиялылық саясаты мен Шарттарды</a> оқыдым және қабылдаймын, жеке деректерімді өңдеуге, соның ішінде сұраныстарым мен мәтіндерімді ЖИ-провайдерге беруге келісім беремін. Мен 18 жастамын немесе ата-анам/заңды өкілім келісім берген.',
     cNeed: 'Кіру үшін келісім белгісін қойыңыз', cTitle: 'Деректерді өңдеуге келісім', cDesc: 'Біз Құпиялылық саясатын жаңарттық. Жалғастыру үшін оны қабылдаңыз.', cOk: 'Қабылдаймын, жалғастыру', cOut: 'Шығу',
     close: 'Жабу', export: '⬇ Деректерімді жүктеу', del: '🗑 Аккаунтты жою', delQ: 'Аккаунт пен барлық деректі біржола жою керек пе? Мұны қайтару мүмкін емес.', delOk: 'Аккаунт жойылды.', version: 'Нұсқа' },
   en: { work: 'Platform', groups: 'Groups', tokens: 'Tokens', about: 'About', contact: 'Contact', privacy: 'Privacy Policy', sections: 'Sections',
-    chatPh: 'Ask the AI anything…', chips: ['Explain a topic in simple words', 'Make an exam prep plan', 'Solve a problem step by step'], hcNote: 'Each answer costs 1 token. The chat uses your uploaded material.', hcErr: 'Error',
+    chatPh: 'Ask the AI anything…', chips: ['Explain a topic in simple words', 'Make an exam prep plan', 'Solve a problem step by step'], hcNote: 'Each answer costs 1 token. You can attach, drag in or paste (Ctrl+V) photos.', hcErr: 'Error',
     cTxt: 'I have read and accept the <a href="#" onclick="openPolicy();return false">Privacy Policy and Terms</a> and consent to the processing of my personal data, including sending my requests and texts to the AI provider. I am 18+ or have consent from my parent/legal guardian.',
     cNeed: 'Tick the consent box to log in', cTitle: 'Consent to data processing', cDesc: 'We updated the Privacy Policy. Please accept it to keep using the service.', cOk: 'Accept and continue', cOut: 'Log out',
     close: 'Close', export: '⬇ Download my data', del: '🗑 Delete account', delQ: 'Delete your account and all data permanently? This cannot be undone.', delOk: 'Account deleted.', version: 'Version' }
@@ -3272,11 +3337,12 @@ function hcLabels() {
 window.hcChip = b => { $('hc-input').value = b.textContent; hcSend(); };
 window.hcSend = async function () {
   if (!currentUser) return checkAuth();
-  const inp = $('hc-input'), msg = inp.value.trim(), box = $('hc-messages'), btn = $('hc-send'); if (!msg || btn.disabled) return;
-  box.classList.remove('hidden'); $('hc-chips').style.display = 'none';
-  box.insertAdjacentHTML('beforeend', `<div class="me-bubble">${esc(msg)}</div>`); inp.value = ''; hcGrow(inp); btn.disabled = true; box.scrollTop = box.scrollHeight;
-  const r = await window.streamChat(box, msg, 'default', HCH.slice(-6));
-  if (r) HCH.push({ m: msg, r: r.reply });
+  const inp = $('hc-input'), box = $('hc-messages'), btn = $('hc-send'); if (btn.disabled) return;
+  const msg = inp.value.trim(); if (!msg && !IMG_HAS('hc')) return;
+  box.classList.remove('hidden'); $('hc-chips').style.display = 'none'; const imgs = takeImgs('hc');
+  box.insertAdjacentHTML('beforeend', imgsBubble(imgs, msg)); inp.value = ''; hcGrow(inp); btn.disabled = true; box.scrollTop = box.scrollHeight;
+  const r = await window.streamChat(box, msg, 'default', HCH.slice(-6), imgs.map(x => x.blob));
+  if (r) HCH.push({ m: (imgs.length ? '[фото] ' : '') + (msg || ''), r: r.reply }); else if (imgs.length) restoreImgs('hc', imgs);
   btn.disabled = false;
 };
 
@@ -3549,7 +3615,7 @@ const _cl4 = window.changeLanguage; window.changeLanguage = function () { _cl4()
 (function () {
 const sleep = ms => new Promise(r => setTimeout(r, ms));
 // Рисует ответ ИИ в box по мере поступления. Возвращает {reply} или null при ошибке.
-window.streamChat = async function (box, msg, docId, hist) {
+window.streamChat = async function (box, msg, docId, hist, imgs) {
   const row = document.createElement('div'); row.className = 'ai-row';
   row.innerHTML = '<div class="ai-av">✨</div><div class="ai-bubble md cp-skip"><span class="dots"><i></i><i></i><i></i></span></div>';
   box.appendChild(row); const bub = row.querySelector('.ai-bubble');
@@ -3557,8 +3623,18 @@ window.streamChat = async function (box, msg, docId, hist) {
   box.scrollTop = box.scrollHeight;
   const fail = text => { row.remove(); box.insertAdjacentHTML('beforeend', `<div class="ai-row">${errorBox(text || 'Error')}</div>`); box.scrollTop = box.scrollHeight; return null; };
 
-  const fd = new FormData(); fd.append('message', msg); fd.append('doc_id', docId || 'default'); fd.append('lang', selectedLang); fd.append('history', JSON.stringify(hist || []));
-  let res = null; try { res = await fetch('/api/chat/stream', { method: 'POST', body: fd }); } catch (e) {}
+  const build = (text, files) => { const fd = new FormData(); fd.append('message', text); fd.append('doc_id', docId || 'default'); fd.append('lang', selectedLang); fd.append('history', JSON.stringify(hist || [])); (files || []).forEach((b, i) => fd.append('images', b, 'photo' + i + '.jpg')); return fd; };
+  let res = null; try { res = await fetch('/api/chat/stream', { method: 'POST', body: build(msg, imgs) }); } catch (e) {}
+  if (res && res.status === 501 && imgs && imgs.length) {          // сервер без модели для фото → распознаём текст на фото в браузере
+    let j = {}; try { j = await res.clone().json(); } catch (e) {}
+    if (j.code === 'no_vision') {
+      bub.innerHTML = '<span class="mono">🔎 ' + ({ ru: 'Распознаю текст на фото…', kz: 'Фотодағы мәтінді танып жатырмын…', en: 'Reading text from the photo…' })[selectedLang === 'kz' ? 'kz' : selectedLang === 'en' ? 'en' : 'ru'] + '</span>';
+      let text = ''; try { text = await window.ocrImages(imgs); } catch (e) {}
+      if (!text.trim()) return fail({ ru: 'Не удалось распознать текст на фото. Попробуйте более чёткое фото или напишите задание текстом.', kz: 'Фотодағы мәтінді тану мүмкін болмады. Анығырақ фото жүктеңіз немесе тапсырманы жазыңыз.', en: 'Could not read any text in the photo. Try a clearer photo or type the task.' }[selectedLang === 'kz' ? 'kz' : selectedLang === 'en' ? 'en' : 'ru']);
+      const m2 = (msg ? msg + '\n\n' : '') + '[Текст, распознанный с фото]\n' + text.slice(0, 6000);
+      try { res = await fetch('/api/chat/stream', { method: 'POST', body: build(m2, []) }); } catch (e) { res = null; }
+    }
+  }
   if (!res || !res.ok || !res.body) { let err = 'Error'; try { err = (await res.json()).error || err; } catch (e) {} return fail(err); }
 
   let acc = '', shown = 0, err = null, left = null, buf = '';
@@ -3589,6 +3665,103 @@ window.streamChat = async function (box, msg, docId, hist) {
   if (left != null) setTokens(left); else if (typeof refreshProfile === 'function') refreshProfile();
   stick(); return { reply: acc };
 };
+})();
+</script>
+<script>
+(function () {
+const $ = id => document.getElementById(id), esc = escapeHtml;
+const LG = () => (['ru', 'kz', 'en'].includes(selectedLang) ? selectedLang : 'ru');
+
+// ======================= ФОТО В ЧАТЕ: выбор, вставка (Ctrl+V), перетаскивание =======================
+const IMGS = { hc: [], ws: [] }, MAXI = 4;
+const DROP = { ru: 'Отпустите фото, чтобы прикрепить', kz: 'Фотоны қосу үшін жіберіңіз', en: 'Drop photos to attach' };
+const prevId = sc => sc === 'hc' ? 'hc-prev' : 'chat-prev';
+const bitmapOf = async f => { try { return await createImageBitmap(f); } catch (e) { return await new Promise((res, rej) => { const im = new Image(); im.onload = () => res(im); im.onerror = rej; im.src = URL.createObjectURL(f); }); } };
+async function prep(file) {                                  // уменьшаем большие фото с телефона до 1600 px
+  if (file.type === 'image/gif') return file;
+  const bmp = await bitmapOf(file), w = bmp.width || bmp.naturalWidth, h = bmp.height || bmp.naturalHeight, k = Math.min(1, 1600 / Math.max(w, h));
+  if (k === 1 && file.size < 700000 && /jpeg|png|webp/.test(file.type)) return file;
+  const cv = document.createElement('canvas'); cv.width = Math.round(w * k); cv.height = Math.round(h * k);
+  const g = cv.getContext('2d'); g.fillStyle = '#fff'; g.fillRect(0, 0, cv.width, cv.height); g.drawImage(bmp, 0, 0, cv.width, cv.height);
+  return await new Promise(r => cv.toBlob(r, 'image/jpeg', 0.85));
+}
+function renderPrev(sc) {
+  const box = $(prevId(sc)); if (!box) return; box.classList.toggle('hidden', !IMGS[sc].length);
+  box.innerHTML = IMGS[sc].map((x, i) => `<div class="ip"><img src="${x.url}" alt=""><button type="button" onclick="rmImg('${sc}',${i})" aria-label="remove">✕</button></div>`).join('');
+}
+async function addImgs(sc, files) {
+  for (const f of [...files].filter(f => /^image\//.test(f.type))) {
+    if (IMGS[sc].length >= MAXI) break;
+    try { const b = await prep(f); IMGS[sc].push({ blob: b, url: URL.createObjectURL(b) }); } catch (e) {}
+  }
+  renderPrev(sc);
+}
+window.IMG_HAS = sc => IMGS[sc].length > 0;
+window.rmImg = (sc, i) => { IMGS[sc].splice(i, 1); renderPrev(sc); };
+window.pickImg = sc => { const f = $(sc === 'hc' ? 'hc-file' : 'chat-file'); if (f) f.click(); };
+window.takeImgs = sc => { const a = IMGS[sc]; IMGS[sc] = []; renderPrev(sc); return a; };
+window.restoreImgs = (sc, a) => { IMGS[sc] = a.concat(IMGS[sc]).slice(0, MAXI); renderPrev(sc); };
+window.imgsBubble = (imgs, msg) => `<div class="me-bubble">${imgs.length ? `<div class="me-imgs">${imgs.map(x => `<img src="${x.url}" alt="">`).join('')}</div>` : ''}${msg ? esc(msg) : ''}</div>`;
+window.photoDefaultText = () => ({ ru: 'Разбери это фото', kz: 'Бұл фотоны талда', en: 'Analyze this photo' })[LG()];
+
+document.addEventListener('change', e => { const t = e.target; if (t && (t.id === 'hc-file' || t.id === 'chat-file')) { addImgs(t.id === 'hc-file' ? 'hc' : 'ws', t.files); t.value = ''; } });
+document.addEventListener('paste', e => {
+  const t = e.target, hero = t.closest && t.closest('#hero-chat'), ws = t.closest && t.closest('#chat-wrap'); if (!hero && !ws) return;
+  const cd = e.clipboardData; if (!cd) return;
+  let files = [...(cd.files || [])].filter(f => f.type.startsWith('image/'));
+  if (!files.length) files = [...(cd.items || [])].filter(i => i.kind === 'file' && i.type.startsWith('image/')).map(i => i.getAsFile()).filter(Boolean);
+  if (!files.length) return; e.preventDefault(); addImgs(hero ? 'hc' : 'ws', files);
+});
+const zoneOf = e => e.target.closest && e.target.closest('#hero-chat, #chat-wrap');
+const hasFiles = e => e.dataTransfer && [...(e.dataTransfer.types || [])].includes('Files');
+document.addEventListener('dragover', e => { if (!hasFiles(e)) return; const z = zoneOf(e); document.querySelectorAll('.drop-on').forEach(x => { if (x !== z) x.classList.remove('drop-on'); }); if (z) { e.preventDefault(); z.dataset.drop = DROP[LG()]; z.classList.add('drop-on'); } });
+document.addEventListener('dragleave', e => { const z = zoneOf(e); if (z && !z.contains(e.relatedTarget)) z.classList.remove('drop-on'); });
+document.addEventListener('drop', e => { const z = zoneOf(e); document.querySelectorAll('.drop-on').forEach(x => x.classList.remove('drop-on')); if (!z || !hasFiles(e)) return; e.preventDefault(); addImgs(z.id === 'hero-chat' ? 'hc' : 'ws', e.dataTransfer.files); });
+
+// ======================= ЗАПАСНОЙ ВАРИАНТ: распознавание текста на фото в браузере =======================
+// Работает, пока на сервере не задан VISION_API_KEY. Подходит для фото с текстом/задачами, но не «видит» схемы и картинки.
+let tessP = null;
+const loadTess = () => window.Tesseract ? Promise.resolve() : (tessP = tessP || new Promise((res, rej) => { const s = document.createElement('script'); s.src = 'https://cdn.jsdelivr.net/npm/tesseract.js@5.1.1/dist/tesseract.min.js'; s.onload = res; s.onerror = () => rej(new Error('tesseract')); document.head.appendChild(s); }));
+window.ocrImages = async function (files) {
+  await loadTess(); let w;
+  try { w = await Tesseract.createWorker(LG() === 'en' ? 'eng' : LG() === 'kz' ? 'rus+kaz+eng' : 'rus+eng'); } catch (e) { w = await Tesseract.createWorker('rus+eng'); }
+  try { const out = []; for (const f of files) { const { data } = await w.recognize(f); if (data.text && data.text.trim()) out.push(data.text.trim()); } return out.join('\n\n---\n\n'); }
+  finally { try { await w.terminate(); } catch (e) {} }
+};
+
+// ======================= РАЗДЕЛ «ПОДГОТОВКА К ЕНТ» — СКОРО =======================
+const ENT = { ru: ['Подготовка к ЕНТ', 'Скоро', 'Раздел в разработке и скоро появится на платформе. Следите за обновлениями!', 'А пока можно загрузить свой материал и сделать по нему тест, карточки или конспект.'],
+  kz: ['ҰБТ-ға дайындық', 'Жақында', 'Бөлім әзірленуде және жақында платформада пайда болады. Жаңартуларды қадағалаңыз!', 'Әзірге өз материалыңызды жүктеп, ол бойынша тест, карточкалар немесе конспект жасай аласыз.'],
+  en: ['UNT preparation', 'Coming soon', 'This section is in development and will appear on the platform soon. Stay tuned!', 'Meanwhile, upload your own material and make a quiz, flashcards or a summary from it.'] };
+window.openEntView = function () {
+  window.currentActiveView = 'ent'; const e = ENT[LG()];
+  $('result-container').innerHTML = `<div class="w-full text-center py-10 space-y-4 quiz-slide-enter"><div class="text-6xl">🎯</div><h3 class="display text-3xl font-bold text-white">${e[0]}</h3><span class="soon-pill">${e[1]}</span><p class="text-sm text-neutral-300 max-w-md mx-auto leading-relaxed">${e[2]}</p><p class="text-xs text-neutral-500 max-w-md mx-auto">${e[3]}</p></div>`;
+};
+
+// ======================= ПРОФИЛЬ СОЗДАТЕЛЯ: тексты на 3 языках =======================
+const CR = {
+  ru: { kicker: 'Создатель', role: 'Создатель StudyAI Hub', name: 'Ауезхан Нурдаулет', sub: 'Студент ЕНУ · Факультет информационных технологий',
+    bio: 'Привет! Я Ауезхан — студент факультета информационных технологий ЕНУ. Увлекаюсь разработкой и программированием, постоянно учусь и создаю цифровые продукты. StudyAI Hub — мой проект: платформа, где ИИ помогает учиться проще, быстрее и интереснее.',
+    t1: '🎓 ЕНУ', t2: '💻 Информационные технологии', t3: '⚙️ Разработка', t4: '🧠 Программирование', menu: 'Создатель', ent: '🎯 Подготовка к ЕНТ', soon: 'СКОРО' },
+  kz: { kicker: 'Жасаушы', role: 'StudyAI Hub жасаушысы', name: 'Ауезхан Нурдаулет', sub: 'ЕҰУ студенті · Ақпараттық технологиялар факультеті',
+    bio: 'Сәлем! Мен Ауезхан — ЕҰУ ақпараттық технологиялар факультетінің студентімін. Әзірлеу мен бағдарламалауға құмармын, үнемі үйреніп, цифрлық өнімдер жасаймын. StudyAI Hub — менің жобам: жасанды интеллект оқуды жеңілдететін, жылдамдататын әрі қызықты ететін платформа.',
+    t1: '🎓 ЕҰУ', t2: '💻 Ақпараттық технологиялар', t3: '⚙️ Әзірлеу', t4: '🧠 Бағдарламалау', menu: 'Жасаушы', ent: '🎯 ҰБТ-ға дайындық', soon: 'ЖАҚЫНДА' },
+  en: { kicker: 'Creator', role: 'Creator of StudyAI Hub', name: 'Auezkhan Nurdaulet', sub: 'ENU student · Faculty of Information Technology',
+    bio: 'Hi! I’m Auezkhan — an Information Technology student at ENU. I’m passionate about software development and programming, always learning and building digital products. StudyAI Hub is my project: a platform where AI makes studying easier, faster and more engaging.',
+    t1: '🎓 ENU', t2: '💻 Information Technology', t3: '⚙️ Development', t4: '🧠 Programming', menu: 'Creator', ent: '🎯 UNT preparation', soon: 'SOON' }
+};
+function v6Labels() {
+  const c = CR[LG()];
+  document.querySelectorAll('[data-cr]').forEach(el => { const v = c[el.dataset.cr]; if (v != null) el.textContent = v; });
+  document.querySelectorAll('[data-i="creator"]').forEach(el => { el.textContent = c.menu; });
+  const n = $('nav-creator'); if (n) n.textContent = c.menu;
+  const e = $('btn-mode-ent'); if (e) e.textContent = c.ent; const s = $('ent-soon'); if (s) s.textContent = c.soon;
+  const hp = $('hc-input'); if (hp) hp.placeholder = ({ ru: 'Спросите ИИ или вставьте фото…', kz: 'ЖИ-дан сұраңыз немесе фото қойыңыз…', en: 'Ask the AI or paste a photo…' })[LG()];
+  const ci = $('chat-input'); if (ci) ci.placeholder = hp ? hp.placeholder : ci.placeholder;
+}
+const _cl6 = window.changeLanguage; window.changeLanguage = function () { _cl6(); v6Labels(); };
+const _ca6 = window.checkAuth; window.checkAuth = function () { _ca6(); v6Labels(); };
+v6Labels();
 })();
 </script>
 </body>
