@@ -65,7 +65,7 @@ if _missing:
     raise RuntimeError("Не заданы переменные окружения: " + ", ".join(_missing))
 # ====================================================
 
-app = FastAPI(title="StudyAI Hub")
+app = FastAPI(title="EnumaAI Hub")
 sb: Client = create_client(SUPABASE_URL, SUPABASE_SERVICE_KEY)
 
 
@@ -108,6 +108,7 @@ def _patch_supabase_retries() -> None:
 
 _patch_supabase_retries()
 INDEX_FILE = Path(__file__).parent / "templates" / "index.html"
+STATIC_DIR = Path(__file__).parent / "static"
 
 HISTORY_TYPES = {"quiz", "flashcards", "summary", "simple", "plan", "teacher", "tickets"}
 LANG_LINE = {
@@ -439,6 +440,28 @@ def read_root():
 @app.get("/terms", response_class=HTMLResponse)
 def read_privacy():
     return HTMLResponse(INDEX_FILE.read_text(encoding="utf-8"))
+
+
+@app.get("/static/{name}")
+def static_file(name: str, request: Request):
+    """Раздача медиа из папки static/ (аватар-анимация и т.п.) с поддержкой Range — без него видео не играет в Safari/iPhone."""
+    ctypes = {".mp4": "video/mp4", ".webm": "video/webm", ".jpg": "image/jpeg", ".jpeg": "image/jpeg", ".png": "image/png", ".webp": "image/webp"}
+    ext = Path(name).suffix.lower()
+    f = STATIC_DIR / name
+    if not re.fullmatch(r"[\w.-]{1,80}", name) or ext not in ctypes or not f.is_file():
+        raise HTTPException(404, "Not found")
+    data, size = f.read_bytes(), f.stat().st_size
+    headers = {"Accept-Ranges": "bytes", "Cache-Control": "public, max-age=86400"}
+    m = re.fullmatch(r"bytes=(\d*)-(\d*)", (request.headers.get("range") or "").strip())
+    if m and (m.group(1) or m.group(2)):
+        a, b = m.groups()
+        start = int(a) if a else max(0, size - int(b))
+        end = min(int(b) if (a and b) else size - 1, size - 1)
+        if start > end or start >= size:
+            return Response(status_code=416, headers={"Content-Range": f"bytes */{size}"})
+        return Response(data[start:end + 1], status_code=206, media_type=ctypes[ext],
+                        headers={**headers, "Content-Range": f"bytes {start}-{end}/{size}"})
+    return Response(data, media_type=ctypes[ext], headers=headers)
 
 
 @app.get("/health")
@@ -1530,7 +1553,7 @@ def fetch_images(urls: dict) -> dict:
                 got = None
             return idx, (got[0] if got else None)
         try:
-            r = httpx.get(url, timeout=httpx.Timeout(28.0, connect=6.0), follow_redirects=True, headers={"User-Agent": "StudyAIHub/1.0"})
+            r = httpx.get(url, timeout=httpx.Timeout(28.0, connect=6.0), follow_redirects=True, headers={"User-Agent": "EnumaAIHub/1.0"})
             ok = r.status_code == 200 and r.headers.get("content-type", "").startswith("image/") and len(r.content) < 6_000_000
             return idx, (r.content if ok else None)
         except Exception:
@@ -1904,7 +1927,7 @@ def export_my_data(user: dict = Depends(current_user)):
         "groups": mem,
     }
     return Response(json.dumps(data, ensure_ascii=False, default=str, indent=1), media_type="application/json",
-                    headers={"Content-Disposition": 'attachment; filename="studyai_my_data.json"'})
+                    headers={"Content-Disposition": 'attachment; filename="enuma_my_data.json"'})
 
 
 @app.delete("/api/me")
@@ -1946,7 +1969,7 @@ def client_ip(request: Request) -> str:
 def _http_image(url: str, headers: Optional[dict] = None, timeout: float = 60.0) -> Optional[tuple[bytes, str]]:
     try:
         r = httpx.get(url, timeout=httpx.Timeout(timeout, connect=8.0), follow_redirects=True,
-                      headers={"User-Agent": "Mozilla/5.0 StudyAIHub/1.0", **(headers or {})})
+                      headers={"User-Agent": "Mozilla/5.0 EnumaAIHub/1.0", **(headers or {})})
         ctype = r.headers.get("content-type", "").split(";")[0].strip().lower()
         if r.status_code == 200 and ctype.startswith("image/") and 1000 < len(r.content) < 6_000_000:
             return r.content, ctype
@@ -2192,7 +2215,7 @@ def group_invite(gid: int, body: InviteIn, user: dict = Depends(current_user)):
     rate_limit(f"ginvite:{user['id']}", 30, 600)
     target, shown = _find_invitee(body.nick)
     if not target:
-        raise HTTPException(404, f"Пользователь «{shown}» не найден. Он должен хотя бы раз войти в StudyAI Hub. Введите @ник или ID из его кабинета.")
+        raise HTTPException(404, f"Пользователь «{shown}» не найден. Он должен хотя бы раз войти в EnumaAI Hub. Введите @ник или ID из его кабинета.")
     if target["id"] == user["id"]:
         raise HTTPException(400, "Нельзя пригласить самого себя.")
     if _my_role(gid, target["id"]):
@@ -2210,7 +2233,7 @@ def group_invite(gid: int, body: InviteIn, user: dict = Depends(current_user)):
     gname = sb.table("groups").select("name").eq("id", gid).limit(1).execute().data[0]["name"]
     me_name = user.get("display_name") or user.get("username") or "Пользователь"
     notified = bool(target.get("telegram_id")) and tg_send(
-        target["telegram_id"], f"👥 {me_name} приглашает вас в группу «{gname}» в StudyAI Hub.\nОткройте сайт → «Группы», чтобы принять приглашение.")
+        target["telegram_id"], f"👥 {me_name} приглашает вас в группу «{gname}» в EnumaAI Hub.\nОткройте сайт → «Группы», чтобы принять приглашение.")
     return {"ok": True, "user": _who(target), "notified": notified}
 
 
