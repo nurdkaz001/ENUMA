@@ -1063,7 +1063,7 @@ body.no-scroll{overflow:hidden}
         function renderMath(element) {
             if (window.renderMathInElement) {
                 renderMathInElement(element, {
-                    delimiters: [{left: '$$', right: '$$', display: true}, {left: '$', right: '$', display: false}],
+                    delimiters: [{left: '$$', right: '$$', display: true}, {left: '\\[', right: '\\]', display: true}, {left: '\\begin{equation}', right: '\\end{equation}', display: true}, {left: '\\begin{align}', right: '\\end{align}', display: true}, {left: '\\(', right: '\\)', display: false}, {left: '$', right: '$', display: false}],
                     throwOnError: false
                 });
             }
@@ -2430,9 +2430,17 @@ const L3 = () => T3[selectedLang] || T3.ru;
 
 // ---------- Markdown-рендер (чат, конспекты, объяснения) ----------
 function md(raw) {
-  const blocks = [];
-  const s = String(raw == null ? '' : raw).replace(/\r/g, '')
+  const blocks = [], maths = [], codes = [];
+  let s = String(raw == null ? '' : raw).replace(/\r/g, '')
     .replace(/```([\w+#-]*)[ \t]*\n?([\s\S]*?)```/g, (m, lg, code) => { blocks.push({ lg, code: code.replace(/\n+$/, '') }); return '\n\u0000' + (blocks.length - 1) + '\u0000\n'; });
+  // формулы прячем до обработки разметки: \[...\], \(...\), $$...$$, $...$ → единый вид, без разрывов строк внутри (иначе <br> ломает KaTeX)
+  const keep = (tex, disp) => '\u0001' + (maths.push({ tex: tex.trim().replace(/\s*\n\s*/g, ' '), disp }) - 1) + '\u0001';
+  s = s.replace(/`[^`\n]+`/g, m => '\u0002' + (codes.push(m) - 1) + '\u0002')
+    .replace(/\$\$([\s\S]+?)\$\$/g, (m, t) => keep(t, true))
+    .replace(/\\\[([\s\S]+?)\\\]/g, (m, t) => keep(t, true))
+    .replace(/\\\(([\s\S]+?)\\\)/g, (m, t) => keep(t, false))
+    .replace(/(^|[^\\$])\$(?!\s)([^$\n]+?[^\s$\\]|[^\s$\\])\$(?!\d)/g, (m, pre, t) => pre + keep(t, false))
+    .replace(/\u0002(\d+)\u0002/g, (m, i) => codes[+i]);
   const inl = t => t.replace(/`([^`\n]+)`/g, '<code class="ic">$1</code>')
     .replace(/\*\*([^*\n]{1,48}:)\*\*/g, '<strong class="lbl">$1</strong>').replace(/\*\*([^*\n]{1,48})\*\*:/g, '<strong class="lbl">$1:</strong>')
     .replace(/\*\*([^*\n]+)\*\*/g, '<strong>$1</strong>')
@@ -2473,7 +2481,8 @@ function md(raw) {
     else if (items && !gap && /^\s{2,}/.test(line)) items[items.length - 1].text += '<br>' + line.trim();
     else { flushL(); para.push(line.trim()); }
   }
-  flushP(); flushL(); return out.join('');
+  flushP(); flushL();
+  return out.join('').replace(/\u0001(\d+)\u0001/g, (m, i) => { const x = maths[+i]; return x.disp ? '$$' + esc(x.tex) + '$$' : '$' + esc(x.tex) + '$'; });
 }
 const stagger = el => [...el.children].forEach((c, i) => c.style.setProperty('--k', Math.min(i, 14)));
 window.formatText = md;
@@ -3615,6 +3624,14 @@ const _cl4 = window.changeLanguage; window.changeLanguage = function () { _cl4()
 (function () {
 const sleep = ms => new Promise(r => setTimeout(r, ms));
 // Рисует ответ ИИ в box по мере поступления. Возвращает {reply} или null при ошибке.
+// скрываем недописанную формулу, пока она не закрыта, чтобы не мигал «сырой» LaTeX
+function openMathCut(t) {
+  let cut = t.length;
+  [['\\[', '\\]'], ['\\(', '\\)']].forEach(([o, c]) => { const i = t.lastIndexOf(o); if (i >= 0 && t.indexOf(c, i + 2) < 0) cut = Math.min(cut, i); });
+  const dd = [...t.matchAll(/\$\$/g)]; if (dd.length % 2) cut = Math.min(cut, dd[dd.length - 1].index);
+  const sd = [...t.replace(/\$\$/g, '  ').matchAll(/\$/g)]; if (sd.length % 2) cut = Math.min(cut, sd[sd.length - 1].index);
+  return t.slice(0, cut);
+}
 window.streamChat = async function (box, msg, docId, hist, imgs) {
   const row = document.createElement('div'); row.className = 'ai-row';
   row.innerHTML = '<div class="ai-av">✨</div><div class="ai-bubble md cp-skip"><span class="dots"><i></i><i></i><i></i></span></div>';
@@ -3642,7 +3659,7 @@ window.streamChat = async function (box, msg, docId, hist, imgs) {
   const tick = setInterval(() => {
     if (shown >= acc.length) return;
     shown = Math.min(acc.length, shown + Math.max(2, Math.ceil((acc.length - shown) / 10)));
-    bub.innerHTML = window.formatText(acc.slice(0, shown)) + '<span class="caret"></span>'; stick();
+    bub.innerHTML = window.formatText(openMathCut(acc.slice(0, shown))) + '<span class="caret"></span>'; stick();
   }, 30);
   try {
     const rd = res.body.getReader(), dec = new TextDecoder();
