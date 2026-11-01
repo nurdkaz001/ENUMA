@@ -761,9 +761,7 @@ body.no-scroll{overflow:hidden}
             <div class="cr-card">
                 <div class="relative z-10 flex flex-col sm:flex-row gap-6 sm:gap-8 sm:items-center">
                     <div class="cr-av display" aria-hidden="true"><span>АН</span>
-                        <video class="cr-vid" autoplay loop muted playsinline preload="auto" poster="/static/creator.jpg" disablepictureinpicture>
-                            <source src="/static/nur.jpg" type="image/jpg" onerror="this.closest('video').remove()">
-                        </video></div>
+                        <img class="cr-vid" src="/static/creator.jpg" alt="Ауезхан Нурдаулет" width="600" height="600" decoding="async" onerror="this.remove()"></div>
                     <div class="min-w-0">
                         <p class="mono" style="color:var(--accent)" data-cr="role">Создатель EnumaAI Hub</p>
                         <h3 class="display text-3xl lg:text-5xl font-bold text-white leading-[1.05] mt-2" data-cr="name">Ауезхан Нурдаулет</h3>
@@ -3784,7 +3782,6 @@ function v6Labels() {
 const _cl6 = window.changeLanguage; window.changeLanguage = function () { _cl6(); v6Labels(); };
 const _ca6 = window.checkAuth; window.checkAuth = function () { _ca6(); v6Labels(); };
 v6Labels();
-if (matchMedia('(prefers-reduced-motion: reduce)').matches) document.querySelectorAll('.cr-vid').forEach(v => { v.removeAttribute('autoplay'); v.pause(); });
 })();
 </script>
 </body>
