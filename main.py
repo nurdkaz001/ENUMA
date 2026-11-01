@@ -7,6 +7,7 @@ import logging
 import os
 import random
 import re
+import base64
 import functools
 import secrets
 import threading
@@ -37,6 +38,10 @@ logging.basicConfig(level=logging.INFO)
 DEEPSEEK_API_KEY = os.getenv("DEEPSEEK_API_KEY", "")
 DEEPSEEK_MODEL = os.getenv("DEEPSEEK_MODEL", "deepseek-chat")
 DEEPSEEK_BASE_URL = os.getenv("DEEPSEEK_BASE_URL", "https://api.deepseek.com").rstrip("/")
+# Модель с поддержкой изображений (любой OpenAI-совместимый API). DeepSeek Chat картинки не понимает.
+VISION_API_KEY = os.getenv("VISION_API_KEY", "")
+VISION_BASE_URL = os.getenv("VISION_BASE_URL", "https://generativelanguage.googleapis.com/v1beta/openai").rstrip("/")
+VISION_MODEL = os.getenv("VISION_MODEL", "gemini-2.0-flash")
 SUPABASE_URL = os.getenv("SUPABASE_URL", "")
 SUPABASE_SERVICE_KEY = os.getenv("SUPABASE_SERVICE_KEY", "")
 JWT_SECRET = os.getenv("JWT_SECRET", "")
@@ -571,25 +576,55 @@ def chat(message: str = Form(...), doc_id: str = Form("default"), lang: str = Fo
     return {"reply": reply, "tokens_left": left}
 
 
+def _read_images(files) -> list[str]:
+    """Проверяет и превращает загруженные фото в data-URL (в базе не сохраняются)."""
+    out: list[str] = []
+    for f in (files or [])[:4]:
+        ct = (f.content_type or "").lower()
+        if not ct.startswith("image/"):
+            continue
+        if ct not in ("image/jpeg", "image/png", "image/webp", "image/gif"):
+            raise HTTPException(400, "Поддерживаются фото JPG, PNG, WEBP и GIF.")
+        raw = f.file.read(6_000_001)
+        if len(raw) > 6_000_000:
+            raise HTTPException(413, "Фото слишком большое (максимум 6 МБ).")
+        if raw:
+            out.append(f"data:{ct};base64,{base64.b64encode(raw).decode()}")
+    return out
+
+
 def _sse(obj: dict) -> str:
     return "data: " + json.dumps(obj, ensure_ascii=False) + "\n\n"
 
 
 @app.post("/api/chat/stream")
-def chat_stream(message: str = Form(...), doc_id: str = Form("default"), lang: str = Form("kz"), history: str = Form(""),
-                user: dict = Depends(current_user)):
-    """Чат с потоковым выводом (SSE): текст приходит кусками, как в ChatGPT. Токен списывается заранее и возвращается при ошибке."""
+def chat_stream(message: str = Form(""), doc_id: str = Form("default"), lang: str = Form("kz"), history: str = Form(""),
+                images: list[UploadFile] = File(default=[]), user: dict = Depends(current_user)):
+    """Чат с потоковым выводом (SSE): текст приходит кусками, как в ChatGPT. Токен списывается заранее и возвращается при ошибке.
+    Если приложены фото — отвечает модель с поддержкой изображений (VISION_*)."""
+    imgs = _read_images(images)
+    if imgs and not VISION_API_KEY:                     # до списания токена: страница сама распознает текст на фото (OCR)
+        return JSONResponse({"error": "Распознавание фото на сервере не настроено.", "code": "no_vision"}, status_code=501)
+    message = message.strip() or ("Опиши и разбери это фото." if imgs else "")
     message, prompt = _chat_prompt(message, doc_id, lang, history, user)
     left = spend_token(user["id"])                      # 402 вернётся обычным JSON ещё до начала потока
+    if imgs:
+        api_url, api_key, model = f"{VISION_BASE_URL}/chat/completions", VISION_API_KEY, VISION_MODEL
+        content = [{"type": "text", "text": prompt + "\n(К сообщению студента приложены фото — используй их.)"}] + \
+                  [{"type": "image_url", "image_url": {"url": u}} for u in imgs]
+        saved_msg = f"📷×{len(imgs)} {message}"
+    else:
+        api_url, api_key, model = f"{DEEPSEEK_BASE_URL}/chat/completions", DEEPSEEK_API_KEY, DEEPSEEK_MODEL
+        content, saved_msg = prompt, message
 
     def gen():
         parts: list[str] = []
         failed = False
         try:
             with httpx.stream(
-                "POST", f"{DEEPSEEK_BASE_URL}/chat/completions",
-                headers={"Authorization": f"Bearer {DEEPSEEK_API_KEY}"},
-                json={"model": DEEPSEEK_MODEL, "messages": [{"role": "user", "content": prompt}],
+                "POST", api_url,
+                headers={"Authorization": f"Bearer {api_key}"},
+                json={"model": model, "messages": [{"role": "user", "content": content}],
                       "max_tokens": 4000, "temperature": 0.7, "stream": True},
                 timeout=httpx.Timeout(90.0, connect=10.0),
             ) as r:
@@ -621,7 +656,7 @@ def chat_stream(message: str = Form(...), doc_id: str = Form("default"), lang: s
         finally:
             reply = "".join(parts).strip()
             if reply:
-                _save_chat(user, doc_id, message, reply)
+                _save_chat(user, doc_id, saved_msg, reply)
             else:
                 refund_token(user["id"])
         if "".join(parts).strip():
