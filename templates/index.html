@@ -534,6 +534,26 @@ body.no-scroll{overflow:hidden}
 .cr-soc b{display:block;font-size:.9rem}
 .soon-pill{display:inline-block;padding:.3rem .8rem;border-radius:999px;border:1px solid rgba(255,196,60,.5);color:var(--gold);font-size:.7rem;font-weight:800;letter-spacing:.12em;text-transform:uppercase}
 @media (max-width:640px){.cr-card{padding:1.3rem}.cr-av{width:6.5rem;height:6.5rem;font-size:2rem;border-radius:1.6rem}.cr-av>span,.cr-vid{border-radius:calc(1.6rem - 3px)}}
+/* ===== v7: учитель, расписание ===== */
+.tq-opt{display:flex;gap:.75rem;align-items:flex-start;text-align:left;width:100%;padding:.8rem 1rem;border:1px solid var(--line);border-radius:1rem;background:#0f0f0f;color:#e6e6df;font-size:.85rem;line-height:1.45;transition:.15s}
+.tq-opt b{flex:none;width:1.5rem;height:1.5rem;border-radius:.5rem;background:rgba(255,255,255,.08);display:flex;align-items:center;justify-content:center;font-size:.72rem}
+.tq-opt:hover:not(:disabled){border-color:var(--accent)}
+.tq-opt.ok{border-color:#37d67a;background:rgba(55,214,122,.12)}
+.tq-opt.ok b{background:#37d67a;color:#000}
+.tq-opt.bad{border-color:#ff5d73;background:rgba(255,93,115,.12)}
+.tq-opt.bad b{background:#ff5d73;color:#000}
+.tq-opt.dim{opacity:.45}
+.tq-bar{height:.3rem;border-radius:9px;background:#222;overflow:hidden}
+.tq-bar>i{display:block;height:100%;background:var(--accent);transition:width .3s}
+.tq-video{position:relative;width:100%;aspect-ratio:16/9;border-radius:1.1rem;overflow:hidden;background:#000;border:1px solid var(--line)}
+.tq-video iframe{position:absolute;inset:0;width:100%;height:100%;border:0}
+.sch-day{display:flex;gap:.6rem;align-items:flex-start;padding:.5rem 0;border-top:1px solid rgba(255,255,255,.06)}
+.sch-day:first-child{border-top:0}
+.sch-day>b{flex:none;width:2rem;font-size:.75rem;color:var(--accent)}
+.sch-chip{display:inline-flex;align-items:center;gap:.35rem;margin:.15rem .25rem .15rem 0;padding:.3rem .6rem;border:1px solid var(--line);border-radius:.8rem;background:#141414;font-size:.7rem;color:#e6e6df}
+.sch-chip em{font-style:normal;color:#8d8d86}
+.sch-chip button{color:#888;font-size:.7rem;margin-left:.1rem}
+.sch-chip button:hover{color:#ff5d73}
     </style>
 </head>
 <body class="min-h-screen flex flex-col">
@@ -1507,7 +1527,7 @@ body.no-scroll{overflow:hidden}
                         <div class="min-w-0">
                             <p class="text-xs md:text-sm font-bold truncate ${item.done ? 'line-through text-neutral-500' : 'text-white'}">${escapeHtml(item.title)}</p>
                             ${item.desc ? `<p class="text-[11px] text-neutral-400">${escapeHtml(item.desc)}</p>` : ''}
-                            <span class="mono" style="color:var(--accent)">${escapeHtml(item.date)}</span>
+                            <span class="mono" style="color:var(--accent)">${escapeHtml(item.date)}${item.start ? ' · ⏰ ' + escapeHtml(item.start) + (item.minutes ? ' · ' + item.minutes + '′' : '') : ''}</span>
                         </div>
                     </div>
                     <div class="flex items-center gap-1.5 shrink-0">
@@ -1709,7 +1729,7 @@ body.no-scroll{overflow:hidden}
             document.getElementById('day-modal-title').textContent = dateStr;
             const dayTasks = studentTasks.filter(item => item.date === dateStr);
             const html = dayTasks.length === 0 ? '<p class="text-xs text-neutral-500 py-4 text-center">—</p>' :
-                dayTasks.map(item => `<div class="tile p-3 text-xs space-y-1 text-neutral-200"><b>${escapeHtml(item.title)}</b><p class="text-neutral-400">${escapeHtml(item.desc || '')}</p></div>`).join('');
+                dayTasks.map(item => `<div class="tile p-3 text-xs space-y-1 text-neutral-200"><b>${item.start ? '⏰ ' + escapeHtml(item.start) + ' · ' : ''}${escapeHtml(item.title)}</b><p class="text-neutral-400">${escapeHtml(item.desc || '')}</p></div>`).join('');
             document.getElementById('day-modal-tasks').innerHTML = html;
             modal.classList.remove('hidden');
         }
@@ -3237,8 +3257,8 @@ const l = () => U[LG()];
 const POL = {
   ru: { t: 'Политика конфиденциальности и Условия использования', s: [
     ['1. Кто мы', `Сервис EnumaAI Hub (далее — «Сервис») управляется: ${OPERATOR}. Контакт по вопросам данных: ${CONTACT} в Telegram. Политика составлена с учётом Закона Республики Казахстан «О персональных данных и их защите» № 94-V.`],
-    ['2. Какие данные мы собираем', '<ul><li><b>Аккаунт:</b> Telegram ID, ник (username) и имя из Telegram — для входа через бота. Пароль не используется.</li><li><b>Материалы:</b> файлы и тексты, которые вы загружаете (PDF, Word, Excel, TXT), и извлечённый из них текст.</li><li><b>Результаты работы:</b> тесты, карточки, конспекты, презентации, билеты, история чата с ИИ.</li><li><b>Учебная активность:</b> задачи планера, XP, токены, подписка.</li><li><b>Группы:</b> названия групп, участники, приглашения и задачи.</li><li><b>Технические данные:</b> IP-адрес (для защиты от злоупотреблений и ограничения частоты запросов), данные в localStorage браузера (токен входа, язык, последняя презентация).</li></ul>'],
-    ['3. Зачем мы это используем', 'Чтобы вы могли войти, пользоваться ИИ-функциями, сохранять историю, получать напоминания в Telegram, работать в группах, учитывать токены и подписку, а также защищать сервис от злоупотреблений. Мы не продаём ваши данные и не показываем рекламу.'],
+    ['2. Какие данные мы собираем', '<ul><li><b>Аккаунт:</b> Telegram ID, ник (username) и имя из Telegram — для входа через бота. Пароль не используется.</li><li><b>Материалы:</b> файлы и тексты, которые вы загружаете (PDF, Word, Excel, TXT), и извлечённый из них текст.</li><li><b>Результаты работы:</b> тесты, карточки, конспекты, презентации, билеты, история чата с ИИ.</li><li><b>Учебная активность:</b> задачи планера и расписание занятий, XP, токены, подписка.</li><li><b>Группы:</b> названия групп, участники, приглашения и задачи.</li><li><b>Технические данные:</b> IP-адрес (для защиты от злоупотреблений и ограничения частоты запросов), данные в localStorage браузера (токен входа, язык, последняя презентация).</li></ul>'],
+    ['3. Зачем мы это используем', 'Чтобы вы могли войти, пользоваться ИИ-функциями, сохранять историю, получать напоминания в Telegram, работать в группах, учитывать токены и подписку, а также защищать сервис от злоупотреблений. Если вы пользуетесь планером, сервис ежедневно присылает в Telegram сводку (уроки и задачи на день) — её можно отключить в планере. Мы не продаём ваши данные и не показываем рекламу.'],
     ['4. Кому передаются данные', '<ul><li><b>Supabase</b> — хранение базы данных.</li><li><b>DeepSeek</b> (ИИ-провайдер) — ваши запросы и тексты материалов отправляются для генерации ответов. Серверы провайдера могут находиться за пределами Казахстана (трансграничная передача). Не отправляйте в чат и материалы чужие персональные, финансовые и иные конфиденциальные сведения.</li><li><b>Telegram</b> — вход, коды, уведомления о приглашениях и напоминания.</li><li><b>Сервисы картинок</b> (Pollinations, LoremFlickr) — получают только текстовое описание иллюстрации, без личных данных.</li><li><b>Google Fonts и CDN</b> — шрифты и библиотеки; при загрузке они видят ваш IP.</li></ul>'],
     ['5. Группы', 'Ваш ник и имя видны участникам групп, в которые вы вступили. Пригласить вас может любой владелец группы, зная ваш ник; приглашение вступает в силу только после вашего принятия. Из группы можно выйти в любой момент.'],
     ['6. Срок хранения', 'Данные хранятся, пока существует ваш аккаунт. Историю и задачи можно удалить в личном кабинете. При удалении аккаунта все связанные данные удаляются безвозвратно (группы, где вы владелец, передаются другому участнику или удаляются, если он один).'],
@@ -3250,8 +3270,8 @@ const POL = {
     ['12. Изменения', 'При существенных изменениях мы попросим вас принять новую версию. Актуальная версия всегда доступна по ссылке /privacy.'] ] },
   kz: { t: 'Құпиялылық саясаты және Пайдалану шарттары', s: [
     ['1. Біз кімбіз', `EnumaAI Hub сервисін (бұдан әрі — «Сервис») басқарады: ${OPERATOR}. Деректер мәселесі бойынша байланыс: Telegram-да ${CONTACT}. Саясат «Дербес деректер және оларды қорғау туралы» Қазақстан Республикасының № 94-V Заңын ескере отырып жасалған.`],
-    ['2. Қандай деректерді жинаймыз', '<ul><li><b>Аккаунт:</b> Telegram ID, ник (username) және Telegram-дағы аты — бот арқылы кіру үшін. Құпиясөз қолданылмайды.</li><li><b>Материалдар:</b> жүктеген файлдарыңыз бен мәтіндеріңіз (PDF, Word, Excel, TXT) және олардан алынған мәтін.</li><li><b>Жұмыс нәтижелері:</b> тесттер, карточкалар, конспектілер, презентациялар, билеттер, ЖИ-мен чат тарихы.</li><li><b>Оқу белсенділігі:</b> жоспарлаушы тапсырмалары, XP, токендер, жазылым.</li><li><b>Топтар:</b> топ атаулары, қатысушылар, шақырулар және тапсырмалар.</li><li><b>Техникалық деректер:</b> IP-мекенжай (теріс пайдаланудан қорғау және сұраныс жиілігін шектеу үшін), браузер localStorage деректері (кіру токені, тіл, соңғы презентация).</li></ul>'],
-    ['3. Не үшін қолданамыз', 'Кіруіңіз, ЖИ-функцияларды пайдалануыңыз, тарихты сақтауыңыз, Telegram-да еске салғыштар алуыңыз, топтарда жұмыс істеуіңіз, токендер мен жазылымды есепке алуыңыз және сервисті теріс пайдаланудан қорғау үшін. Деректеріңізді сатпаймыз, жарнама көрсетпейміз.'],
+    ['2. Қандай деректерді жинаймыз', '<ul><li><b>Аккаунт:</b> Telegram ID, ник (username) және Telegram-дағы аты — бот арқылы кіру үшін. Құпиясөз қолданылмайды.</li><li><b>Материалдар:</b> жүктеген файлдарыңыз бен мәтіндеріңіз (PDF, Word, Excel, TXT) және олардан алынған мәтін.</li><li><b>Жұмыс нәтижелері:</b> тесттер, карточкалар, конспектілер, презентациялар, билеттер, ЖИ-мен чат тарихы.</li><li><b>Оқу белсенділігі:</b> жоспарлаушы тапсырмалары мен сабақ кестесі, XP, токендер, жазылым.</li><li><b>Топтар:</b> топ атаулары, қатысушылар, шақырулар және тапсырмалар.</li><li><b>Техникалық деректер:</b> IP-мекенжай (теріс пайдаланудан қорғау және сұраныс жиілігін шектеу үшін), браузер localStorage деректері (кіру токені, тіл, соңғы презентация).</li></ul>'],
+    ['3. Не үшін қолданамыз', 'Кіруіңіз, ЖИ-функцияларды пайдалануыңыз, тарихты сақтауыңыз, Telegram-да еске салғыштар алуыңыз, топтарда жұмыс істеуіңіз, токендер мен жазылымды есепке алуыңыз және сервисті теріс пайдаланудан қорғау үшін. Жоспарлаушыны қолдансаңыз, сервис Telegram-ға күн сайын жиынтық (күннің сабақтары мен тапсырмалары) жібереді — оны жоспарлаушыдан өшіруге болады. Деректеріңізді сатпаймыз, жарнама көрсетпейміз.'],
     ['4. Деректер кімге беріледі', '<ul><li><b>Supabase</b> — дерекқорды сақтау.</li><li><b>DeepSeek</b> (ЖИ-провайдер) — жауап жасау үшін сұраныстарыңыз бен материал мәтіндері жіберіледі. Провайдер серверлері Қазақстаннан тыс жерде болуы мүмкін (трансшекаралық беру). Чатқа және материалдарға басқа адамдардың жеке, қаржылық және өзге құпия мәліметтерін жүктемеңіз.</li><li><b>Telegram</b> — кіру, кодтар, шақыру хабарламалары және еске салғыштар.</li><li><b>Сурет сервистері</b> (Pollinations, LoremFlickr) — тек иллюстрацияның мәтіндік сипаттамасын алады, жеке деректерсіз.</li><li><b>Google Fonts және CDN</b> — қаріптер мен кітапханалар; жүктеу кезінде IP-ңызды көреді.</li></ul>'],
     ['5. Топтар', 'Ник пен атыңыз сіз қосылған топ қатысушыларына көрінеді. Сізді ник арқылы кез келген топ иесі шақыра алады; шақыру тек сіз қабылдағаннан кейін күшіне енеді. Топтан кез келген уақытта шыға аласыз.'],
     ['6. Сақтау мерзімі', 'Деректер аккаунтыңыз бар кезде сақталады. Тарих пен тапсырмаларды жеке кабинетте жоюға болады. Аккаунт жойылғанда барлық байланысты деректер қайтарусыз жойылады (сіз иесі болған топтар басқа қатысушыға беріледі немесе қатысушы жалғыз болса, жойылады).'],
@@ -3263,8 +3283,8 @@ const POL = {
     ['12. Өзгерістер', 'Елеулі өзгерістер болса, жаңа нұсқаны қабылдауды сұраймыз. Өзекті нұсқа әрқашан /privacy сілтемесінде қолжетімді.'] ] },
   en: { t: 'Privacy Policy and Terms of Use', s: [
     ['1. Who we are', `EnumaAI Hub (the “Service”) is operated by: ${OPERATOR}. Contact for data questions: ${CONTACT} on Telegram. This policy takes into account the Law of the Republic of Kazakhstan “On Personal Data and Their Protection” No. 94-V.`],
-    ['2. Data we collect', '<ul><li><b>Account:</b> Telegram ID, username and display name from Telegram — for bot-based login. No passwords are used.</li><li><b>Materials:</b> files and texts you upload (PDF, Word, Excel, TXT) and the text extracted from them.</li><li><b>Your results:</b> quizzes, flashcards, summaries, presentations, tickets, AI chat history.</li><li><b>Learning activity:</b> planner tasks, XP, tokens, subscription.</li><li><b>Groups:</b> group names, members, invitations and tasks.</li><li><b>Technical data:</b> IP address (abuse protection and rate limiting) and browser localStorage (login token, language, last presentation).</li></ul>'],
-    ['3. Why we use it', 'To let you log in, use AI features, keep your history, get Telegram reminders, work in groups, account for tokens and subscriptions, and protect the Service from abuse. We do not sell your data and show no ads.'],
+    ['2. Data we collect', '<ul><li><b>Account:</b> Telegram ID, username and display name from Telegram — for bot-based login. No passwords are used.</li><li><b>Materials:</b> files and texts you upload (PDF, Word, Excel, TXT) and the text extracted from them.</li><li><b>Your results:</b> quizzes, flashcards, summaries, presentations, tickets, AI chat history.</li><li><b>Learning activity:</b> planner tasks and class schedule, XP, tokens, subscription.</li><li><b>Groups:</b> group names, members, invitations and tasks.</li><li><b>Technical data:</b> IP address (abuse protection and rate limiting) and browser localStorage (login token, language, last presentation).</li></ul>'],
+    ['3. Why we use it', 'To let you log in, use AI features, keep your history, get Telegram reminders, work in groups, account for tokens and subscriptions, and protect the Service from abuse. If you use the planner, the service sends a daily digest (the day’s classes and tasks) to Telegram — you can turn it off in the planner. We do not sell your data and show no ads.'],
     ['4. Who receives data', '<ul><li><b>Supabase</b> — database hosting.</li><li><b>DeepSeek</b> (AI provider) — your requests and material texts are sent to generate answers. The provider’s servers may be outside Kazakhstan (cross-border transfer). Do not put other people’s personal, financial or otherwise confidential information into the chat or materials.</li><li><b>Telegram</b> — login, codes, invitation notices and reminders.</li><li><b>Image services</b> (Pollinations, LoremFlickr) — receive only a text description of the illustration, no personal data.</li><li><b>Google Fonts and CDNs</b> — fonts and libraries; they see your IP when loading.</li></ul>'],
     ['5. Groups', 'Your username and name are visible to members of groups you join. Any group owner who knows your username can invite you; an invitation takes effect only after you accept. You can leave a group at any time.'],
     ['6. Retention', 'Data is kept while your account exists. You can delete history and tasks in your cabinet. When you delete your account, all related data is permanently erased (groups you own pass to another member, or are deleted if you are the only one).'],
@@ -3709,6 +3729,7 @@ function renderPrev(sc) {
   const box = $(prevId(sc)); if (!box) return; box.classList.toggle('hidden', !IMGS[sc].length);
   box.innerHTML = IMGS[sc].map((x, i) => `<div class="ip"><img src="${x.url}" alt=""><button type="button" onclick="rmImg('${sc}',${i})" aria-label="remove">✕</button></div>`).join('');
 }
+window.prepImage = prep;
 async function addImgs(sc, files) {
   for (const f of [...files].filter(f => /^image\//.test(f.type))) {
     if (IMGS[sc].length >= MAXI) break;
@@ -3761,13 +3782,13 @@ window.openEntView = function () {
 // ======================= ПРОФИЛЬ СОЗДАТЕЛЯ: тексты на 3 языках =======================
 const CR = {
   ru: { kicker: 'Создатель', role: 'Создатель EnumaAI Hub', name: 'Ауезхан Нурдаулет', sub: 'Студент ЕНУ · Факультет информационных технологий',
-    bio: 'Привет! Я Нурдаулет — студент факультета информационных технологий ЕНУ. Увлекаюсь разработкой и программированием, постоянно учусь и создаю цифровые продукты. EnumaAI Hub — мой проект: платформа, где ИИ помогает учиться проще, быстрее и интереснее.',
+    bio: 'Привет! Я Ауезхан — студент факультета информационных технологий ЕНУ. Увлекаюсь разработкой и программированием, постоянно учусь и создаю цифровые продукты. EnumaAI Hub — мой проект: платформа, где ИИ помогает учиться проще, быстрее и интереснее.',
     t1: '🎓 ЕНУ', t2: '💻 Информационные технологии', t3: '⚙️ Разработка', t4: '🧠 Программирование', menu: 'Создатель', ent: '🎯 Подготовка к ЕНТ', soon: 'СКОРО' },
   kz: { kicker: 'Жасаушы', role: 'EnumaAI Hub жасаушысы', name: 'Ауезхан Нурдаулет', sub: 'ЕҰУ студенті · Ақпараттық технологиялар факультеті',
-    bio: 'Сәлем! Мен Нұрдаулет — ЕҰУ ақпараттық технологиялар факультетінің студентімін. Әзірлеу мен бағдарламалауға құмармын, үнемі үйреніп, цифрлық өнімдер жасаймын. EnumaAI Hub — менің жобам: жасанды интеллект оқуды жеңілдететін, жылдамдататын әрі қызықты ететін платформа.',
+    bio: 'Сәлем! Мен Ауезхан — ЕҰУ ақпараттық технологиялар факультетінің студентімін. Әзірлеу мен бағдарламалауға құмармын, үнемі үйреніп, цифрлық өнімдер жасаймын. EnumaAI Hub — менің жобам: жасанды интеллект оқуды жеңілдететін, жылдамдататын әрі қызықты ететін платформа.',
     t1: '🎓 ЕҰУ', t2: '💻 Ақпараттық технологиялар', t3: '⚙️ Әзірлеу', t4: '🧠 Бағдарламалау', menu: 'Жасаушы', ent: '🎯 ҰБТ-ға дайындық', soon: 'ЖАҚЫНДА' },
   en: { kicker: 'Creator', role: 'Creator of EnumaAI Hub', name: 'Auezkhan Nurdaulet', sub: 'ENU student · Faculty of Information Technology',
-    bio: 'Hi! I’m Nurdaulet — an Information Technology student at ENU. I’m passionate about software development and programming, always learning and building digital products. EnumaAI Hub is my project: a platform where AI makes studying easier, faster and more engaging.',
+    bio: 'Hi! I’m Auezkhan — an Information Technology student at ENU. I’m passionate about software development and programming, always learning and building digital products. EnumaAI Hub is my project: a platform where AI makes studying easier, faster and more engaging.',
     t1: '🎓 ENU', t2: '💻 Information Technology', t3: '⚙️ Development', t4: '🧠 Programming', menu: 'Creator', ent: '🎯 UNT preparation', soon: 'SOON' }
 };
 function v6Labels() {
@@ -3782,6 +3803,265 @@ function v6Labels() {
 const _cl6 = window.changeLanguage; window.changeLanguage = function () { _cl6(); v6Labels(); };
 const _ca6 = window.checkAuth; window.checkAuth = function () { _ca6(); v6Labels(); };
 v6Labels();
+})();
+</script>
+<script>
+(function () {
+const $ = id => document.getElementById(id), esc = escapeHtml;
+const LG = () => (['ru', 'kz', 'en'].includes(selectedLang) ? selectedLang : 'ru');
+const sleep = ms => new Promise(r => setTimeout(r, ms));
+
+// ============================================================================================
+//                                    ИИ-УЧИТЕЛЬ
+// ============================================================================================
+const TL = {
+  ru: { exp: '🎓 Объяснение', video: '🎬 Видео по теме', findVid: '▶ Найти лучшее видео на YouTube', vidHint: 'Подобрали поисковый запрос — откроется лучшая выдача по теме.', open: 'Открыть на YouTube', min: 'мин',
+    quiz: '🧠 Проверь себя', q: 'Вопрос', right: '✅ Верно!', wrong: '❌ Не совсем.', correct: 'Правильный ответ', next: 'Дальше →', result: 'Результат', easy: 'лёгкий', medium: 'средний', hard: 'сложный',
+    res: 'Результат', of: 'из', mistakes: 'Разбор ошибок', retry: '🔁 Повторить ошибки', more: '➕ Ещё 10 вопросов', cost: '5 токенов', moreErr: 'Не удалось получить вопросы',
+    great: 'Отлично! Тема усвоена.', good: 'Хорошо! Осталось закрепить пару моментов.', ok: 'Неплохо, но стоит перечитать объяснение.', low: 'Тема пока даётся сложно — перечитайте объяснение и повторите ошибки.',
+    load: ['Готовлю объяснение…', 'Подбираю видео…', 'Составляю 10 вопросов…'], none: 'ИИ не вернул вопросы' },
+  kz: { exp: '🎓 Түсіндірме', video: '🎬 Тақырып бойынша бейне', findVid: '▶ YouTube-тан ең жақсы бейнені табу', vidHint: 'Іздеу сұранысы дайын — тақырып бойынша ең жақсы нәтижелер ашылады.', open: 'YouTube-та ашу', min: 'мин',
+    quiz: '🧠 Өзіңді тексер', q: 'Сұрақ', right: '✅ Дұрыс!', wrong: '❌ Толық емес.', correct: 'Дұрыс жауап', next: 'Әрі қарай →', result: 'Нәтиже', easy: 'жеңіл', medium: 'орташа', hard: 'қиын',
+    res: 'Нәтиже', of: '/', mistakes: 'Қателерді талдау', retry: '🔁 Қателерді қайталау', more: '➕ Тағы 10 сұрақ', cost: '5 токен', moreErr: 'Сұрақтарды алу мүмкін болмады',
+    great: 'Тамаша! Тақырып меңгерілді.', good: 'Жақсы! Бірнеше сәтті бекіту қалды.', ok: 'Жаман емес, бірақ түсіндірмені қайта оқыған жөн.', low: 'Тақырып әзірге қиын — түсіндірмені қайта оқып, қателерді қайталаңыз.',
+    load: ['Түсіндірме дайындалуда…', 'Бейне таңдалуда…', '10 сұрақ құрастырылуда…'], none: 'ЖИ сұрақтар қайтармады' },
+  en: { exp: '🎓 Explanation', video: '🎬 Video on the topic', findVid: '▶ Find the best video on YouTube', vidHint: 'We prepared a search query — it opens the best results for this topic.', open: 'Open on YouTube', min: 'min',
+    quiz: '🧠 Test yourself', q: 'Question', right: '✅ Correct!', wrong: '❌ Not quite.', correct: 'Correct answer', next: 'Next →', result: 'Result', easy: 'easy', medium: 'medium', hard: 'hard',
+    res: 'Result', of: 'of', mistakes: 'Review of mistakes', retry: '🔁 Retry mistakes', more: '➕ 10 more questions', cost: '5 tokens', moreErr: 'Could not get questions',
+    great: 'Excellent! You’ve got this topic.', good: 'Good! A couple of points left to nail down.', ok: 'Not bad, but re-read the explanation.', low: 'This topic is tough for now — re-read the explanation and retry your mistakes.',
+    load: ['Preparing the explanation…', 'Picking a video…', 'Writing 10 questions…'], none: 'The AI returned no questions' }
+};
+const tl = () => TL[LG()];
+let TQ = null;
+const LVL = { easy: '🟢', medium: '🟡', hard: '🔴' };
+const normQ = g => {
+  const opts = (g.options || []).map(o => String(o).replace(/^\s*[A-Da-d][).:]\s+/, ''));
+  const k = 'ABCD'.indexOf(String(g.answer || '').trim().toUpperCase().charAt(0));
+  return { q: String(g.q || ''), opts, ans: k, explain: String(g.explain || ''), level: g.level || 'medium' };
+};
+
+window.startAITeacherGame = async function () {
+  if (!currentUser) return checkAuth();
+  const t = translations[selectedLang], L = tl();
+  const topic = $('teacher-topic').value.trim(), comment = $('teacher-comment').value.trim();
+  if (!topic) return alert(t.teacherTopicPlaceholder);
+  const area = $('teacher-game-area'); let li = 0;
+  const showLoad = () => { area.innerHTML = `<div class="p-8 text-center space-y-3"><div class="w-10 h-10 border-4 border-[#c8ff2e] border-t-transparent rounded-full animate-spin mx-auto"></div><p class="text-xs font-bold text-[#c8ff2e]">${L.load[li % L.load.length]}</p></div>`; };
+  showLoad(); const iv = setInterval(() => { li++; showLoad(); }, 4500);
+  const fd = new FormData(); fd.append('topic', topic); fd.append('comment', comment); fd.append('doc_id', currentDocId || 'default'); fd.append('lang', selectedLang);
+  let res = null, data = {}; try { res = await fetch('/api/ai-teacher', { method: 'POST', body: fd }); data = await res.json().catch(() => ({})); } catch (e) {}
+  clearInterval(iv);
+  if (!res) { area.innerHTML = errorBox('Network error'); return; }
+  if (data.tokens_left != null) setTokens(data.tokens_left);
+  const r = data.result;
+  if (!res.ok || !r || !r.explanation) { area.innerHTML = errorBox(data.error || data.detail || 'Server error'); return; }
+  const qs = (r.game_questions || []).map(normQ).filter(g => g.q && g.opts.length === 4 && g.ans >= 0);
+  TQ = { topic, comment, docId: currentDocId || 'default', qs, i: 0, base: 0, score: 0, wrong: [], asked: qs.map(x => x.q), busy: false };
+  const vq = r.video_query || topic, yt = 'https://www.youtube.com/results?search_query=' + encodeURIComponent(vq) + '&sp=EgIQAQ%253D%253D';
+  const v = r.video;
+  const videoHtml = v ? `<div class="tq-video"><iframe src="https://www.youtube-nocookie.com/embed/${encodeURIComponent(v.id)}?rel=0&modestbranding=1" title="${esc(v.title)}" loading="lazy" allow="accelerometer; encrypted-media; picture-in-picture; fullscreen" allowfullscreen referrerpolicy="strict-origin-when-cross-origin"></iframe></div>
+      <div class="flex flex-wrap items-center justify-between gap-2"><p class="text-xs text-neutral-300 min-w-0"><b class="text-white">${esc(v.title)}</b><br><span class="text-neutral-500">${esc(v.channel)} · ${v.minutes} ${L.min}</span></p><a class="btn-ghost px-4 py-2 text-xs" target="_blank" rel="noopener" href="https://www.youtube.com/watch?v=${encodeURIComponent(v.id)}">${L.open}</a></div>`
+    : `<p class="text-xs text-neutral-400">${L.vidHint}</p><a class="btn-accent inline-block px-5 py-3 text-xs" target="_blank" rel="noopener" href="${yt}">${L.findVid}</a>`;
+  area.innerHTML = `<div class="space-y-5 quiz-slide-enter">
+    <div class="banner space-y-3"><h4 class="mono" style="color:var(--accent)">${L.exp}</h4><div class="md copyable text-sm text-neutral-300 leading-relaxed">${formatText(r.explanation)}</div></div>
+    <div class="banner space-y-3"><h4 class="mono">${L.video}</h4>${videoHtml}</div>
+    <div class="space-y-3"><h4 class="mono">${L.quiz}</h4><div id="tq-quiz"></div></div></div>`;
+  renderMath(area); tqRender();
+};
+
+function tqRender() {
+  const L = tl(), box = $('tq-quiz'); if (!box || !TQ) return;
+  const total = TQ.qs.length - TQ.base;
+  if (TQ.i >= TQ.qs.length) return tqSummary();
+  const g = TQ.qs[TQ.i], n = TQ.i - TQ.base + 1;
+  box.innerHTML = `<div class="tile p-5 space-y-4 quiz-slide-enter">
+    <div class="flex items-center justify-between gap-2"><span class="mono">${L.q} ${n} ${L.of} ${total}</span><span class="mono">${LVL[g.level] || ''} ${L[g.level] || ''}</span></div>
+    <div class="tq-bar"><i style="width:${(n - 1) / total * 100}%"></i></div>
+    <p class="font-bold text-white text-sm leading-relaxed">${esc(g.q)}</p>
+    <div class="grid gap-2">${g.opts.map((o, k) => `<button class="tq-opt" data-k="${k}" onclick="tqPick(${k})"><b>${'ABCD'[k]}</b><span class="min-w-0">${esc(o)}</span></button>`).join('')}</div>
+    <div id="tq-fb"></div></div>`;
+  renderMath(box);
+}
+window.tqPick = function (k) {
+  if (!TQ || TQ.locked) return; TQ.locked = true; const L = tl(), g = TQ.qs[TQ.i], good = k === g.ans;
+  document.querySelectorAll('.tq-opt').forEach((b, i) => { b.disabled = true; b.classList.add(i === g.ans ? 'ok' : (i === k ? 'bad' : 'dim')); });
+  if (good) TQ.score++; else TQ.wrong.push(g);
+  const last = TQ.i + 1 >= TQ.qs.length;
+  $('tq-fb').innerHTML = `<div class="rounded-2xl border ${good ? 'border-[#37d67a]/40 bg-[#37d67a]/10' : 'border-[#ff5d73]/40 bg-[#ff5d73]/10'} p-4 space-y-2">
+    <p class="text-sm font-extrabold text-white">${good ? L.right : L.wrong}${good ? '' : ` <span class="text-neutral-300 font-semibold">${L.correct}: ${'ABCD'[g.ans]}</span>`}</p>
+    ${g.explain ? `<p class="text-xs text-neutral-300 leading-relaxed">${esc(g.explain)}</p>` : ''}
+    <button class="btn-accent px-6 py-2.5 text-xs" onclick="tqNext()">${last ? L.result : L.next}</button></div>`;
+  renderMath($('tq-fb'));
+};
+window.tqNext = function () { TQ.i++; TQ.locked = false; tqRender(); };
+
+function tqSummary() {
+  const L = tl(), box = $('tq-quiz'), total = TQ.qs.length - TQ.base, pct = Math.round(TQ.score / Math.max(1, total) * 100);
+  const msg = pct >= 90 ? L.great : pct >= 70 ? L.good : pct >= 50 ? L.ok : L.low;
+  if (!TQ.retry && TQ.score > 0 && typeof addXP === 'function') addXP(Math.min(100, TQ.score * 5), 'teacher');
+  box.innerHTML = `<div class="tile p-5 space-y-4 quiz-slide-enter text-center">
+    <p class="mono">${L.res}</p><p class="display text-5xl font-bold" style="color:var(--accent)">${TQ.score} <span class="text-neutral-500 text-2xl">${L.of} ${total}</span></p>
+    <div class="tq-bar"><i style="width:${pct}%"></i></div><p class="text-sm text-neutral-300">${msg}</p>
+    ${TQ.wrong.length ? `<details class="text-left rounded-2xl border border-white/10 p-3"><summary class="mono cursor-pointer">${L.mistakes} · ${TQ.wrong.length}</summary><div class="space-y-3 mt-3">${TQ.wrong.map(g => `<div class="text-xs"><p class="font-bold text-white">${esc(g.q)}</p><p style="color:#37d67a" class="mt-1">✔ ${esc(g.opts[g.ans])}</p>${g.explain ? `<p class="text-neutral-400 mt-1">${esc(g.explain)}</p>` : ''}</div>`).join('')}</div></details>` : ''}
+    <div class="flex flex-col sm:flex-row gap-2 justify-center">
+      ${TQ.wrong.length ? `<button class="btn-ghost px-5 py-3 text-xs" onclick="tqRetry()">${L.retry}</button>` : ''}
+      <button id="tq-more" class="btn-accent px-5 py-3 text-xs" onclick="tqMore()">${L.more} · ${L.cost}</button></div>
+    <p id="tq-more-err" class="text-xs min-h-[1rem]" style="color:#ff6b6b"></p></div>`;
+  renderMath(box);
+}
+window.tqRetry = function () {
+  TQ.qs = TQ.qs.concat(TQ.wrong.map(g => ({ ...g }))); TQ.base = TQ.qs.length - TQ.wrong.length; TQ.i = TQ.base; TQ.wrong = []; TQ.score = 0; TQ.retry = true; TQ.locked = false; tqRender();
+};
+window.tqMore = async function () {
+  if (!TQ || TQ.busy) return; const L = tl(), b = $('tq-more'), err = $('tq-more-err'); TQ.busy = true; const o = b.textContent; b.disabled = true; b.textContent = '…'; err.textContent = '';
+  const fd = new FormData(); fd.append('topic', TQ.topic); fd.append('comment', TQ.comment); fd.append('doc_id', TQ.docId); fd.append('lang', selectedLang); fd.append('asked', JSON.stringify(TQ.asked));
+  let res = null, data = {}; try { res = await fetch('/api/ai-teacher/more', { method: 'POST', body: fd }); data = await res.json().catch(() => ({})); } catch (e) {}
+  TQ.busy = false; b.disabled = false; b.textContent = o;
+  if (!res || !res.ok) { err.textContent = (data && (data.error || data.detail)) || L.moreErr; return; }
+  setTokens(data.tokens_left);
+  const qs = (data.questions || []).map(normQ).filter(g => g.q && g.opts.length === 4 && g.ans >= 0);
+  if (!qs.length) { err.textContent = L.none; return; }
+  TQ.base = TQ.qs.length; TQ.qs = TQ.qs.concat(qs); TQ.asked = TQ.asked.concat(qs.map(x => x.q)); TQ.i = TQ.base; TQ.score = 0; TQ.wrong = []; TQ.retry = false; TQ.locked = false; tqRender();
+};
+
+// ============================================================================================
+//                                 ПЛАНЕР, РАСПИСАНИЕ, TELEGRAM
+// ============================================================================================
+const SC = {
+  ru: { title: 'Моё расписание', lessons: 'занятий', hint: 'Загрузите расписание (фото, PDF, Word, Excel) или вставьте текст — ИИ разложит занятия по дням. Планер будет ставить задачи только в свободное время, а в Telegram каждое утро придёт сводка: уроки и задачи на сегодня.',
+    upload: 'Загрузить расписание', paste: 'или вставьте текст расписания, например: Пн 8:30 Математика, 9:25 Физика…', parse: 'Разобрать с ИИ · 1 токен', need: 'Загрузите файл или вставьте текст', reading: '⏳ ИИ читает расписание…', ocr: '🔎 Распознаю текст на фото…',
+    check: 'Проверьте расписание и сохраните. Лишнее можно удалить крестиком.', save: 'Сохранить', cancel: 'Отмена', replace: 'Заменить', clear: 'Очистить', clearQ: 'Удалить расписание?', saved: '✓ Сохранено', files: 'Выбрано',
+    notify: 'Присылать в Telegram утреннюю сводку: уроки и задачи на сегодня', at: 'Время', tz: 'Часовой пояс', test: 'Прислать пример сейчас', sent: '✓ Отправлено в Telegram', empty: 'На сегодня нет уроков и задач — сводка не отправлена.',
+    nohint: 'Сообщения приходят автоматически. Если нет занятий и задач на день — сводка не отправляется.', notg: 'Telegram не привязан — войдите через бота.', days: ['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Вс'],
+    aiPh: 'Например: подготовь меня к экзамену по физике за 5 дней по 1,5 часа', msg: 'ИИ запланировал:', addAll: 'Добавить выбранные', noTasks: 'ИИ не вернул задач — переформулируйте запрос', min: 'мин' },
+  kz: { title: 'Менің кестем', lessons: 'сабақ', hint: 'Кестені (фото, PDF, Word, Excel) жүктеңіз немесе мәтінді қойыңыз — ЖИ сабақтарды күндерге бөледі. Жоспарлаушы тапсырмаларды тек бос уақытқа қояды, ал Telegram-ға күн сайын таңертең бүгінгі сабақтар мен тапсырмалар жиынтығы келеді.',
+    upload: 'Кестені жүктеу', paste: 'немесе кесте мәтінін қойыңыз, мысалы: Дс 8:30 Математика, 9:25 Физика…', parse: 'ЖИ-мен талдау · 1 токен', need: 'Файл жүктеңіз немесе мәтін қойыңыз', reading: '⏳ ЖИ кестені оқып жатыр…', ocr: '🔎 Фотодағы мәтінді танып жатырмын…',
+    check: 'Кестені тексеріп, сақтаңыз. Артығын крестикпен өшіруге болады.', save: 'Сақтау', cancel: 'Бас тарту', replace: 'Ауыстыру', clear: 'Тазалау', clearQ: 'Кестені өшіру керек пе?', saved: '✓ Сақталды', files: 'Таңдалды',
+    notify: 'Telegram-ға таңертеңгі жиынтық жіберу: бүгінгі сабақтар мен тапсырмалар', at: 'Уақыты', tz: 'Белдеу', test: 'Мысалды қазір жіберу', sent: '✓ Telegram-ға жіберілді', empty: 'Бүгін сабақ та, тапсырма да жоқ — жиынтық жіберілмеді.',
+    nohint: 'Хабарламалар автоматты түрде келеді. Күнде сабақ пен тапсырма болмаса, жиынтық жіберілмейді.', notg: 'Telegram байланыспаған — бот арқылы кіріңіз.', days: ['Дс', 'Сс', 'Ср', 'Бс', 'Жм', 'Сб', 'Жс'],
+    aiPh: 'Мысалы: физикадан емтиханға 5 күнде күніне 1,5 сағаттан дайында', msg: 'ЖИ жоспарлады:', addAll: 'Таңдағандарды қосу', noTasks: 'ЖИ тапсырма қайтармады — сұранысты өзгертіңіз', min: 'мин' },
+  en: { title: 'My schedule', lessons: 'classes', hint: 'Upload your timetable (photo, PDF, Word, Excel) or paste the text — the AI sorts classes by day. The planner will only schedule tasks in free time, and every morning Telegram sends a digest: today’s classes and tasks.',
+    upload: 'Upload timetable', paste: 'or paste the timetable text, e.g.: Mon 8:30 Math, 9:25 Physics…', parse: 'Parse with AI · 1 token', need: 'Upload a file or paste text', reading: '⏳ The AI is reading your timetable…', ocr: '🔎 Reading text from the photo…',
+    check: 'Check the timetable and save it. Remove extras with the ✕.', save: 'Save', cancel: 'Cancel', replace: 'Replace', clear: 'Clear', clearQ: 'Delete the timetable?', saved: '✓ Saved', files: 'Selected',
+    notify: 'Send a morning digest to Telegram: today’s classes and tasks', at: 'Time', tz: 'Time zone', test: 'Send an example now', sent: '✓ Sent to Telegram', empty: 'No classes or tasks today — nothing was sent.',
+    nohint: 'Messages arrive automatically. If there are no classes and tasks for the day, no digest is sent.', notg: 'Telegram is not linked — log in via the bot.', days: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'],
+    aiPh: 'E.g. prepare me for the physics exam in 5 days, 1.5 hours a day', msg: 'The AI planned:', addAll: 'Add selected', noTasks: 'The AI returned no tasks — rephrase your request', min: 'min' }
+};
+const sc = () => SC[LG()];
+const SCH = { items: null, settings: null, preview: null, replacing: false, files: [] };
+
+async function schLoad() {
+  if (!currentUser) return; const r = await api('/api/schedule'); if (!r.ok) return;
+  SCH.items = r.data.items || []; SCH.settings = r.data.settings || {}; schRender();
+}
+function dayList(items, del) {
+  const L = sc();
+  return [1, 2, 3, 4, 5, 6, 7].map(d => { const it = items.map((x, i) => ({ ...x, i })).filter(x => x.weekday === d); if (!it.length) return '';
+    return `<div class="sch-day"><b>${L.days[d - 1]}</b><div class="min-w-0">${it.map(x => `<span class="sch-chip">${esc(x.start)}${x.end ? '–' + esc(x.end) : ''} <b class="text-white">${esc(x.title)}</b>${x.room ? ` <em>${esc(x.room)}</em>` : ''}${del ? `<button onclick="schDel(${x.i})" aria-label="remove">✕</button>` : ''}</span>`).join('')}</div></div>`; }).join('');
+}
+function tzOptions(cur) { let h = ''; for (let z = -12; z <= 14; z++) h += `<option value="${z}" ${z === cur ? 'selected' : ''}>UTC${z >= 0 ? '+' : ''}${z}${z === 5 ? ' · Астана' : ''}</option>`; return h; }
+function schRender() {
+  const box = $('sched-panel'); if (!box) return; const L = sc(), items = SCH.items, st = SCH.settings || {};
+  if (items === null) { box.innerHTML = `<h4 class="mono">📚 ${L.title}</h4><p class="text-xs text-neutral-500">…</p>`; return; }
+  let body = '';
+  if (SCH.preview) {
+    body = `<p class="text-xs text-neutral-300">${L.check}</p><div class="rounded-2xl border border-white/10 p-3">${dayList(SCH.preview, true) || '—'}</div>
+      <div class="flex gap-2"><button class="btn-accent flex-1 py-3 text-xs" onclick="schSave()">${L.save}</button><button class="btn-ghost px-5 py-3 text-xs" onclick="schCancel()">${L.cancel}</button></div>`;
+  } else if (!items.length || SCH.replacing) {
+    body = `<p class="text-xs text-neutral-400 leading-relaxed">${L.hint}</p>
+      <div class="flex flex-col sm:flex-row gap-2"><button class="btn-accent px-5 py-3 text-xs" onclick="document.getElementById('sch-file').click()">📎 ${L.upload}</button><input type="file" id="sch-file" hidden multiple accept="image/*,.pdf,.docx,.xlsx,.txt" onchange="schPick(this)">${SCH.replacing ? `<button class="btn-ghost px-5 py-3 text-xs" onclick="schCancel()">${L.cancel}</button>` : ''}</div>
+      <p id="sch-files" class="text-[11px] text-neutral-400"></p>
+      <textarea id="sch-text" rows="3" class="field" placeholder="${L.paste}"></textarea>
+      <button class="btn-ghost w-full py-3 text-xs" onclick="schParse()">${L.parse}</button><p id="sch-status" class="text-xs min-h-[1rem]"></p>`;
+  } else {
+    body = `<div class="rounded-2xl border border-white/10 p-3">${dayList(items, false)}</div>
+      <div class="flex gap-2"><button class="btn-ghost px-4 py-2 text-[11px]" onclick="schReplace()">${L.replace}</button><button class="btn-ghost px-4 py-2 text-[11px]" style="color:#ff6b6b" onclick="schClear()">${L.clear}</button></div>`;
+  }
+  const hh = String(st.hour ?? 7).padStart(2, '0'), mm = String(st.minute ?? 30).padStart(2, '0');
+  const notify = `<div class="rounded-2xl border border-white/10 p-3 space-y-3">
+    <label class="flex items-start gap-2 text-xs font-bold text-white cursor-pointer"><input type="checkbox" id="nf-on" class="mt-0.5" style="accent-color:#c8ff2e" ${st.enabled !== false ? 'checked' : ''} onchange="nfSave()"><span>📨 ${L.notify}</span></label>
+    <div class="flex flex-wrap items-center gap-2"><span class="mono">${L.at}</span><input type="time" id="nf-time" value="${hh}:${mm}" class="field" style="width:7.5rem;color-scheme:dark" onchange="nfSave()">
+      <select id="nf-tz" class="field" style="width:11rem;padding:.8rem .6rem" onchange="nfSave()">${tzOptions(st.tz ?? 5)}</select>
+      <button class="btn-ghost px-4 py-2.5 text-[11px]" onclick="nfTest()">${L.test}</button></div>
+    <p id="nf-msg" class="text-[11px] min-h-[1rem]" style="color:var(--accent)"></p>
+    <p class="text-[11px] text-neutral-500">${st.has_telegram === false ? L.notg : L.nohint}</p></div>`;
+  box.innerHTML = `<div class="flex items-center justify-between gap-2"><h4 class="mono">📚 ${L.title}</h4>${items.length ? `<span class="mono" style="color:var(--accent)">${items.length} ${L.lessons}</span>` : ''}</div>${body}${notify}`;
+}
+function schStatus(t, bad) { const e = $('sch-status'); if (e) { e.textContent = t; e.style.color = bad ? '#ff6b6b' : 'var(--accent)'; } }
+window.schPick = inp => { SCH.files = [...inp.files]; const e = $('sch-files'); if (e) e.textContent = SCH.files.length ? `📎 ${sc().files}: ` + SCH.files.map(f => f.name).join(', ') : ''; };
+window.schReplace = () => { SCH.replacing = true; SCH.files = []; schRender(); };
+window.schCancel = () => { SCH.preview = null; SCH.replacing = false; SCH.files = []; schRender(); };
+window.schDel = i => { SCH.preview.splice(i, 1); schRender(); };
+window.schClear = async () => { if (!confirm(sc().clearQ)) return; const r = await api('/api/schedule', 'PUT', { items: [] }); if (r.ok) { SCH.items = []; schRender(); } };
+window.schSave = async () => { const r = await api('/api/schedule', 'PUT', { items: SCH.preview }); if (!r.ok) return alert((r.data && r.data.error) || 'Error'); SCH.items = r.data.items; SCH.preview = null; SCH.replacing = false; schRender(); await nfSave(); };
+window.schParse = async function () {
+  if (!currentUser) return checkAuth(); const L = sc(), text = ($('sch-text').value || '').trim(), files = SCH.files;
+  if (!text && !files.length) return schStatus(L.need, true);
+  const doc = files.find(f => !/^image\//.test(f.type)), rawImgs = files.filter(f => /^image\//.test(f.type)).slice(0, 4);
+  schStatus(L.reading);
+  const imgs = []; for (const f of rawImgs) { try { imgs.push(await window.prepImage(f)); } catch (e) {} }
+  const build = (t, im, d) => { const fd = new FormData(); fd.append('text', t); fd.append('lang', selectedLang); if (d) fd.append('file', d); im.forEach((b, i) => fd.append('images', b, 'sch' + i + '.jpg')); return fd; };
+  let res = null; try { res = await fetch('/api/schedule/parse', { method: 'POST', body: build(text, imgs, doc) }); } catch (e) {}
+  if (res && res.status === 501 && imgs.length) {                       // сервер без модели для фото → читаем текст в браузере
+    schStatus(L.ocr); let j = {}; try { j = await res.clone().json(); } catch (e) {}
+    if (j.code === 'no_vision') { let ocr = ''; try { ocr = await window.ocrImages(imgs); } catch (e) {}
+      if (!ocr.trim() && !text && !doc) return schStatus('OCR: ' + ({ ru: 'текст на фото не найден', kz: 'фотодан мәтін табылмады', en: 'no text found in the photo' })[LG()], true);
+      schStatus(L.reading); try { res = await fetch('/api/schedule/parse', { method: 'POST', body: build((text + '\n' + ocr).trim(), [], doc) }); } catch (e) { res = null; } }
+  }
+  if (!res) return schStatus('Network error', true);
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) return schStatus(data.error || data.detail || 'Error', true);
+  setTokens(data.tokens_left); SCH.preview = data.items; schRender();
+};
+async function nfSave() {
+  const on = $('nf-on'); if (!on) return; const [h, m] = ($('nf-time').value || '07:30').split(':').map(Number);
+  const body = { enabled: on.checked, hour: h || 0, minute: m || 0, tz: +$('nf-tz').value, lang: selectedLang };
+  const r = await api('/api/settings/notify', 'PUT', body); const e = $('nf-msg');
+  if (r.ok) { Object.assign(SCH.settings, { enabled: body.enabled, hour: body.hour, minute: body.minute, tz: body.tz }); if (e) { e.style.color = 'var(--accent)'; e.textContent = sc().saved; } }
+  else if (e) { e.style.color = '#ff6b6b'; e.textContent = (r.data && r.data.error) || 'Error'; }
+}
+window.nfSave = nfSave;
+window.nfTest = async function () {
+  await nfSave(); const e = $('nf-msg'), L = sc(); const r = await api('/api/digest/test', 'POST', {}); if (!e) return;
+  if (!r.ok) { e.style.color = '#ff6b6b'; e.textContent = (r.data && r.data.error) || 'Error'; return; }
+  e.style.color = 'var(--accent)'; e.textContent = r.data.sent ? L.sent : L.empty;
+};
+
+// --- ИИ-планер: запрос выполняется буквально, с учётом расписания и свободного времени ---
+window.askAIPlanner = async function () {
+  if (!currentUser) return checkAuth(); const L = sc(), q = ($('ai-planner-query').value || '').trim(); if (q.length < 2) return;
+  const box = $('ai-planner-response'), btn = $('ai-planner-btn'); box.classList.remove('hidden'); btn.disabled = true;
+  box.innerHTML = `<div class="text-xs font-bold text-[#c8ff2e] animate-pulse">${translations[selectedLang].plannerLoading}</div>`;
+  const r = await api('/api/planner/ask', 'POST', { query: q, lang: selectedLang }); btn.disabled = false;
+  if (!r.ok) { box.innerHTML = errorBox((r.data && (r.data.error || r.data.detail)) || 'Error'); return; }
+  setTokens(r.data.tokens_left); pendingAiTasks = r.data.tasks || [];
+  if (!pendingAiTasks.length) { box.innerHTML = errorBox(L.noTasks); return; }
+  box.innerHTML = `<div class="space-y-2">${r.data.message ? `<p class="text-xs text-neutral-300">✨ ${esc(r.data.message)}</p>` : `<p class="mono">${L.msg}</p>`}
+    <div class="space-y-2 max-h-80 overflow-y-auto pr-1">${pendingAiTasks.map((x, i) => `<label class="flex items-start gap-3 p-3 rounded-2xl bg-[#0d0d0d] border border-white/10 cursor-pointer">
+      <input type="checkbox" checked data-i="${i}" class="mt-1 accent-[#c8ff2e]"><span class="min-w-0"><span class="block text-xs font-bold text-white">${esc(x.title)}</span>
+      ${x.desc ? `<span class="block text-[11px] text-neutral-400">${esc(x.desc)}</span>` : ''}<span class="mono" style="color:var(--accent)">${esc(x.date)}${x.start ? ' · ⏰ ' + esc(x.start) + (x.minutes ? ' · ' + x.minutes + ' ' + L.min : '') : ''}</span></span></label>`).join('')}</div>
+    <button onclick="applyAiTasks()" class="btn-accent w-full py-3 text-xs">${L.addAll}</button></div>`;
+};
+window.applyAiTasks = async function () {
+  const picked = []; document.querySelectorAll('#ai-planner-response input[type=checkbox]:checked').forEach(b => { const x = pendingAiTasks[+b.dataset.i]; if (x) picked.push({ title: x.title, date: x.date, desc: x.desc, start: x.start || null, minutes: x.minutes || null }); });
+  pendingAiTasks = []; if (!picked.length) return openPlannerView();
+  const r = await api('/api/tasks', 'POST', { tasks: picked }); if (r.ok) studentTasks = studentTasks.concat(r.data.tasks); else alert((r.data && r.data.error) || 'Error');
+  openPlannerView();
+};
+
+// --- планер: без повторной анимации и скачков при каждом действии, панель расписания ---
+const _op7 = window.openPlannerView;
+window.openPlannerView = function () {
+  const again = window.currentActiveView === 'planner', y = window.scrollY;
+  _op7(); slideDirection = '';
+  const root = $('result-container').firstElementChild; if (again && root) root.classList.remove('quiz-slide-enter');
+  const q = $('ai-planner-query'); if (!q) return; const ban = q.closest('.banner');
+  q.placeholder = sc().aiPh;
+  if (!$('sched-panel')) ban.insertAdjacentHTML('beforebegin', '<div id="sched-panel" class="banner space-y-4"></div>');
+  schRender(); if (SCH.items === null) schLoad();
+  if (again) window.scrollTo(0, y);
+};
+const _cl7 = window.changeLanguage; window.changeLanguage = function () { _cl7(); if ($('sched-panel')) schRender(); };
 })();
 </script>
 </body>
