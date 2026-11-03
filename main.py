@@ -9,6 +9,7 @@ import random
 import re
 import base64
 import functools
+import math
 import secrets
 import threading
 import time
@@ -689,31 +690,6 @@ def chat_stream(message: str = Form(""), doc_id: str = Form("default"), lang: st
 
     return StreamingResponse(gen(), media_type="text/event-stream",
                              headers={"Cache-Control": "no-cache, no-transform", "X-Accel-Buffering": "no", "Connection": "keep-alive"})
-
-
-@app.post("/api/ai-teacher")
-def ai_teacher(topic: str = Form(...), comment: str = Form(""), doc_id: str = Form("default"),
-               lang: str = Form("kz"), user: dict = Depends(current_user)):
-    topic = topic.strip()[:200]
-    ctx = (get_doc_text(doc_id, user) or "")[:MAX_DOC_CHARS]
-    prompt = (
-        f"Ты — опытный учитель. Объясни тему «{topic}» простым и понятным языком (6–10 предложений, с примером). "
-        f"Пожелания студента: {comment[:500] or 'нет'}. " + lang_line(lang) + "\n"
-        + (f"Опирайся на материал студента:\n{ctx}\n" if ctx else "")
-        + 'Верни ТОЛЬКО JSON такого вида: {"explanation":"...","video_query":"поисковый запрос для YouTube",'
-          '"game_questions":[{"q":"вопрос","options":["A) ...","B) ...","C) ...","D) ..."],"answer":"A"}]}. '
-          "Ровно 5 вопросов для закрепления, answer — буква правильного варианта."
-    )
-
-    def run():
-        data = parse_json(ask_ai(prompt, json_mode=True))
-        if not isinstance(data, dict) or not data.get("explanation"):
-            raise HTTPException(502, "ИИ вернул неверный формат. Попробуйте ещё раз.")
-        return data
-
-    data, left = paid(user, run)
-    save_generation(user["id"], "teacher", topic, json.dumps(data, ensure_ascii=False), doc_id)
-    return {"result": data, "tokens_left": left}
 
 
 @app.post("/api/tickets")
@@ -1790,10 +1766,12 @@ class TaskIn(BaseModel):
     title: str = Field(min_length=1, max_length=120)
     date: Optional[str] = None
     desc: str = Field(default="", max_length=300)
+    start: Optional[str] = None
+    minutes: Optional[int] = Field(default=None, ge=5, le=480)
 
 
 class TasksIn(BaseModel):
-    tasks: list[TaskIn] = Field(min_length=1, max_length=10)
+    tasks: list[TaskIn] = Field(min_length=1, max_length=40)
 
 
 class TaskPatch(BaseModel):
@@ -1811,7 +1789,7 @@ def safe_date(s: Optional[str]) -> str:
 
 def task_out(r: dict) -> dict:
     return {"id": r["id"], "title": r["title"], "desc": r.get("description") or "",
-            "date": r["due_date"], "done": r["done"]}
+            "date": r["due_date"], "done": r["done"], "start": r.get("start_time"), "minutes": r.get("minutes")}
 
 
 @app.get("/api/tasks")
@@ -1822,10 +1800,14 @@ def tasks_list(user: dict = Depends(current_user)):
 
 @app.post("/api/tasks")
 def tasks_create(body: TasksIn, user: dict = Depends(current_user)):
-    rows = sb.table("tasks").insert([
-        {"user_id": user["id"], "title": t.title.strip(), "description": t.desc.strip(),
-         "due_date": safe_date(t.date)} for t in body.tasks
-    ]).execute().data
+    base = [{"user_id": user["id"], "title": t.title.strip(), "description": t.desc.strip(), "due_date": safe_date(t.date)} for t in body.tasks]
+    full = [{**b, "start_time": _hm_norm(t.start), "minutes": t.minutes if _hm_norm(t.start) else None} for b, t in zip(base, body.tasks)]
+    try:
+        rows = sb.table("tasks").insert(full).execute().data
+    except Exception as e:                      # колонок start_time/minutes ещё нет (migration_v5.sql не выполнена) — сохраняем без времени
+        if "start_time" not in str(e) and "minutes" not in str(e) and "PGRST204" not in str(e):
+            raise
+        rows = sb.table("tasks").insert(base).execute().data
     return {"tasks": [task_out(r) for r in rows]}
 
 
@@ -2389,6 +2371,568 @@ def group_split(gid: int, body: SplitIn, user: dict = Depends(current_user)):
         raise HTTPException(502, "ИИ не смог составить задачи. Токен возвращён.")
     sb.table("group_tasks").insert(rows).execute()
     return {"added": len(rows), "tokens_left": left}
+
+
+# ==================== РАСПИСАНИЕ, ПЛАНЕР С УЧЁТОМ ВРЕМЕНИ, СВОДКА В TELEGRAM ====================
+DAY_START_MIN, DAY_END_MIN = 8 * 60, 22 * 60            # учебный день: 08:00–22:00
+WD_SHORT = {"ru": ["Пн", "Вт", "Ср", "Чт", "Пт", "Сб", "Вс"], "kz": ["Дс", "Сс", "Ср", "Бс", "Жм", "Сб", "Жс"],
+            "en": ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"]}
+MONTHS_G = {"ru": ["января", "февраля", "марта", "апреля", "мая", "июня", "июля", "августа", "сентября", "октября", "ноября", "декабря"],
+            "kz": ["қаңтар", "ақпан", "наурыз", "сәуір", "мамыр", "маусым", "шілде", "тамыз", "қыркүйек", "қазан", "қараша", "желтоқсан"],
+            "en": ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"]}
+WD_WORDS = {  # для разбора названий дней из расписания
+    1: ("пн", "пон", "mon", "дс", "дүй"), 2: ("вт", "втор", "tue", "сс", "сей"), 3: ("ср", "сред", "wed", "ср", "сәр"),
+    4: ("чт", "четв", "thu", "бс", "бей"), 5: ("пт", "пят", "fri", "жм", "жұм"), 6: ("сб", "суб", "sat", "сн", "сен"), 7: ("вс", "воскр", "sun", "жс", "жек")}
+
+
+def _lang(v: str) -> str:
+    return v if v in ("ru", "kz", "en") else "ru"
+
+
+def _hm_norm(s) -> Optional[str]:
+    m = re.fullmatch(r"\s*(\d{1,2})[:.](\d{2})\s*", str(s or ""))
+    if not m:
+        return None
+    h, mi = int(m.group(1)), int(m.group(2))
+    return f"{h:02d}:{mi:02d}" if h < 24 and mi < 60 else None
+
+
+def _mins(hm: str) -> int:
+    h, m = hm.split(":")
+    return int(h) * 60 + int(m)
+
+
+def _hm(minutes: int) -> str:
+    minutes = max(0, min(24 * 60 - 1, int(minutes)))
+    return f"{minutes // 60:02d}:{minutes % 60:02d}"
+
+
+def user_now(user: dict) -> datetime:
+    tz = user.get("tz_offset")
+    tz = 5 if tz is None else max(-12, min(14, int(tz)))
+    return datetime.now(timezone.utc) + timedelta(hours=tz)
+
+
+def _weekday_of(v) -> Optional[int]:
+    if isinstance(v, (int, float)) or (isinstance(v, str) and v.strip().isdigit()):
+        n = int(v)
+        return n if 1 <= n <= 7 else None
+    s = str(v or "").strip().lower()
+    for n, words in WD_WORDS.items():
+        if any(s.startswith(w) for w in words):
+            return n
+    return None
+
+
+def _clean_sched(items) -> list[dict]:
+    out, seen = [], set()
+    for it in items or []:
+        if not isinstance(it, dict):
+            continue
+        wd = _weekday_of(it.get("weekday") or it.get("day"))
+        st = _hm_norm(it.get("start") or it.get("start_time"))
+        title = _str(it.get("title") or it.get("subject"), 80)
+        if not (wd and st and title):
+            continue
+        en = _hm_norm(it.get("end") or it.get("end_time")) or ""
+        if en and _mins(en) <= _mins(st):
+            en = ""
+        key = (wd, st, title.lower())
+        if key in seen:
+            continue
+        seen.add(key)
+        out.append({"weekday": wd, "start": st, "end": en, "title": title, "room": _str(it.get("room"), 30)})
+    out.sort(key=lambda x: (x["weekday"], x["start"]))
+    return out[:100]
+
+
+def _sched_out(r: dict) -> dict:
+    return {"weekday": r["weekday"], "start": r["start_time"], "end": r.get("end_time") or "", "title": r["title"], "room": r.get("room") or ""}
+
+
+def _load_sched(uid: str) -> list[dict]:
+    try:
+        rows = sb.table("schedule_items").select("*").eq("user_id", uid).order("weekday").order("start_time").limit(200).execute().data or []
+    except Exception:
+        log.warning("schedule table unavailable")
+        return []
+    return [_sched_out(r) for r in rows]
+
+
+def _busy(sched: list[dict], tasks: list[dict], d: date, extra: Optional[list] = None) -> list[tuple[int, int]]:
+    """Занятые интервалы дня в минутах: уроки (+10 мин на дорогу) и уже запланированные задачи."""
+    out = []
+    for it in sched:
+        if it["weekday"] == d.isoweekday():
+            a = _mins(it["start"])
+            b = _mins(it["end"]) if it.get("end") else a + 45
+            out.append((max(0, a - 10), b + 10))
+    for t in tasks:
+        if t.get("due_date") == d.isoformat() and t.get("start_time") and not t.get("done"):
+            a = _mins(t["start_time"])
+            out.append((a, a + int(t.get("minutes") or 45) + 10))
+    out += extra or []
+    return sorted(out)
+
+
+def _free(busy: list, lo: int = DAY_START_MIN, hi: int = DAY_END_MIN, min_len: int = 30) -> list[tuple[int, int]]:
+    cur, res = lo, []
+    for a, b in busy:
+        if a > cur and min(a, hi) - cur >= min_len:
+            res.append((cur, min(a, hi)))
+        cur = max(cur, b)
+    if hi - cur >= min_len:
+        res.append((cur, hi))
+    return res
+
+
+def _place(busy: list, start: Optional[int], minutes: int, lo: int) -> Optional[int]:
+    """Ставит задачу в свободное время: сначала туда, куда просит ИИ, иначе в первое подходящее окно."""
+    def ok(s: int) -> bool:
+        return s >= lo and s + minutes <= DAY_END_MIN and all(s + minutes <= a or s >= b for a, b in busy)
+    if start is not None and ok(start):
+        return start
+    for c in sorted({lo, *[b for _, b in busy]}):
+        c = (c + 4) // 5 * 5
+        if ok(c):
+            return c
+    return None
+
+
+class PlanIn(BaseModel):
+    query: str = Field(min_length=2, max_length=600)
+    lang: str = "ru"
+
+
+@app.post("/api/planner/ask")
+def planner_ask(body: PlanIn, user: dict = Depends(current_user)):
+    """ИИ-планер: понимает запрос, видит расписание и занятые окна, ставит задачи в свободное время. 1 токен."""
+    rate_limit(f"plan:{user['id']}", 20, 600)
+    lang = _lang(body.lang)
+    now = user_now(user)
+    today = now.date()
+    sched = _load_sched(user["id"])
+    try:
+        tasks = sb.table("tasks").select("title,due_date,done,start_time,minutes").eq("user_id", user["id"]) \
+            .gte("due_date", today.isoformat()).order("due_date").limit(120).execute().data or []
+    except Exception:
+        tasks = sb.table("tasks").select("title,due_date,done").eq("user_id", user["id"]).gte("due_date", today.isoformat()).limit(120).execute().data or []
+    lines = []
+    for i in range(14):
+        d = today + timedelta(days=i)
+        lo = DAY_START_MIN if i else min(DAY_END_MIN, max(DAY_START_MIN, (now.hour * 60 + now.minute + 20 + 4) // 5 * 5))
+        busy = _busy(sched, tasks, d)
+        free = ", ".join(f"{_hm(a)}–{_hm(b)}" for a, b in _free(busy, lo)) or "нет свободного времени"
+        lessons = "; ".join(f"{it['start']}–{it['end'] or '…'} {it['title']}" for it in sched if it["weekday"] == d.isoweekday()) or "занятий нет"
+        lines.append(f"{d.isoformat()} ({WD_SHORT['ru'][d.weekday()]}): занятия: {lessons}. СВОБОДНО: {free}")
+    existing = "\n".join(f"- {t['due_date']} {t.get('start_time') or ''} {t['title']}" for t in tasks if not t.get("done"))[:1500] or "ничего"
+    prompt = (
+        f"Ты — личный планировщик студента. Сегодня {today.isoformat()} ({WD_SHORT['ru'][today.weekday()]}), сейчас {now.strftime('%H:%M')}.\n"
+        f"ЗАПРОС СТУДЕНТА (выполни ровно его): «{body.query.strip()}»\n\n"
+        "ПРАВИЛА:\n"
+        "1. Следуй запросу буквально. Если указаны число дней, предмет, объём, дедлайн, длительность или время — соблюдай их. "
+        "Одна просьба — одна задача; «план на N дней» — распредели по дням начиная с сегодня (если сегодня уже поздно — с завтра). "
+        "Не добавляй общих советов и лишних задач.\n"
+        "2. Ставь задачи ТОЛЬКО в свободные окна из списка ниже. start — HH:MM внутри окна, minutes — от 20 до 120 (кратно 5). "
+        "Не больше 4 часов учёбы в день, между задачами — перерыв от 10 минут. Не нарушай дедлайны из запроса.\n"
+        "3. title — конкретное действие до 70 символов («Решить 10 задач по пределам», а не «Учёба»). desc — одно короткое предложение: что именно сделать.\n"
+        "4. Максимум 20 задач. Не дублируй уже запланированное.\n\n"
+        f"ЗАНЯТОСТЬ И СВОБОДНОЕ ВРЕМЯ НА 14 ДНЕЙ (расписание повторяется каждую неделю):\n" + "\n".join(lines) + "\n\n"
+        f"УЖЕ ЗАПЛАНИРОВАНО:\n{existing}\n\n"
+        'Верни ТОЛЬКО JSON: {"message":"одно короткое предложение студенту — что именно ты запланировал","tasks":[{"title":"...","date":"YYYY-MM-DD","start":"HH:MM","minutes":45,"desc":"..."}]}. '
+        + lang_line(lang)
+    )
+
+    def run():
+        data = parse_json(ask_ai(prompt, json_mode=True, max_tokens=2600, temperature=0.4, timeout=75.0))
+        items = data.get("tasks") if isinstance(data, dict) else None
+        if not isinstance(items, list) or not items:
+            raise HTTPException(502, "ИИ не смог составить задачи по запросу. Токен возвращён — переформулируйте запрос.")
+        return data
+
+    data, left = paid(user, run)
+    placed, extra = [], defaultdict(list)
+    for it in data["tasks"][:20]:
+        if not isinstance(it, dict) or not _str(it.get("title"), 80):
+            continue
+        try:
+            d = date.fromisoformat(str(it.get("date"))[:10])
+        except ValueError:
+            d = today
+        d = min(max(d, today), today + timedelta(days=90))
+        minutes = max(20, min(180, int(it.get("minutes") or 45) // 5 * 5)) if str(it.get("minutes") or "45").isdigit() or isinstance(it.get("minutes"), (int, float)) else 45
+        lo = DAY_START_MIN if d > today else min(DAY_END_MIN, max(DAY_START_MIN, (now.hour * 60 + now.minute + 20 + 4) // 5 * 5))
+        st = _hm_norm(it.get("start"))
+        busy = _busy(sched, tasks, d, extra[d.isoformat()])
+        s = _place(busy, _mins(st) if st else None, minutes, lo)
+        if s is not None:
+            extra[d.isoformat()].append((s, s + minutes + 10))
+        placed.append({"title": _str(it.get("title"), 80), "date": d.isoformat(), "start": _hm(s) if s is not None else None,
+                       "minutes": minutes if s is not None else None, "desc": _str(it.get("desc"), 200)})
+    if not placed:
+        refund_token(user["id"])
+        raise HTTPException(502, "ИИ не смог составить задачи по запросу. Токен возвращён.")
+    placed.sort(key=lambda x: (x["date"], x["start"] or "99:99"))
+    return {"message": _str(data.get("message"), 240), "tasks": placed, "tokens_left": left}
+
+
+# ---------- расписание ----------
+class SchedItem(BaseModel):
+    weekday: int = Field(ge=1, le=7)
+    start: str
+    end: str = ""
+    title: str = Field(min_length=1, max_length=80)
+    room: str = Field(default="", max_length=30)
+
+
+class SchedIn(BaseModel):
+    items: list[SchedItem] = Field(max_length=100)
+
+
+class NotifyIn(BaseModel):
+    enabled: bool = True
+    hour: int = Field(default=7, ge=0, le=23)
+    minute: int = Field(default=30, ge=0, le=59)
+    tz: int = Field(default=5, ge=-12, le=14)
+    lang: str = "ru"
+
+
+def _settings_out(u: dict) -> dict:
+    return {"enabled": u.get("notify_enabled", True) is not False, "hour": u.get("notify_hour", 7) if u.get("notify_hour") is not None else 7,
+            "minute": u.get("notify_minute", 30) if u.get("notify_minute") is not None else 30,
+            "tz": u.get("tz_offset", 5) if u.get("tz_offset") is not None else 5, "has_telegram": bool(u.get("telegram_id"))}
+
+
+@app.get("/api/schedule")
+def schedule_get(user: dict = Depends(current_user)):
+    return {"items": _load_sched(user["id"]), "settings": _settings_out(user)}
+
+
+@app.put("/api/schedule")
+def schedule_put(body: SchedIn, user: dict = Depends(current_user)):
+    items = _clean_sched([i.model_dump() for i in body.items])
+    sb.table("schedule_items").delete().eq("user_id", user["id"]).execute()
+    if items:
+        sb.table("schedule_items").insert([{"user_id": user["id"], "weekday": i["weekday"], "start_time": i["start"], "end_time": i["end"],
+                                            "title": i["title"], "room": i["room"]} for i in items]).execute()
+    return {"items": items}
+
+
+@app.put("/api/settings/notify")
+def notify_put(body: NotifyIn, user: dict = Depends(current_user)):
+    sb.table("profiles").update({"notify_enabled": body.enabled, "notify_hour": body.hour, "notify_minute": body.minute,
+                                 "tz_offset": body.tz, "lang": _lang(body.lang)}).eq("id", user["id"]).execute()
+    return {"ok": True}
+
+
+def _vision_complete(prompt: str, imgs: list[str]) -> str:
+    content = [{"type": "text", "text": prompt}] + [{"type": "image_url", "image_url": {"url": u}} for u in imgs]
+    try:
+        r = httpx.post(f"{VISION_BASE_URL}/chat/completions", headers={"Authorization": f"Bearer {VISION_API_KEY}"},
+                       json={"model": VISION_MODEL, "messages": [{"role": "user", "content": content}], "max_tokens": 4000, "temperature": 0.1},
+                       timeout=httpx.Timeout(90.0, connect=10.0))
+        r.raise_for_status()
+        return r.json()["choices"][0]["message"]["content"]
+    except Exception:
+        log.exception("vision failed")
+        raise HTTPException(502, "Не удалось прочитать фото. Токен возвращён — попробуйте более чёткое фото.")
+
+
+@app.post("/api/schedule/parse")
+def schedule_parse(text: str = Form(""), lang: str = Form("ru"), file: Optional[UploadFile] = File(None),
+                   images: list[UploadFile] = File(default=[]), user: dict = Depends(current_user)):
+    """ИИ превращает расписание (фото, PDF, Word, Excel, текст) в список занятий недели. 1 токен. Сохраняет клиент после проверки."""
+    rate_limit(f"schparse:{user['id']}", 8, 600)
+    src = text.strip()
+    if file is not None and file.filename:
+        src += "\n" + read_upload(file)
+    imgs = _read_images(images)
+    if imgs and not VISION_API_KEY:
+        return JSONResponse({"error": "Распознавание фото на сервере не настроено.", "code": "no_vision"}, status_code=501)
+    if not src.strip() and not imgs:
+        raise HTTPException(400, "Загрузите файл или вставьте текст расписания.")
+    prompt = (
+        "Ты разбираешь расписание занятий студента или школьника. Извлеки ВСЕ занятия недели.\n"
+        'Верни ТОЛЬКО JSON: {"items":[{"weekday":1,"start":"08:30","end":"09:15","title":"Математика","room":"305"}]}\n'
+        "weekday: 1=понедельник … 7=воскресенье. Время в 24-часовом формате HH:MM. Если время окончания не указано — оставь end пустым. "
+        "title — короткое название предмета, room — кабинет/аудитория или пустая строка. Если есть чётная/нечётная неделя — бери первую. "
+        "Ничего не выдумывай: чего нет в расписании — пропускай. Если указаны номера уроков без времени — используй стандартные звонки (1-й урок 08:30, по 45 минут + перемена 10 минут).\n"
+        + lang_line(_lang(lang)) + "\n\nРАСПИСАНИЕ:\n" + (src[:12000] or "(см. фото)")
+    )
+
+    def run():
+        raw = _vision_complete(prompt, imgs) if imgs else ask_ai(prompt, json_mode=True, max_tokens=4000, temperature=0.1, timeout=90.0)
+        data = parse_json(raw)
+        items = _clean_sched(data.get("items") if isinstance(data, dict) else data)
+        if not items:
+            raise HTTPException(502, "Не удалось найти занятия в расписании. Токен возвращён — проверьте файл или вставьте текст.")
+        return items
+
+    items, left = paid(user, run)
+    return {"items": items, "tokens_left": left}
+
+
+# ---------- ежедневная сводка в Telegram ----------
+DIGEST_T = {
+    "ru": {"hi": "☀️ Доброе утро, {name}! Сегодня {date}.", "lessons": "📚 Уроки сегодня:", "tasks": "✅ Задачи на сегодня:", "over": "⏳ Просрочено задач: {n} — загляните в планер.",
+           "window": "💡 Лучшее окно для подготовки: {a}–{b}.", "bye": "Удачного дня! Отключить эти сообщения можно в планере на сайте.", "mins": "мин"},
+    "kz": {"hi": "☀️ Қайырлы таң, {name}! Бүгін {date}.", "lessons": "📚 Бүгінгі сабақтар:", "tasks": "✅ Бүгінгі тапсырмалар:", "over": "⏳ Мерзімі өткен тапсырмалар: {n} — жоспарлаушыны ашыңыз.",
+           "window": "💡 Дайындалуға ең ыңғайлы уақыт: {a}–{b}.", "bye": "Сәтті күн! Бұл хабарламаларды сайттағы жоспарлаушыдан өшіруге болады.", "mins": "мин"},
+    "en": {"hi": "☀️ Good morning, {name}! Today is {date}.", "lessons": "📚 Today’s classes:", "tasks": "✅ Today’s tasks:", "over": "⏳ Overdue tasks: {n} — open the planner.",
+           "window": "💡 Best window to study: {a}–{b}.", "bye": "Have a great day! You can turn these messages off in the planner on the site.", "mins": "min"},
+}
+
+
+def build_digest(u: dict, sched: list[dict], tasks: list[dict], today: date, now_min: int) -> Optional[str]:
+    lang = _lang(u.get("lang") or "ru")
+    T = DIGEST_T[lang]
+    lessons = [it for it in sched if it["weekday"] == today.isoweekday()]
+    todays = [t for t in tasks if t.get("due_date") == today.isoformat() and not t.get("done")]
+    overdue = [t for t in tasks if (t.get("due_date") or "9") < today.isoformat() and not t.get("done")]
+    if not lessons and not todays:
+        return None
+    nice = f"{WD_SHORT[lang][today.weekday()]}, {today.day} {MONTHS_G[lang][today.month - 1]}"
+    name = (u.get("display_name") or u.get("username") or "").split(" ")[0] or "друг"
+    parts = [T["hi"].format(name=name, date=nice)]
+    if lessons:
+        parts.append(T["lessons"] + "\n" + "\n".join(
+            f"• {it['start']}{'–' + it['end'] if it.get('end') else ''} — {it['title']}" + (f" ({it['room']})" if it.get("room") else "") for it in lessons))
+    if todays:
+        todays.sort(key=lambda t: t.get("start_time") or "99:99")
+        parts.append(T["tasks"] + "\n" + "\n".join(
+            "• " + (f"{t['start_time']} · " if t.get("start_time") else "") + t["title"] + (f" ({t['minutes']} {T['mins']})" if t.get("minutes") else "") for t in todays))
+    if overdue:
+        parts.append(T["over"].format(n=len(overdue)))
+    free = [w for w in _free(_busy(sched, tasks, today), max(DAY_START_MIN, now_min)) if w[1] - w[0] >= 60]
+    if free:
+        a, b = max(free, key=lambda w: w[1] - w[0])
+        parts.append(T["window"].format(a=_hm(a), b=_hm(b)))
+    parts.append(T["bye"])
+    return "\n\n".join(parts)[:3900]
+
+
+def _tasks_for_digest(uid: str) -> list[dict]:
+    try:
+        return sb.table("tasks").select("title,due_date,done,start_time,minutes").eq("user_id", uid).eq("done", False).limit(300).execute().data or []
+    except Exception:
+        return sb.table("tasks").select("title,due_date,done").eq("user_id", uid).eq("done", False).limit(300).execute().data or []
+
+
+def _send_digest(u: dict, force: bool = False) -> bool:
+    now = user_now(u)
+    text = build_digest(u, _load_sched(u["id"]), _tasks_for_digest(u["id"]), now.date(), now.hour * 60 + now.minute)
+    return bool(text) and bool(u.get("telegram_id")) and tg_send(u["telegram_id"], text)
+
+
+@app.post("/api/digest/test")
+def digest_test(user: dict = Depends(current_user)):
+    """Отправить сводку на сегодня прямо сейчас (проверка настроек)."""
+    if not user.get("telegram_id"):
+        raise HTTPException(400, "Telegram не привязан.")
+    rate_limit(f"digest:{user['id']}", 5, 600)
+    now = user_now(user)
+    text = build_digest(user, _load_sched(user["id"]), _tasks_for_digest(user["id"]), now.date(), now.hour * 60 + now.minute)
+    if not text:
+        return {"sent": False, "reason": "empty"}
+    if not tg_send(user["telegram_id"], text):
+        raise HTTPException(502, "Не удалось отправить сообщение в Telegram. Откройте бота и нажмите /start.")
+    return {"sent": True}
+
+
+def _digest_tick() -> None:
+    rows = (sb.table("profiles").select("id,telegram_id,display_name,username,tz_offset,notify_hour,notify_minute,last_digest_on,lang")
+            .eq("notify_enabled", True).not_.is_("telegram_id", "null").limit(5000).execute().data or [])
+    for u in rows:
+        try:
+            now = user_now(u)
+            due = (u.get("notify_hour") if u.get("notify_hour") is not None else 7) * 60 + (u.get("notify_minute") if u.get("notify_minute") is not None else 30)
+            passed = now.hour * 60 + now.minute - due
+            ld = now.date().isoformat()
+            if passed < 0 or u.get("last_digest_on") == ld:
+                continue
+            q = sb.table("profiles").update({"last_digest_on": ld}).eq("id", u["id"])           # «захватываем» отправку: защита от дублей при нескольких воркерах
+            q = q.is_("last_digest_on", "null") if u.get("last_digest_on") is None else q.eq("last_digest_on", u["last_digest_on"])
+            if not q.execute().data:
+                continue
+            if passed <= 180:                                                                      # если сервер был выключен — устаревшую утреннюю сводку не шлём
+                _send_digest(u)
+        except Exception:
+            log.exception("digest for %s failed", u.get("id"))
+
+
+def _digest_loop() -> None:
+    time.sleep(15)
+    while True:
+        try:
+            _digest_tick()
+            time.sleep(60)
+        except Exception as e:
+            log.warning("digest tick failed (%s) — проверьте, что выполнена migration_v5.sql", type(e).__name__)
+            time.sleep(300)
+
+
+@app.on_event("startup")
+def _start_background() -> None:
+    if os.getenv("DISABLE_DIGEST") == "1":
+        return
+    threading.Thread(target=_digest_loop, daemon=True, name="digest").start()
+
+
+# ==================== ИИ-УЧИТЕЛЬ: объяснение → видео → 10 вопросов (+10 за 5 токенов) ====================
+YOUTUBE_API_KEY = os.getenv("YOUTUBE_API_KEY", "")
+_VIDEO_CACHE: "OrderedDict[str, Optional[dict]]" = OrderedDict()
+_TEACH_POOL = ThreadPoolExecutor(max_workers=8)
+MORE_QUESTIONS_COST = 5
+
+
+def _iso_seconds(d: str) -> int:
+    m = re.fullmatch(r"PT(?:(\d+)H)?(?:(\d+)M)?(?:(\d+)S)?", d or "")
+    return (int(m.group(1) or 0) * 3600 + int(m.group(2) or 0) * 60 + int(m.group(3) or 0)) if m else 0
+
+
+def find_video(query: str, lang: str) -> Optional[dict]:
+    """Лучшее обучающее видео по запросу (нужен YOUTUBE_API_KEY): встраиваемое, 3–25 минут, выше — с большим числом просмотров и лайков."""
+    if not YOUTUBE_API_KEY or not query:
+        return None
+    key = f"{lang}|{query.lower()}"
+    if key in _VIDEO_CACHE:
+        return _VIDEO_CACHE[key]
+    best = None
+    try:
+        rl = {"ru": "ru", "kz": "kk", "en": "en"}[_lang(lang)]
+        r = httpx.get("https://www.googleapis.com/youtube/v3/search", timeout=10.0, params={
+            "part": "snippet", "q": query, "type": "video", "maxResults": 10, "videoEmbeddable": "true", "videoSyndicated": "true",
+            "safeSearch": "strict", "relevanceLanguage": rl, "key": YOUTUBE_API_KEY})
+        ids = [i["id"]["videoId"] for i in r.json().get("items", []) if i.get("id", {}).get("videoId")]
+        if ids:
+            r2 = httpx.get("https://www.googleapis.com/youtube/v3/videos", timeout=10.0, params={
+                "part": "statistics,contentDetails,snippet", "id": ",".join(ids), "key": YOUTUBE_API_KEY})
+            top = -1e9
+            for v in r2.json().get("items", []):
+                st, secs = v.get("statistics", {}), _iso_seconds(v.get("contentDetails", {}).get("duration", ""))
+                views, likes = int(st.get("viewCount", 0) or 0), int(st.get("likeCount", 0) or 0)
+                score = math.log10(views + 10) + 40 * min(likes / max(views, 1), 0.08) - (3 if secs < 180 or secs > 1500 else 0)
+                if score > top:
+                    top, best = score, {"id": v["id"], "title": _str(v["snippet"].get("title"), 140), "channel": _str(v["snippet"].get("channelTitle"), 80),
+                                        "minutes": max(1, round(secs / 60))}
+    except Exception:
+        log.warning("youtube search failed")
+        return None                       # не кэшируем неудачу
+    _VIDEO_CACHE[key] = best
+    while len(_VIDEO_CACHE) > 200:
+        _VIDEO_CACHE.popitem(last=False)
+    return best
+
+
+def _teacher_explain(topic: str, comment: str, ctx: str, lang: str) -> dict:
+    prompt = (
+        f"Ты — лучший преподаватель: объясняешь так, что тема «щёлкает» с первого раза и читать интересно. Тема: «{topic}». "
+        f"Пожелания студента: {comment or 'нет'}. " + lang_line(lang) + "\n"
+        + (f"Опирайся на материал студента:\n{ctx}\n" if ctx else "")
+        + "Напиши объяснение в Markdown, чтобы его было легко и приятно читать. Строго такая структура (заголовки с эмодзи):\n"
+          "### 🎯 Суть в одной фразе — 1–2 предложения.\n"
+          "### 🧩 Простыми словами — яркая аналогия из жизни, которая сразу даёт понимание. Начни с интересного факта или вопроса, который цепляет.\n"
+          "### 📚 Разбор по шагам — 3–6 пунктов нумерованным списком: идея + короткое пояснение. Термины выделяй **жирным**.\n"
+          "### 🔢 Пример — один конкретный пример с разбором по шагам (для нематематических тем — реальный кейс, ситуация или кусочек кода).\n"
+          "### ⚠️ Частые ошибки — 2–3 пункта, где обычно ошибаются.\n"
+          "### ✅ Запомнить — 3–5 коротких тезисов.\n"
+          "Короткие абзацы, живой дружелюбный тон, 250–450 слов, без лишних вступлений. Формулы: короткие в $...$, отдельные в $$...$$ на своей строке.\n"
+          "Также придумай video_query — точный запрос для YouTube, чтобы найти лучшее обучающее видео именно по этой теме (на языке ответа, добавь слово «объяснение» или «explained», без кавычек).\n"
+          'Верни ТОЛЬКО JSON: {"explanation":"...Markdown...","video_query":"..."}'
+    )
+    for _ in range(2):
+        data = parse_json(ask_ai(prompt, json_mode=True, max_tokens=3500, temperature=0.6, timeout=100.0))
+        if isinstance(data, dict) and len(str(data.get("explanation") or "")) > 150:
+            return {"explanation": str(data["explanation"]).strip(), "video_query": _str(data.get("video_query"), 120)}
+    raise HTTPException(502, "ИИ вернул неверный формат. Попробуйте ещё раз — токены вернутся.")
+
+
+def _clean_questions(items) -> list[dict]:
+    out, seen = [], set()
+    for it in items or []:
+        if not isinstance(it, dict):
+            continue
+        q = _str(it.get("q") or it.get("question"), 400)
+        opts_raw = it.get("options") or it.get("choices")
+        if not q or not isinstance(opts_raw, list) or q.lower() in seen:
+            continue
+        opts = [re.sub(r"^\s*[A-Da-d][\).:]\s+", "", _str(o, 220)) for o in opts_raw][:4]
+        if len(opts) != 4 or not all(opts) or len({o.lower() for o in opts}) != 4:
+            continue
+        ans = str(it.get("answer") if it.get("answer") is not None else it.get("correct", "")).strip()
+        idx = "ABCD".find(ans[:1].upper()) if re.match(r"^[A-Da-d]([\).:\s]|$)", ans) else next((i for i, o in enumerate(opts) if o.lower() == re.sub(r"^\s*[A-Da-d][\).:]\s+", "", ans).lower()), -1)
+        if idx < 0:
+            continue
+        correct = opts[idx]
+        random.shuffle(opts)                         # модели любят ставить правильный ответ на B/C — перемешиваем сами
+        seen.add(q.lower())
+        lvl = str(it.get("level", "medium")).lower()
+        out.append({"q": q, "options": [f"{'ABCD'[i]}) {o}" for i, o in enumerate(opts)], "answer": "ABCD"[opts.index(correct)],
+                    "explain": _str(it.get("explain") or it.get("explanation"), 500), "level": lvl if lvl in ("easy", "medium", "hard") else "medium"})
+    return out[:10]
+
+
+def _gen_questions(topic: str, comment: str, ctx: str, lang: str, asked: Optional[list] = None) -> list[dict]:
+    avoid = ("\nНЕ повторяй и не перефразируй уже заданные вопросы:\n" + "\n".join(f"- {a}" for a in (asked or [])[-40:])) if asked else ""
+    prompt = (
+        f"Составь ровно 10 хороших тестовых вопросов по теме «{topic}», чтобы по-настоящему проверить понимание, а не память. Пожелания: {comment or 'нет'}. "
+        + lang_line(lang) + "\n"
+        + (f"Опирайся на материал студента:\n{ctx}\n" if ctx else "")
+        + "Сложность: 3 лёгких (термины, суть), 4 средних (применение, небольшие расчёты или ситуации), 3 сложных (анализ, ловушки, сравнение). "
+          "У каждого вопроса 4 варианта и ровно один правильный; неправильные варианты правдоподобны (типичные ошибки), без «все вышеперечисленные» и «ничего из этого». "
+          "Вопросы разные по смыслу, формулировки короткие и однозначные. В explain — 1–2 предложения: почему верный ответ верен и в чём ловушка (не упоминай буквы вариантов). "
+          "Формулы пиши в $...$." + avoid + "\n"
+          'Верни ТОЛЬКО JSON: {"questions":[{"q":"...","options":["...","...","...","..."],"answer":"B","explain":"...","level":"easy"}]}. '
+          "В options пиши только текст вариантов без букв; answer — буква правильного варианта (A–D)."
+    )
+    best: list[dict] = []
+    for attempt in range(2):
+        data = parse_json(ask_ai(prompt, json_mode=True, max_tokens=5000, temperature=0.7 if attempt == 0 else 0.5, timeout=110.0))
+        qs = _clean_questions(data.get("questions") if isinstance(data, dict) else data)
+        if len(qs) > len(best):
+            best = qs
+        if len(best) >= 9:
+            break
+    if len(best) < 6:
+        raise HTTPException(502, "ИИ вернул неполный набор вопросов. Попробуйте ещё раз — токены вернутся.")
+    return best
+
+
+@app.post("/api/ai-teacher")
+def ai_teacher(topic: str = Form(...), comment: str = Form(""), doc_id: str = Form("default"),
+               lang: str = Form("kz"), user: dict = Depends(current_user)):
+    topic, comment, lang = topic.strip()[:200], comment.strip()[:500], _lang(lang)
+    if len(topic) < 2:
+        raise HTTPException(400, "Введите тему.")
+    ctx = (get_doc_text(doc_id, user) or "")[:MAX_DOC_CHARS]
+
+    def run():
+        f_expl = _TEACH_POOL.submit(_teacher_explain, topic, comment, ctx, lang)      # объяснение и вопросы пишутся параллельно — быстрее
+        f_qs = _TEACH_POOL.submit(_gen_questions, topic, comment, ctx, lang, None)
+        expl, qs = f_expl.result(), f_qs.result()
+        query = expl["video_query"] or f"{topic} {'объяснение' if lang != 'en' else 'explained'}"
+        return {"explanation": expl["explanation"], "video_query": query, "video": find_video(query, lang), "game_questions": qs}
+
+    data, left = paid(user, run)
+    save_generation(user["id"], "teacher", topic, json.dumps(data, ensure_ascii=False), doc_id)
+    return {"result": data, "tokens_left": left}
+
+
+@app.post("/api/ai-teacher/more")
+def ai_teacher_more(topic: str = Form(...), comment: str = Form(""), doc_id: str = Form("default"), lang: str = Form("kz"),
+                    asked: str = Form(""), user: dict = Depends(current_user)):
+    """Ещё 10 вопросов по теме за 5 токенов (уже заданные не повторяются)."""
+    have = int(user.get("tokens", 0))
+    if have < MORE_QUESTIONS_COST:
+        raise HTTPException(402, f"Для ещё 10 вопросов нужно {MORE_QUESTIONS_COST} токенов, у вас {have}. Токены обновляются каждый день, а Premium снимает лимиты.")
+    topic, comment, lang = topic.strip()[:200], comment.strip()[:500], _lang(lang)
+    try:
+        prev = [_str(a, 200) for a in json.loads(asked)][:80] if asked else []
+    except Exception:
+        prev = []
+    ctx = (get_doc_text(doc_id, user) or "")[:MAX_DOC_CHARS]
+    qs, left, _ = paid_n(user, MORE_QUESTIONS_COST, lambda: _gen_questions(topic, comment, ctx, lang, prev))
+    return {"questions": qs, "tokens_left": left}
 
 
 if __name__ == "__main__":
