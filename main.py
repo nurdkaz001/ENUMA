@@ -28,6 +28,8 @@ from fastapi.responses import HTMLResponse, JSONResponse, Response, StreamingRes
 from pydantic import BaseModel, Field
 import openpyxl
 from docx import Document
+from docx.table import Table
+from docx.text.paragraph import Paragraph
 from pypdf import PdfReader
 from starlette.exceptions import HTTPException as StarletteHTTPException
 from supabase import Client, create_client
@@ -51,7 +53,7 @@ TELEGRAM_WEBHOOK_SECRET = os.getenv("TELEGRAM_WEBHOOK_SECRET", "")
 DAILY_TOKENS = int(os.getenv("DAILY_TOKENS", "3"))
 PRO_TOKENS = int(os.getenv("PRO_TOKENS", "50"))          # токенов в день по подписке
 ADMIN_IDS = {int(x) for x in re.split(r"[,\s]+", os.getenv("ADMIN_TELEGRAM_IDS", "")) if x.isdigit()}
-MAX_DOC_CHARS = int(os.getenv("MAX_DOC_CHARS", "30000"))   # сколько текста отдаём модели
+MAX_DOC_CHARS = int(os.getenv("MAX_DOC_CHARS", "70000"))   # сколько текста отдаём модели (DeepSeek держит 64K+ токенов контекста)
 MAX_STORE_CHARS = 200_000                                  # сколько текста PDF храним
 MAX_UPLOAD_BYTES = 15 * 1024 * 1024
 JWT_DAYS = 30
@@ -322,34 +324,42 @@ def telegram_reminder(task_title: str = Form(...), task_date: str = Form(""), us
 
 
 # ==================== ПОМОЩНИКИ ====================
-def ask_ai(prompt: str, json_mode: bool = False, max_tokens: int = 4000, temperature: float = 0.7, timeout: float = 90.0) -> str:
-    """DeepSeek (OpenAI-совместимый API). В json_mode модель обязана вернуть JSON-ОБЪЕКТ."""
-    payload = {
-        "model": DEEPSEEK_MODEL,
-        "messages": [{"role": "user", "content": prompt}],
-        "max_tokens": max_tokens,
-        "temperature": temperature,
-    }
+def _deepseek(messages: list, json_mode: bool, max_tokens: int, temperature: float, timeout: float) -> tuple[str, str]:
+    payload = {"model": DEEPSEEK_MODEL, "messages": messages, "max_tokens": max_tokens, "temperature": temperature}
     if json_mode:
         payload["response_format"] = {"type": "json_object"}
     try:
-        r = httpx.post(
-            f"{DEEPSEEK_BASE_URL}/chat/completions",
-            headers={"Authorization": f"Bearer {DEEPSEEK_API_KEY}"},
-            json=payload, timeout=httpx.Timeout(timeout, connect=10.0),
-        )
+        r = httpx.post(f"{DEEPSEEK_BASE_URL}/chat/completions", headers={"Authorization": f"Bearer {DEEPSEEK_API_KEY}"},
+                       json=payload, timeout=httpx.Timeout(timeout, connect=10.0))
         if r.status_code == 402:
             log.error("DeepSeek: недостаточно средств на балансе")
             raise HTTPException(502, "ИИ временно недоступен (проверьте баланс DeepSeek).")
         r.raise_for_status()
-        text = (r.json()["choices"][0]["message"]["content"] or "").strip()
+        ch = r.json()["choices"][0]
+        return (ch["message"]["content"] or "").strip(), ch.get("finish_reason") or ""
     except HTTPException:
         raise
     except Exception:
         log.exception("deepseek failed")
         raise HTTPException(502, "ИИ сейчас недоступен, попробуйте ещё раз.")
+
+
+def ask_ai(prompt: str, json_mode: bool = False, max_tokens: int = 4000, temperature: float = 0.7, timeout: float = 90.0) -> str:
+    """DeepSeek (OpenAI-совместимый API). В json_mode модель обязана вернуть JSON-ОБЪЕКТ.
+    Если текстовый ответ оборвался на лимите токенов — просим продолжить (до 2 раз), чтобы не терять конец."""
+    msgs = [{"role": "user", "content": prompt}]
+    text, finish = _deepseek(msgs, json_mode, max_tokens, temperature, timeout)
     if not text:
         raise HTTPException(502, "ИИ вернул пустой ответ.")
+    for _ in range(2):
+        if json_mode or finish != "length":
+            break
+        more, finish = _deepseek(msgs + [{"role": "assistant", "content": text},
+                                         {"role": "user", "content": "Продолжи ровно с того места, где оборвался ответ. Без повторов и вступлений."}],
+                                 False, max_tokens, temperature, timeout)
+        if not more:
+            break
+        text += more if text.endswith((" ", "\n")) or more.startswith((" ", "\n")) else " " + more
     return text
 
 
@@ -416,6 +426,92 @@ def get_doc_text(doc_id: str, user: dict) -> Optional[str]:
     return res[0]["text"] if res else None
 
 
+def fit_context(text: str, limit: int = 0) -> str:
+    """Если материал не помещается в лимит — берём выдержки из ВСЕХ его частей (а не обрезаем хвост), чтобы ИИ видел весь документ."""
+    limit = limit or MAX_DOC_CHARS
+    text = (text or "").strip()
+    if len(text) <= limit:
+        return text
+    parts = 8
+    per = limit // parts - 60
+    step = len(text) / parts
+    out = [f"[Материал большой ({len(text)} символов): ниже выдержки из всех {parts} частей документа по порядку. Охвати их все.]"]
+    for i in range(parts):
+        if i == parts - 1:                                   # из последней части берём КОНЕЦ документа: там обычно выводы
+            chunk = text[-per:]
+            nl = chunk.find("\n")
+            if 0 <= nl < per * 0.3:
+                chunk = chunk[nl + 1:]
+        else:
+            start = int(i * step)
+            chunk = text[start:start + per]
+            cut = chunk.rfind("\n")
+            if cut > per * 0.6:
+                chunk = chunk[:cut]
+        out.append(f"[Часть {i + 1} из {parts}]\n{chunk.strip()}")
+    return "\n\n".join(out)
+
+
+MATERIAL_RULES = (
+    "СТРОГИЕ ПРАВИЛА РАБОТЫ С МАТЕРИАЛОМ (соблюдай все):\n"
+    "1. Изучи материал ПОЛНОСТЬЮ — от первой до последней строки, включая таблицы, формулы, определения, даты и примеры. "
+    "Ничего не пропускай: охвати каждый раздел (маркеры [Страница N] и [Часть N из M] показывают, где ты находишься).\n"
+    "2. Опирайся только на материал. Не выдумывай факты, числа, имена и формулы. Чего в материале нет — не утверждай; "
+    "общеизвестные пояснения допустимы только с пометкой «Дополнение».\n"
+    "3. Числа, имена, даты, термины и формулы переноси точно, без искажений и округлений.\n"
+    "4. Перед ответом мысленно сверь результат с материалом: все ли разделы отражены, нет ли противоречий, неточностей и выдуманных деталей.\n"
+    "5. Пиши грамотно: без орфографических, грамматических и стилистических ошибок, без повторов и заглушек («и т.д.», «...»).\n"
+    "6. Доводи ответ до конца: не обрывай списки и разделы на полуслове.\n"
+)
+QUESTION_RULES = (
+    "ПРАВИЛА ДЛЯ ВОПРОСОВ: равномерно охвати ВЕСЬ материал от начала до конца (не больше двух вопросов на один абзац); "
+    "каждый вопрос проверяем по тексту, ответ однозначен и есть в материале; неверные варианты правдоподобны, но однозначно неверны; "
+    "в вопросах, вариантах и пояснениях — точные числа, термины и формулировки из материала, без ошибок.\n"
+)
+
+
+def _verify_questions(items: list, material: str, lang: str) -> list:
+    """Второй проход: сверяет вопросы с материалом, исправляет неверный ответ и ошибки текста, убирает неоднозначные."""
+    if not material or not items:
+        return items
+    key = "correct" if "correct" in items[0] else "answer"
+    listing = "\n".join(
+        f"{i + 1}. {it.get('q', '')}\n" + "\n".join(str(o) for o in it.get("options", [])) + f"\nУказан верный: {it.get(key, '')}\nПояснение: {it.get('explain', '')}"
+        for i, it in enumerate(items))
+    prompt = (
+        "Ты — строгий эксперт-проверяющий. Ниже МАТЕРИАЛ и тестовые вопросы по нему. Проверь КАЖДЫЙ вопрос:\n"
+        "1) верен ли указанный правильный вариант по материалу (если нет — укажи верную букву);\n"
+        "2) нет ли второго правильного варианта и двусмысленности (если есть — в drop);\n"
+        "3) нет ли орфографических, фактических и смысловых ошибок в вопросе и пояснении (если есть — дай исправленный текст);\n"
+        "4) ответ на вопрос должен находиться в материале; если его там нет — в drop.\n"
+        'Верни ТОЛЬКО JSON: {"fixes":[{"i":1,"correct":"B","q":"исправленный вопрос или пустая строка","explain":"исправленное пояснение или пустая строка"}],"drop":[номера]}. '
+        'Если всё верно — {"fixes":[],"drop":[]}. Не меняй то, что верно. ' + lang_line(lang) + "\n\n"
+        f"МАТЕРИАЛ:\n{fit_context(material, 60000)}\n\nВОПРОСЫ:\n{listing}"
+    )
+    try:
+        d = parse_json(ask_ai(prompt, json_mode=True, max_tokens=3000, temperature=0.1, timeout=100.0))
+    except Exception:
+        log.warning("verify skipped")
+        return items
+    if not isinstance(d, dict):
+        return items
+    for f in d.get("fixes") or []:
+        try:
+            it = items[int(f["i"]) - 1]
+        except (KeyError, ValueError, TypeError, IndexError):
+            continue
+        c = str(f.get("correct") or "").strip().upper()[:1]
+        if c in "ABCD" and c:
+            it[key] = c
+        if str(f.get("q") or "").strip():
+            it["q"] = _str(f["q"], 400)
+        if str(f.get("explain") or "").strip():
+            it["explain"] = _str(f["explain"], 500)
+    drop = {int(x) - 1 for x in (d.get("drop") or []) if str(x).isdigit()}
+    keep = [it for i, it in enumerate(items) if i not in drop]
+    return keep if len(keep) >= max(4, int(len(items) * 0.6)) else items
+
+
 def build_context(doc_id: str, title: str, user: dict) -> str:
     text = get_doc_text(doc_id, user)
     if text is None:
@@ -424,7 +520,7 @@ def build_context(doc_id: str, title: str, user: dict) -> str:
         text = f"Тема для изучения: {title.strip()[:200]}"
     if not text:
         raise HTTPException(400, "Сначала загрузите PDF или введите тему.")
-    return text[:MAX_DOC_CHARS]
+    return fit_context(text)
 
 
 def lang_line(lang: str) -> str:
@@ -470,25 +566,47 @@ def health():
     return {"ok": True}
 
 
-def read_upload(file: UploadFile) -> str:
-    """Достаёт текст из PDF, Word (.docx), Excel (.xlsx) или .txt."""
+def read_upload_ex(file: UploadFile) -> tuple[str, dict]:
+    """Достаёт текст из PDF, Word (.docx), Excel (.xlsx) или .txt. Возвращает текст и сведения о качестве чтения."""
     name = (file.filename or "").lower()
     data = file.file.read(MAX_UPLOAD_BYTES + 1)
     if len(data) > MAX_UPLOAD_BYTES:
         raise HTTPException(413, "Файл больше 15 МБ.")
     parts: list[str] = []
+    meta: dict = {"pages": 0, "empty_pages": 0}
     try:
         if name.endswith(".pdf"):
             reader = PdfReader(io.BytesIO(data))
             if reader.is_encrypted:
                 raise HTTPException(400, "PDF защищён паролем.")
-            parts = list(filter(None, (p.extract_text() for p in reader.pages)))
+            meta["pages"] = len(reader.pages)
+            for i, page in enumerate(reader.pages, 1):
+                try:
+                    t = (page.extract_text() or "").strip()
+                except Exception:
+                    t = ""
+                if t:
+                    parts.append(f"[Страница {i}]\n{t}")
+                else:
+                    meta["empty_pages"] += 1
         elif name.endswith(".docx"):
             d = Document(io.BytesIO(data))
-            parts = [p.text for p in d.paragraphs if p.text.strip()]
-            for t in d.tables:
-                for row in t.rows:
-                    parts.append(" | ".join(c.text.strip() for c in row.cells))
+            for child in d.element.body.iterchildren():             # порядок как в документе: абзацы и таблицы на своих местах
+                tag = child.tag.rsplit("}", 1)[-1]
+                if tag == "p":
+                    para = Paragraph(child, d)
+                    if para.text.strip():
+                        style = (para.style.name if para.style is not None else "") or ""
+                        parts.append(("## " if style.lower().startswith(("heading", "заголовок", "title")) else "") + para.text.strip())
+                elif tag == "tbl":
+                    for row in Table(child, d).rows:
+                        cells = []
+                        for c in row.cells:
+                            tx = c.text.strip().replace("\n", " ")
+                            if tx and (not cells or cells[-1] != tx):         # объединённые ячейки не дублируем
+                                cells.append(tx)
+                        if cells:
+                            parts.append(" | ".join(cells))
         elif name.endswith((".xlsx", ".xlsm")):
             wb = openpyxl.load_workbook(io.BytesIO(data), read_only=True, data_only=True)
             size = 0
@@ -503,7 +621,15 @@ def read_upload(file: UploadFile) -> str:
                 if size > MAX_STORE_CHARS:
                     break
         elif name.endswith(".txt"):
-            parts = [data.decode("utf-8", "ignore")]
+            raw = data
+            for enc in ("utf-8-sig", "cp1251", "utf-8"):
+                try:
+                    parts = [raw.decode(enc)]
+                    break
+                except UnicodeDecodeError:
+                    continue
+            else:
+                parts = [raw.decode("utf-8", "ignore")]
         else:
             raise HTTPException(400, "Поддерживаются PDF, Word (.docx), Excel (.xlsx) и .txt.")
     except HTTPException:
@@ -513,19 +639,31 @@ def read_upload(file: UploadFile) -> str:
         raise HTTPException(400, "Не удалось прочитать файл.")
     text = "\n".join(parts)
     if len(text.strip()) < 30:
-        raise HTTPException(400, "В файле не найден текст (возможно, это скан).")
-    return text
+        raise HTTPException(400, "В файле не найден текст (возможно, это скан). Загрузите PDF с выделяемым текстом или сфотографируйте страницы и отправьте в чат.")
+    return text, meta
+
+
+def read_upload(file: UploadFile) -> str:
+    return read_upload_ex(file)[0]
 
 
 @app.post("/upload")
 def upload_file(file: UploadFile = File(...), user: dict = Depends(current_user)):
-    text = read_upload(file)
+    text, meta = read_upload_ex(file)
     doc_id = secrets.token_hex(8)
     sb.table("documents").insert({
         "id": doc_id, "user_id": user["id"], "filename": (file.filename or "")[:200],
         "text": text[:MAX_STORE_CHARS],
     }).execute()
-    return {"doc_id": doc_id, "message": "Файл успешно прочитан!", "chars": len(text)}
+    warn = []
+    if meta.get("empty_pages"):
+        warn.append(f"на {meta['empty_pages']} из {meta['pages']} страниц нет текста (похоже на сканы) — ИИ их не увидит; сфотографируйте их и отправьте в чат")
+    if len(text) > MAX_STORE_CHARS:
+        warn.append(f"файл очень большой — сохранены первые {MAX_STORE_CHARS} символов")
+    elif len(text) > MAX_DOC_CHARS:
+        warn.append("материал большой: ИИ увидит выдержки из всех его частей")
+    return {"doc_id": doc_id, "message": "Файл успешно прочитан!", "chars": len(text), "pages": meta.get("pages", 0),
+            "warning": "; ".join(warn)}
 
 
 PROMPTS = {
@@ -553,8 +691,8 @@ def generate_content(
     if action not in PROMPTS:
         raise HTTPException(400, "Неизвестный режим.")
     context = build_context(doc_id, title, user)
-    prompt = f"{PROMPTS[action]}\n{lang_line(lang)}\n\nМатериал:\n{context}"
-    result, left = paid(user, lambda: ask_ai(prompt))
+    prompt = f"{PROMPTS[action]}\n{lang_line(lang)}\n{MATERIAL_RULES}\nМатериал:\n{context}"
+    result, left = paid(user, lambda: ask_ai(prompt, max_tokens=6000, temperature=0.3))
     hid = save_generation(user["id"], action, title if title != "Lesson" else "", result, doc_id)
     return {"result": result, "tokens_left": left, "history_id": hid}
 
@@ -577,7 +715,7 @@ def _chat_prompt(message: str, doc_id: str, lang: str, history: str, user: dict)
         "Формулы пиши в LaTeX: короткие — между $...$, отдельные (длинные, предел, дробь, сумма) — между $$...$$ на отдельной строке. Не используй \\[ \\] и \\( \\). " + lang_line(lang) + "\n"
         "ВАЖНО: не выбирай тему за студента и не додумывай её. Если сообщение — приветствие или в нём нет конкретного вопроса/темы, "
         "коротко поздоровайся и спроси, какую тему или задачу он хочет разобрать (1–2 предложения, без списка тем и без лекции).\n\n"
-        + (f"Материал студента:\n{ctx[:MAX_DOC_CHARS]}\n\n" if ctx else "")
+        + (MATERIAL_RULES + f"Материал студента:\n{fit_context(ctx)}\nОтвечай по материалу; если ответа в нём нет — скажи об этом прямо.\n\n" if ctx else "")
         + (f"Предыдущий диалог:\n{dialog}\n\n" if dialog else "")
         + f"Студент: {message}\nНаставник:"
     )
@@ -697,11 +835,11 @@ def tickets(theme: str = Form(...), comment: str = Form(""), count: int = Form(3
             doc_id: str = Form("default"), lang: str = Form("kz"), user: dict = Depends(current_user)):
     theme = theme.strip()[:200]
     count = max(1, min(count, 10))
-    ctx = (get_doc_text(doc_id, user) or "")[:MAX_DOC_CHARS]
+    ctx = fit_context(get_doc_text(doc_id, user) or "")
     prompt = (
         f"Составь {count} экзаменационных билетов по теме «{theme}» в формате игры-викторины. "
         f"Дополнительные требования: {comment[:500] or 'нет'}. " + lang_line(lang) + "\n"
-        + (f"Опирайся на материал студента:\n{ctx}\n" if ctx else "")
+        + (MATERIAL_RULES + QUESTION_RULES + f"Материал студента:\n{ctx}\n" if ctx else "")
         + 'Верни ТОЛЬКО JSON-объект: {"tickets":[{"ticket_num":1,"question":"...","game_task":"короткое игровое задание",'
           '"options":["A) ...","B) ...","C) ..."],"correct":"A"}]}. correct — буква правильного варианта.'
     )
@@ -727,14 +865,15 @@ QUIZ_FMT = (
 )
 
 
-def make_questions(prompt: str, n: int):
+def make_questions(prompt: str, n: int, material: str = "", lang: str = "ru"):
     def run():
-        data = parse_json(ask_ai(prompt, json_mode=True, max_tokens=6000))
+        data = parse_json(ask_ai(prompt, json_mode=True, max_tokens=6000, temperature=0.4 if material else 0.7))
         if isinstance(data, dict):
             data = data.get("questions")
         if not isinstance(data, list) or len(data) < min(n, 4):
             raise HTTPException(502, "ИИ вернул неверный формат. Попробуйте ещё раз.")
-        return data[:n]
+        data = [x for x in data if isinstance(x, dict) and x.get("q") and isinstance(x.get("options"), list)][:n]
+        return _verify_questions(data, material, lang) if material else data
     return run
 
 
@@ -742,8 +881,8 @@ def make_questions(prompt: str, n: int):
 def quiz(doc_id: str = Form("default"), lang: str = Form("kz"), title: str = Form(""),
          user: dict = Depends(current_user)):
     context = build_context(doc_id, title, user)
-    prompt = f"Составь 20 тестовых вопросов по материалу. {QUIZ_FMT}\n{lang_line(lang)}\n\nМатериал:\n{context}"
-    data, left = paid(user, make_questions(prompt, 20))
+    prompt = f"Составь 20 тестовых вопросов по материалу. {QUIZ_FMT}\n{lang_line(lang)}\n{MATERIAL_RULES}{QUESTION_RULES}\nМатериал:\n{context}"
+    data, left = paid(user, make_questions(prompt, 20, context, lang))
     save_generation(user["id"], "quiz", title if title != "Lesson" else "",
                     json.dumps({"questions": data}, ensure_ascii=False), doc_id)
     return {"questions": data, "tokens_left": left}
@@ -789,7 +928,7 @@ def ticket_open(theme: str = Form(""), comment: str = Form(""), num: int = Form(
     """Открывает один билет: 20 точных вопросов с вариантами. Содержимое генерируется только при открытии."""
     num = max(1, min(num, 4))
     theme = theme.strip()[:200]
-    ctx = (get_doc_text(doc_id, user) or "")[:MAX_DOC_CHARS]
+    ctx = fit_context(get_doc_text(doc_id, user) or "")
     given = parse_json(questions) if questions else None
     if isinstance(given, list) and given:
         given = [str(q)[:300] for q in given[:20]]
@@ -803,8 +942,8 @@ def ticket_open(theme: str = Form(""), comment: str = Form(""), num: int = Form(
         task = (f"Составь экзаменационный билет №{num} из 4 по теме «{theme or 'материал'}»: ровно 20 точных вопросов. "
                 f"Четыре билета покрывают РАЗНЫЕ части темы, в этом билете сделай упор на часть №{num} из 4. "
                 f"Пожелания: {comment[:500] or 'нет'}. Вариация: {secrets.token_hex(3)}.")
-    prompt = f"{task}\n{QUIZ_FMT}\n{lang_line(lang)}\n" + (f"Опирайся на материал:\n{ctx}\n" if ctx else "")
-    data, left = paid(user, make_questions(prompt, n))
+    prompt = f"{task}\n{QUIZ_FMT}\n{lang_line(lang)}\n" + (MATERIAL_RULES + QUESTION_RULES + f"Материал:\n{ctx}\n" if ctx else "")
+    data, left = paid(user, make_questions(prompt, n, ctx, lang))
     save_generation(user["id"], "tickets", f"{theme or 'Билет'} · №{num}",
                     json.dumps({"questions": data}, ensure_ascii=False), doc_id)
     return {"questions": data, "tokens_left": left}
@@ -815,7 +954,7 @@ def tickets_custom(file: UploadFile = File(...), user: dict = Depends(current_us
     """Свои вопросы из PDF/Word/Excel: ИИ вытаскивает вопросы, сервер случайно раскладывает их по 4 билетам."""
     text = read_upload(file)
     prompt = ("Из текста выдели все экзаменационные вопросы (не больше 80), без номеров, по одному на строку, "
-              'смысл не меняй. Верни ТОЛЬКО JSON: {"questions":["..."]}.\n\n' + text[:MAX_DOC_CHARS])
+              'смысл не меняй. Верни ТОЛЬКО JSON: {"questions":["..."]}.\n\n' + fit_context(text))
 
     def run():
         data = parse_json(ask_ai(prompt, json_mode=True, max_tokens=4000))
@@ -836,12 +975,12 @@ def tickets_custom(file: UploadFile = File(...), user: dict = Depends(current_us
 def flashcards(doc_id: str = Form("default"), lang: str = Form("kz"), title: str = Form(""),
                user: dict = Depends(current_user)):
     context = build_context(doc_id, title, user)
-    prompt = ("Создай 12 карточек для заучивания ключевых понятий из материала. Вопрос короткий (до 15 слов), "
-              "ответ — 1–3 предложения. " + lang_line(lang) +
+    prompt = ("Создай 12 карточек для заучивания ключевых понятий из материала: равномерно охвати ВЕСЬ материал от начала до конца, "
+              "ничего важного не пропусти. Вопрос короткий (до 15 слов), ответ — 1–3 предложения, точные термины, числа и формулы из материала. " + MATERIAL_RULES + lang_line(lang) +
               ' Верни ТОЛЬКО JSON: {"cards":[{"q":"...","a":"..."}]}.\n\nМатериал:\n' + context)
 
     def run():
-        d = parse_json(ask_ai(prompt, json_mode=True, max_tokens=4000))
+        d = parse_json(ask_ai(prompt, json_mode=True, max_tokens=4000, temperature=0.3))
         cards = d.get("cards") if isinstance(d, dict) else d
         if not isinstance(cards, list) or len(cards) < 3:
             raise HTTPException(502, "ИИ вернул неверный формат. Попробуйте ещё раз.")
@@ -929,14 +1068,22 @@ def humanize(text: str = Form(...), lang: str = Form("ru"), user: dict = Depends
 
 
 # ==================== ПОСТУПЛЕНИЕ ПОСЛЕ 11 КЛАССА ====================
-# Проверенные данные: общий конкурс на грант 2025 (минимальный балл получивших грант) по univision.kz,
-# официальный сайт КБТУ и заявление МНВО. kind: grant — проходной на грант; threshold — порог вуза (реальный проходной обычно выше).
-# Обновляйте раз в год после публикации итогов конкурса грантов.
+# Данные прошлого года (конкурс грантов 2025): минимальный балл получивших грант в общем конкурсе.
+# Официальные итоги публикует НЦТ — grant.testcenter.kz; сводка по вузам и ГОП (источник этих чисел) — univision.kz.
+# kind: grant — проходной на грант; threshold — порог вуза (реальный проходной обычно выше).
+# Обновляйте раз в год после публикации итогов конкурса грантов. Сверено вручную: КБТУ, КазНУ, ЕНУ, КазНПУ, Астана МУ.
 KB_YEAR = 2025
+SOURCES = {"official": "https://grant.testcenter.kz", "official_name": "grant.testcenter.kz (НЦТ)", "summary": "https://univision.kz", "summary_name": "univision.kz"}
+# Итоги основного ЕНТ-2025 (сообщение МНВО РК от 12.07.2025: более 210 тыс. абитуриентов, 381 тыс. попыток)
+ENT_STATS = {"year": 2025, "takers": 210000, "attempts": 381000, "avg": 69, "max": 140, "passed_pct": 76, "passed": 161000, "high130": 598,
+             "source_name": "МНВО РК / НЦТ", "source": "https://www.nur.kz/society/2264556-obyavleny-itogi-osnovnogo-ent-v-kazahstane/"}
 KB = {
     "kbtu_it": ("КБТУ", "Информационные технологии", 110, "grant", "other", True),
-    "kaznu_it": ("КазНУ им. аль-Фараби", "Информационные технологии (порог вуза)", 90, "threshold", "other", True),
-    "satbayev_it": ("Satbayev University", "Информационные технологии (порог вуза)", 85, "threshold", "other", True),
+    "enu_it": ("ЕНУ им. Л.Н. Гумилёва", "Информационные технологии", 110, "grant", "other", True),
+    "kaznu_it": ("КазНУ им. аль-Фараби", "Информационные технологии", 90, "grant", "other", True),
+    "satbayev_it": ("Satbayev University", "Информационные технологии (порог вуза 85; на общий конкурс 2025 — от 75)", 85, "threshold", "other", True),
+    "kaznu_law": ("КазНУ им. аль-Фараби", "Право", 90, "grant", "law", True),
+    "astana_med": ("Медицинский университет Астана", "Общая медицина", 128, "grant", "health", True),
     "narxoz_it": ("Университет Нархоз", "Информационные технологии (порог вуза)", 105, "threshold", "other", False),
     "satbayev_it_rural": ("Satbayev University", "Информационные технологии, сельская квота", 75, "grant", "other", True),
     "astana_med": ("Медицинский университет Астана", "Общая медицина", 128, "grant", "health", True),
@@ -970,7 +1117,7 @@ KB = {
     "kaznu_phys": ("КазНУ им. аль-Фараби", "Физика", 70, "grant", "other", True),
     "kaznu_pol": ("КазНУ им. аль-Фараби", "Политология", 86, "grant", "other", True),
     "kaznu_hist": ("КазНУ им. аль-Фараби", "История", 93, "grant", "other", True),
-    "ped_math": ("Педагогические вузы РК", "Учитель математики (данные МНВО)", 124, "grant", "pedagogy", True),
+    "kaznpu_math": ("КазНПУ им. Абая", "Подготовка учителей математики", 106, "grant", "pedagogy", True),
 }
 KB_PROMPT = "\n".join(f"{k} | {v[0]} | {v[1]} | {v[2]} ({'проходной на грант' if v[3] == 'grant' else 'порог вуза'})" for k, v in KB.items())
 
@@ -991,6 +1138,12 @@ class CareerIn(BaseModel):
     rural: bool = False
     study_lang: str = "kz"
     lang: str = "ru"
+
+
+@app.get("/api/career/info")
+def career_info():
+    """Публичная статистика прошлого года (ЕНТ-2025) и источники данных — для стартового экрана раздела."""
+    return {"year": KB_YEAR, "ent_stats": ENT_STATS, "sources": SOURCES}
 
 
 @app.post("/api/career")
@@ -1057,7 +1210,7 @@ def career(body: CareerIn, user: dict = Depends(current_user)):
     return {
         "profile": d.get("profile") or {}, "professions": (d.get("professions") or [])[:6],
         "options": options, "tips": (d.get("tips") or [])[:6], "note": str(d.get("note", ""))[:400],
-        "year": KB_YEAR, "score": body.score, "tokens_left": left,
+        "year": KB_YEAR, "score": body.score, "tokens_left": left, "sources": SOURCES, "ent_stats": ENT_STATS,
     }
 
 
@@ -2081,9 +2234,27 @@ def _profiles(ids) -> dict:
     return {r["id"]: r for r in rows}
 
 
+_ROLE_CACHE: dict[tuple[int, str], tuple[str, float]] = {}
+
+
+def _forget_role(gid: int, uid: Optional[str] = None) -> None:
+    for k in [k for k in _ROLE_CACHE if k[0] == gid and (uid is None or k[1] == uid)]:
+        _ROLE_CACHE.pop(k, None)
+
+
 def _my_role(gid: int, uid: str) -> Optional[str]:
+    """Роль участника в группе. Положительный ответ кэшируем на 15 секунд — чат и задачи не бьют в БД на каждый запрос."""
+    hit = _ROLE_CACHE.get((gid, uid))
+    if hit and hit[1] > time.time():
+        return hit[0]
     r = sb.table("group_members").select("role").eq("group_id", gid).eq("user_id", uid).limit(1).execute().data
-    return r[0]["role"] if r else None
+    if not r:
+        _ROLE_CACHE.pop((gid, uid), None)
+        return None
+    if len(_ROLE_CACHE) > 5000:
+        _ROLE_CACHE.clear()
+    _ROLE_CACHE[(gid, uid)] = (r[0]["role"], time.time() + 15)
+    return r[0]["role"]
 
 
 def _need_member(gid: int, user: dict) -> str:
@@ -2123,7 +2294,8 @@ def groups_list(user: dict = Depends(current_user)):
     inviters = _profiles([i["invited_by"] for i in inv])
     return {
         "groups": [{"id": g["id"], "name": g["name"], "role": roles.get(g["id"]), "members": counts[g["id"]],
-                    "open": tasks[g["id"]][0], "done": tasks[g["id"]][1]} for g in groups],
+                    "open": tasks[g["id"]][0], "done": tasks[g["id"]][1],
+                    "goal": g.get("goal") or "", "deadline": g.get("deadline")} for g in groups],
         "invites": [{"id": i["id"], "group_id": i["group_id"], "group_name": igroups.get(i["group_id"], "—"),
                      "from": _who(inviters[i["invited_by"]]) if i["invited_by"] in inviters else None,
                      "created_at": i["created_at"]} for i in inv if i["group_id"] in igroups],
@@ -2142,30 +2314,97 @@ def groups_create(body: GroupIn, user: dict = Depends(current_user)):
 
 @app.get("/api/groups/{gid}")
 def group_detail(gid: int, user: dict = Depends(current_user)):
+    """Вся группа за один заход: запросы к БД идут параллельно, профили участников подтягиваются тем же запросом."""
     role = _need_member(gid, user)
-    g = sb.table("groups").select("*").eq("id", gid).limit(1).execute().data
+    f_group = _TEACH_POOL.submit(lambda: sb.table("groups").select("*").eq("id", gid).limit(1).execute().data)
+    f_tasks = _TEACH_POOL.submit(lambda: sb.table("group_tasks").select("*").eq("group_id", gid).order("created_at").limit(MAX_GROUP_TASKS + 5).execute().data or [])
+    f_inv = _TEACH_POOL.submit(lambda: (sb.table("group_invites").select("id,user_id,created_at").eq("group_id", gid).eq("status", "pending").execute().data or []) if role == "owner" else [])
+    try:
+        members = sb.table("group_members").select("user_id,role,joined_at,profiles(username,display_name,score)").eq("group_id", gid).order("joined_at").execute().data or []
+        people = [{"user_id": m["user_id"], "role": m["role"], "username": (m.get("profiles") or {}).get("username"),
+                   "display_name": (m.get("profiles") or {}).get("display_name") or (m.get("profiles") or {}).get("username") or "—",
+                   "score": (m.get("profiles") or {}).get("score") or 0} for m in members]
+    except Exception:                                               # запасной путь без встраивания профилей
+        members = sb.table("group_members").select("user_id,role,joined_at").eq("group_id", gid).order("joined_at").execute().data or []
+        prof = _profiles([m["user_id"] for m in members])
+        people = [{**_who(prof[m["user_id"]]), "role": m["role"], "score": prof[m["user_id"]].get("score") or 0} for m in members if m["user_id"] in prof]
+    g, tasks, invites = f_group.result(), f_tasks.result(), f_inv.result()
     if not g:
         raise HTTPException(404, "Группа не найдена.")
-    members = sb.table("group_members").select("user_id,role,joined_at").eq("group_id", gid).order("joined_at").execute().data or []
-    tasks = sb.table("group_tasks").select("*").eq("group_id", gid).order("created_at").limit(MAX_GROUP_TASKS + 5).execute().data or []
-    invites = []
-    if role == "owner":
-        invites = sb.table("group_invites").select("id,user_id,created_at").eq("group_id", gid).eq("status", "pending").execute().data or []
-    prof = _profiles([m["user_id"] for m in members] + [i["user_id"] for i in invites])
+    iprof = _profiles([i["user_id"] for i in invites]) if invites else {}
     return {
-        "group": {"id": gid, "name": g[0]["name"], "owner_id": g[0]["owner_id"]},
+        "group": {"id": gid, "name": g[0]["name"], "owner_id": g[0]["owner_id"], "goal": g[0].get("goal") or "", "deadline": g[0].get("deadline")},
         "me": {"user_id": user["id"], "role": role},
-        "members": [{**_who(prof[m["user_id"]]), "role": m["role"]} for m in members if m["user_id"] in prof],
+        "members": people,
         "tasks": [{"id": t["id"], "title": t["title"], "description": t.get("description", ""), "assignee_id": t.get("assignee_id"),
                    "due_date": t.get("due_date"), "done": bool(t.get("done"))} for t in tasks],
-        "invites": [{"id": i["id"], "user": _who(prof[i["user_id"]])} for i in invites if i["user_id"] in prof],
+        "invites": [{"id": i["id"], "user": _who(iprof[i["user_id"]])} for i in invites if i["user_id"] in iprof],
     }
+
+
+class GroupPatch(BaseModel):
+    name: Optional[str] = Field(default=None, min_length=2, max_length=60)
+    goal: Optional[str] = Field(default=None, max_length=300)
+    deadline: Optional[str] = None
+    clear_deadline: bool = False
+
+
+@app.patch("/api/groups/{gid}")
+def group_patch(gid: int, body: GroupPatch, user: dict = Depends(current_user)):
+    _need_owner(gid, user)
+    upd: dict = {}
+    if body.name is not None:
+        upd["name"] = body.name.strip()
+    if body.goal is not None:
+        upd["goal"] = body.goal.strip()
+    if body.clear_deadline:
+        upd["deadline"] = None
+    elif body.deadline:
+        upd["deadline"] = _gdate(body.deadline)
+    if upd:
+        sb.table("groups").update(upd).eq("id", gid).execute()
+    return {"ok": True}
+
+
+class MsgIn(BaseModel):
+    text: str = Field(min_length=1, max_length=1000)
+
+
+def _msg_out(m: dict) -> dict:
+    p = m.get("profiles") or {}
+    return {"id": m["id"], "user_id": m["user_id"], "text": m["text"], "at": m["created_at"],
+            "name": p.get("display_name") or p.get("username") or "—", "username": p.get("username")}
+
+
+@app.get("/api/groups/{gid}/messages")
+def group_messages(gid: int, after: int = 0, user: dict = Depends(current_user)):
+    """Чат группы. after=0 — последние 50 сообщений; after=N — только новые (страница опрашивает раз в несколько секунд)."""
+    _need_member(gid, user)
+    q = sb.table("group_messages").select("id,user_id,text,created_at,profiles(username,display_name)").eq("group_id", gid)
+    if after > 0:
+        rows = q.gt("id", after).order("id").limit(100).execute().data or []
+    else:
+        rows = list(reversed(q.order("id", desc=True).limit(50).execute().data or []))
+    return {"messages": [_msg_out(m) for m in rows]}
+
+
+@app.post("/api/groups/{gid}/messages")
+def group_message_send(gid: int, body: MsgIn, user: dict = Depends(current_user)):
+    _need_member(gid, user)
+    rate_limit(f"gmsg:{user['id']}", 40, 60)
+    text = body.text.strip()
+    if not text:
+        raise HTTPException(400, "Пустое сообщение.")
+    m = sb.table("group_messages").insert({"group_id": gid, "user_id": user["id"], "text": text}).execute().data[0]
+    return {"message": {"id": m["id"], "user_id": user["id"], "text": text, "at": m["created_at"],
+                        "name": user.get("display_name") or user.get("username") or "—", "username": user.get("username")}}
 
 
 @app.delete("/api/groups/{gid}")
 def group_delete(gid: int, user: dict = Depends(current_user)):
     _need_owner(gid, user)
     sb.table("groups").delete().eq("id", gid).execute()
+    _forget_role(gid)
     return {"ok": True}
 
 
@@ -2242,6 +2481,7 @@ def invite_accept(iid: int, user: dict = Depends(current_user)):
     if not claimed:
         raise HTTPException(400, "Приглашение уже обработано.")
     sb.table("group_members").upsert({"group_id": inv["group_id"], "user_id": user["id"], "role": "member"}, on_conflict="group_id,user_id").execute()
+    _forget_role(inv["group_id"], user["id"])
     return {"ok": True, "group_id": inv["group_id"]}
 
 
@@ -2260,6 +2500,7 @@ def group_remove_member(gid: int, uid: str, user: dict = Depends(current_user)):
     if _my_role(gid, uid) == "owner":
         raise HTTPException(400, "Владелец не может выйти из группы — удалите группу целиком.")
     sb.table("group_members").delete().eq("group_id", gid).eq("user_id", uid).execute()
+    _forget_role(gid, uid)
     sb.table("group_tasks").update({"assignee_id": None}).eq("group_id", gid).eq("assignee_id", uid).execute()
     return {"ok": True}
 
@@ -2828,7 +3069,7 @@ def _teacher_explain(topic: str, comment: str, ctx: str, lang: str) -> dict:
     prompt = (
         f"Ты — лучший преподаватель: объясняешь так, что тема «щёлкает» с первого раза и читать интересно. Тема: «{topic}». "
         f"Пожелания студента: {comment or 'нет'}. " + lang_line(lang) + "\n"
-        + (f"Опирайся на материал студента:\n{ctx}\n" if ctx else "")
+        + (MATERIAL_RULES + f"Материал студента:\n{ctx}\n" if ctx else "")
         + "Напиши объяснение в Markdown, чтобы его было легко и приятно читать. Строго такая структура (заголовки с эмодзи):\n"
           "### 🎯 Суть в одной фразе — 1–2 предложения.\n"
           "### 🧩 Простыми словами — яркая аналогия из жизни, которая сразу даёт понимание. Начни с интересного факта или вопроса, который цепляет.\n"
@@ -2877,7 +3118,7 @@ def _gen_questions(topic: str, comment: str, ctx: str, lang: str, asked: Optiona
     prompt = (
         f"Составь ровно 10 хороших тестовых вопросов по теме «{topic}», чтобы по-настоящему проверить понимание, а не память. Пожелания: {comment or 'нет'}. "
         + lang_line(lang) + "\n"
-        + (f"Опирайся на материал студента:\n{ctx}\n" if ctx else "")
+        + (MATERIAL_RULES + QUESTION_RULES + f"Материал студента:\n{ctx}\n" if ctx else "")
         + "Сложность: 3 лёгких (термины, суть), 4 средних (применение, небольшие расчёты или ситуации), 3 сложных (анализ, ловушки, сравнение). "
           "У каждого вопроса 4 варианта и ровно один правильный; неправильные варианты правдоподобны (типичные ошибки), без «все вышеперечисленные» и «ничего из этого». "
           "Вопросы разные по смыслу, формулировки короткие и однозначные. В explain — 1–2 предложения: почему верный ответ верен и в чём ловушка (не упоминай буквы вариантов). "
@@ -2889,6 +3130,8 @@ def _gen_questions(topic: str, comment: str, ctx: str, lang: str, asked: Optiona
     for attempt in range(2):
         data = parse_json(ask_ai(prompt, json_mode=True, max_tokens=5000, temperature=0.7 if attempt == 0 else 0.5, timeout=110.0))
         qs = _clean_questions(data.get("questions") if isinstance(data, dict) else data)
+        if ctx and qs:
+            qs = _clean_questions(_verify_questions([dict(x) for x in qs], ctx, lang)) or qs
         if len(qs) > len(best):
             best = qs
         if len(best) >= 9:
@@ -2904,7 +3147,7 @@ def ai_teacher(topic: str = Form(...), comment: str = Form(""), doc_id: str = Fo
     topic, comment, lang = topic.strip()[:200], comment.strip()[:500], _lang(lang)
     if len(topic) < 2:
         raise HTTPException(400, "Введите тему.")
-    ctx = (get_doc_text(doc_id, user) or "")[:MAX_DOC_CHARS]
+    ctx = fit_context(get_doc_text(doc_id, user) or "")
 
     def run():
         f_expl = _TEACH_POOL.submit(_teacher_explain, topic, comment, ctx, lang)      # объяснение и вопросы пишутся параллельно — быстрее
@@ -2930,7 +3173,7 @@ def ai_teacher_more(topic: str = Form(...), comment: str = Form(""), doc_id: str
         prev = [_str(a, 200) for a in json.loads(asked)][:80] if asked else []
     except Exception:
         prev = []
-    ctx = (get_doc_text(doc_id, user) or "")[:MAX_DOC_CHARS]
+    ctx = fit_context(get_doc_text(doc_id, user) or "")
     qs, left, _ = paid_n(user, MORE_QUESTIONS_COST, lambda: _gen_questions(topic, comment, ctx, lang, prev))
     return {"questions": qs, "tokens_left": left}
 
