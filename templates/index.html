@@ -554,6 +554,24 @@ body.no-scroll{overflow:hidden}
 .sch-chip em{font-style:normal;color:#8d8d86}
 .sch-chip button{color:#888;font-size:.7rem;margin-left:.1rem}
 .sch-chip button:hover{color:#ff5d73}
+/* ===== v8: группы 2.0, статистика ЕНТ, демо ===== */
+.g-tabs{display:flex;gap:.4rem;overflow-x:auto;padding-bottom:.2rem}
+.g-tab{flex:none;padding:.55rem 1rem;border:1px solid var(--line);border-radius:999px;font-size:.75rem;font-weight:800;color:#bdbdb6;background:transparent;transition:.15s;white-space:nowrap}
+.g-tab.on{background:var(--accent);border-color:var(--accent);color:#000}
+.gc-list{height:min(46vh,24rem);overflow-y:auto;display:flex;flex-direction:column;gap:.5rem;padding:.25rem;-webkit-overflow-scrolling:touch}
+.gc-msg{max-width:84%;padding:.55rem .8rem;border-radius:1rem;background:#161616;border:1px solid var(--line);font-size:.8rem;line-height:1.45;color:#e6e6df;word-break:break-word;white-space:pre-wrap}
+.gc-msg b{display:block;font-size:.65rem;color:var(--accent);margin-bottom:.1rem}
+.gc-msg time{display:block;font-size:.58rem;color:#77776f;margin-top:.15rem}
+.gc-msg.me{align-self:flex-end;background:rgba(200,255,46,.12);border-color:rgba(200,255,46,.35)}
+.gc-msg.me b{display:none}
+.g-rank{display:flex;align-items:center;gap:.75rem;padding:.7rem .8rem;border:1px solid var(--line);border-radius:1rem;background:#121212}
+.g-rank .pos{flex:none;width:1.8rem;text-align:center;font-size:1.1rem}
+.g-dl{display:inline-flex;align-items:center;gap:.35rem;padding:.25rem .65rem;border-radius:999px;font-size:.68rem;font-weight:800;border:1px solid rgba(255,196,60,.45);color:var(--gold)}
+.g-dl.bad{border-color:rgba(255,93,115,.5);color:#ff5d73}
+.demo-note{display:flex;gap:.7rem;align-items:flex-start;padding:.85rem 1rem;border:1px solid rgba(255,196,60,.4);border-radius:1.1rem;background:rgba(255,196,60,.07);color:#e9dcae;font-size:.78rem;line-height:1.5}
+.demo-note b{color:var(--gold)}
+.ent-src{font-size:.68rem;color:#8d8d86}
+.ent-src a{color:var(--accent);text-decoration:underline}
     </style>
 </head>
 <body class="min-h-screen flex flex-col">
@@ -727,7 +745,8 @@ body.no-scroll{overflow:hidden}
                         <button onclick="openPlannerView()" class="mode-row"><span class="num">08</span><span id="btn-mode-planner">📅 Күнтізбе & ЖИ-Планер</span><span class="arrow">→</span></button>
                         <button onclick="openHumanizerView()" class="mode-row accent"><span class="num">09</span><span id="btn-mode-human">✍️ Мәтінді адамдандыру</span><span class="arrow">NEW</span></button>
                         <button onclick="openCareerView()" class="mode-row accent"><span class="num">10</span><span id="btn-mode-career">🎓 11 сынып: түсу кеңесі</span><span class="arrow">NEW</span></button>
-                        <button onclick="openSlidesView()" class="mode-row accent"><span class="num">11</span><span id="btn-mode-slides">🎞️ ЖИ-презентациялар</span><span class="arrow">NEW</span></button>
+                        <button onclick="openSlidesView()" class="mode-row accent"><span class="num">11</span><span id="btn-mode-slides">🎞️ ЖИ-презентациялар</span><span class="arrow" style="color:var(--gold)">DEMO</span></button>
+                        <p id="slides-demo-sub" class="mono" style="font-size:.58rem;color:var(--gold);margin:-.15rem 0 .25rem 2.6rem">демо-версия · скоро обновление</p>
                         <button onclick="openGroupsView()" class="mode-row accent"><span class="num">12</span><span id="btn-mode-groups">👥 Группы</span><span class="arrow"><span id="g-badge-side" class="g-badge hidden"></span><span id="g-new">NEW</span></span></button>
                         <button onclick="openEntView()" class="mode-row" style="opacity:.6"><span class="num">13</span><span id="btn-mode-ent">🎯 Подготовка к ЕНТ</span><span class="arrow" style="color:var(--gold)" id="ent-soon">СКОРО</span></button>
                     </div>
@@ -1110,7 +1129,7 @@ body.no-scroll{overflow:hidden}
                 try {
                     const res = await fetch('/upload', { method: 'POST', body: fd });
                     const data = await res.json().catch(() => ({}));
-                    if (res.ok) { currentDocId = data.doc_id; alert(t.fileUploaded); }
+                    if (res.ok) { currentDocId = data.doc_id; alert(t.fileUploaded + (data.warning ? '\n\n⚠ ' + data.warning : '')); }
                     else alert(data.error || 'Upload error');
                 } catch (e) { alert('Network error'); }
             } else if (topicInput) {
@@ -2755,7 +2774,7 @@ const Q = {
     sc: 'Твой балл ЕНТ', scD: 'Не сдавал? Укажи тот, на который рассчитываешь.', rural: 'Я из села (сельская квота)', lang: 'Язык обучения', go: 'Узнать шансы ✨', step: 'Вопрос', of: 'из',
     l1: 'Анализирую твои ответы…', l2: 'Сверяю с проходными баллами…', l3: 'Подбираю вузы и профессии…', prof: 'Твой профиль', jobs: 'Подходящие профессии', unis: 'Куда поступать', tips: 'Советы по поступлению', retry: 'Пройти заново',
     high: 'Высокие шансы', mid: 'Средние шансы', low: 'Сложно', below: 'Ниже порога', ver: '✓ Данные грантов', thr: 'Порог вуза', est: 'Ориентир ИИ', need: 'порог для участия', pass: 'проходной', yours: 'твой балл',
-    disc: 'Проходные баллы меняются каждый год и зависят от конкурса. Проверенные цифры — итоги конкурса грантов за', disc2: 'год, «ориентир ИИ» — оценка, её надо уточнить. Минимум для участия в конкурсе: 65 баллов — национальные вузы, 50 — остальные, 75 — педагогика и право, 70 — здравоохранение. В 2026 году пороги ряда вузов выросли.', src: 'Актуальные баллы: univision.kz' },
+    disc: 'Проходные баллы меняются каждый год и зависят от конкурса. Проверенные цифры — итоги конкурса грантов за', disc2: 'год (НЦТ — grant.testcenter.kz, сводка по вузам — univision.kz), «ориентир ИИ» — оценка, её надо уточнить. Минимум для участия в конкурсе: 65 баллов — национальные вузы, 50 — остальные, 75 — педагогика и право, 70 — здравоохранение. В 2026 году пороги ряда вузов выросли.', src: 'Официальные итоги: grant.testcenter.kz' },
   kz: { t: '🎓 11 сыныптан кейінгі түсу', d: '4 қысқа сұраққа жауап беріп, ЕНТ балыңды көрсет — ЖИ мамандықтарды таңдап, қай ЖОО-ға грантқа түсу мүмкіндігің жоғары екенін көрсетеді.', start: 'Бастау · 1 токен', hello: 'Сәлем! Мамандық пен ЖОО таңдауға көмектесемін. Бастаймыз ба?',
     qs: [['Бос уақытта нені қуана істер едің?', [['💻', 'Компьютер мен кодты зерттеу'], ['🎨', 'Сурет салу, түсіру, ойлап табу'], ['🧪', 'Тәжірибе жасау, табиғатты зерттеу'], ['🤝', 'Адамдарға көмектесу, сөйлесу'], ['📊', 'Санау, ұйымдастыру, басқару']]],
       ['Қай пәндер оңай беріледі?', [['🔢', 'Математика және физика'], ['🧬', 'Биология және химия'], ['📚', 'Тілдер, тарих, әдебиет'], ['🌍', 'География, құқық, қоғам'], ['⌨️', 'Информатика']]],
@@ -2764,7 +2783,7 @@ const Q = {
     sc: 'ЕНТ балың', scD: 'Тапсырмадың ба? Күтіп жүрген балыңды көрсет.', rural: 'Мен ауылданмын (ауыл квотасы)', lang: 'Оқыту тілі', go: 'Мүмкіндікті білу ✨', step: 'Сұрақ', of: '/',
     l1: 'Жауаптарыңды талдаудамын…', l2: 'Өту баллдарымен салыстырудамын…', l3: 'ЖОО мен мамандық таңдаудамын…', prof: 'Сенің профилің', jobs: 'Сәйкес мамандықтар', unis: 'Қайда түсуге болады', tips: 'Түсу бойынша кеңестер', retry: 'Қайта өту',
     high: 'Мүмкіндік жоғары', mid: 'Орташа мүмкіндік', low: 'Қиын', below: 'Шектен төмен', ver: '✓ Грант деректері', thr: 'ЖОО шегі', est: 'ЖИ бағасы', need: 'қатысу шегі', pass: 'өту балы', yours: 'сенің балың',
-    disc: 'Өту баллдары жыл сайын өзгереді. Расталған сандар — грант конкурсының нәтижелері,', disc2: 'жыл. «ЖИ бағасы» — болжам, оны нақтылау керек. Конкурсқа қатысу минимумы: ұлттық ЖОО — 65, қалғаны — 50, педагогика және құқық — 75, денсаулық сақтау — 70. 2026 жылы бірнеше ЖОО шегі өсті.', src: 'Өзекті баллдар: univision.kz' },
+    disc: 'Өту баллдары жыл сайын өзгереді. Расталған сандар — грант конкурсының нәтижелері,', disc2: 'жыл (ҰТО — grant.testcenter.kz, ЖОО бойынша жиынтық — univision.kz). «ЖИ бағасы» — болжам, оны нақтылау керек. Конкурсқа қатысу минимумы: ұлттық ЖОО — 65, қалғаны — 50, педагогика және құқық — 75, денсаулық сақтау — 70. 2026 жылы бірнеше ЖОО шегі өсті.', src: 'Ресми нәтижелер: grant.testcenter.kz' },
   en: { t: '🎓 After 11th grade', d: 'Answer 4 short questions and enter your ENT score — the AI will suggest careers and show which Kazakhstan universities give you the best shot at a grant.', start: 'Start · 1 token', hello: 'Hi! I will help you choose a career and a university. Ready?',
     qs: [['What would you happily do in your free time?', [['💻', 'Tinker with computers and code'], ['🎨', 'Draw, film, invent things'], ['🧪', 'Run experiments, study nature'], ['🤝', 'Help and talk to people'], ['📊', 'Count, organize, lead']]],
       ['Which subjects come easiest?', [['🔢', 'Math and physics'], ['🧬', 'Biology and chemistry'], ['📚', 'Languages, history, literature'], ['🌍', 'Geography, law, social studies'], ['⌨️', 'Computer science']]],
@@ -2773,7 +2792,7 @@ const Q = {
     sc: 'Your ENT score', scD: 'Have not taken it yet? Enter the score you aim for.', rural: 'I am from a village (rural quota)', lang: 'Language of study', go: 'Find my chances ✨', step: 'Question', of: 'of',
     l1: 'Analyzing your answers…', l2: 'Checking passing scores…', l3: 'Picking universities and careers…', prof: 'Your profile', jobs: 'Careers that fit', unis: 'Where to apply', tips: 'Admission tips', retry: 'Start over',
     high: 'High chance', mid: 'Medium chance', low: 'Tough', below: 'Below threshold', ver: '✓ Grant data', thr: 'University threshold', est: 'AI estimate', need: 'entry threshold', pass: 'passing', yours: 'your score',
-    disc: 'Passing scores change every year. Verified numbers are grant competition results for', disc2: '; “AI estimate” is a rough guess you must double-check. Minimum to enter the grant competition: 65 — national universities, 50 — others, 75 — pedagogy and law, 70 — health. Several universities raised their thresholds in 2026.', src: 'Current scores: univision.kz' }
+    disc: 'Passing scores change every year. Verified numbers are grant competition results for', disc2: '(NTC — grant.testcenter.kz; per-university summary — univision.kz); “AI estimate” is a rough guess you must double-check. Minimum to enter the grant competition: 65 — national universities, 50 — others, 75 — pedagogy and law, 70 — health. Several universities raised their thresholds in 2026.', src: 'Official results: grant.testcenter.kz' }
 };
 const L = () => Q[selectedLang] || Q.ru;
 const CRC = { high: '#c8ff2e', mid: '#ffd23f', low: '#ff5d73', below: '#8a8a85' };
@@ -2783,7 +2802,7 @@ window.openCareerView = function () {
   window.currentActiveView = 'career'; S = { i: 0, ans: [], score: 90, rural: false, sl: 'kz' }; const l = L();
   $('result-container').innerHTML = `<div class="w-full space-y-5 text-left quiz-slide-enter">
     <div class="banner relative overflow-hidden"><h3 class="display text-2xl font-bold text-white">${l.t}</h3><p class="text-xs text-neutral-400 mt-1.5 max-w-xl">${l.d}</p></div>
-    <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">${[['140', 'max ЕНТ', '#c8ff2e'], ['65', 'national', '#8b5cf6'], ['50', 'other', '#3de0ff'], ['30%', 'rural quota', '#ff5d73']].map((x, i) => `<div class="tile p-4 text-center" style="animation:mdIn .5s ${i * 90}ms backwards"><p class="display text-3xl font-bold" style="color:${x[2]}">${x[0]}</p><p class="mono mt-1">${x[1]}</p></div>`).join('')}</div>
+    <div>${window.entTiles()}</div>
     <button onclick="careerAsk()" class="btn-accent w-full py-4 text-sm">${l.start}</button></div>`;
 };
 window.careerAsk = function () {
@@ -2841,7 +2860,7 @@ function careerResult(d) {
       ${o.why ? `<p class="text-xs text-neutral-300">${esc(o.why)}</p>` : ''}</div>`).join('')}</div></div>
     <div class="banner space-y-2"><h4 class="mono" style="color:var(--gold)">${l.tips}</h4><ul class="space-y-1.5 text-sm text-neutral-200 list-disc pl-5">${(d.tips || []).map(x => `<li>${esc(x)}</li>`).join('')}</ul>${d.note ? `<p class="text-xs text-neutral-400">${esc(d.note)}</p>` : ''}</div>
     <p class="text-[11px] text-neutral-500 leading-relaxed">${l.disc} ${d.year} ${l.disc2}</p>
-    <div class="flex flex-col sm:flex-row gap-2.5"><a href="https://univision.kz" target="_blank" rel="noopener" class="btn-accent flex-1 py-3.5 text-sm text-center">${l.src}</a><button class="btn-ghost flex-1 py-3.5 text-sm" onclick="openCareerView()">${l.retry}</button></div></div>`;
+    <div class="flex flex-col sm:flex-row gap-2.5"><a href="https://grant.testcenter.kz" target="_blank" rel="noopener" class="btn-accent flex-1 py-3.5 text-sm text-center">${l.src}</a><button class="btn-ghost flex-1 py-3.5 text-sm" onclick="openCareerView()">${l.retry}</button></div></div>`;
   requestAnimationFrame(() => requestAnimationFrame(() => { const e = $('pt'); if (e) e.style.left = sc / 140 * 100 + '%'; document.querySelectorAll('.ub').forEach(b => b.style.width = b.dataset.w + '%'); }));
   if (d.options.some(o => o.chance === 'high')) confetti(50);
 }
@@ -4062,6 +4081,210 @@ window.openPlannerView = function () {
   if (again) window.scrollTo(0, y);
 };
 const _cl7 = window.changeLanguage; window.changeLanguage = function () { _cl7(); if ($('sched-panel')) schRender(); };
+})();
+</script>
+<script>
+(function () {
+const $ = id => document.getElementById(id), esc = escapeHtml;
+const LG = () => (['ru', 'kz', 'en'].includes(selectedLang) ? selectedLang : 'ru');
+
+// ======================= ЕНТ-2025: данные прошлого года (НЦТ / МНВО) =======================
+const ENT_DEF = { year: 2025, takers: 210000, avg: 69, max: 140, passed_pct: 76, passed: 161000, high130: 598, source: 'https://www.nur.kz/society/2264556-obyavleny-itogi-osnovnogo-ent-v-kazahstane/' };
+let ENT = ENT_DEF;
+fetch('/api/career/info').then(r => r.ok ? r.json() : null).then(j => { if (j && j.ent_stats) ENT = j.ent_stats; }).catch(() => {});
+const ET = {
+  ru: { tiles: ['сдали основное ЕНТ', 'средний балл (5 предметов)', 'набрали пороговый балл', 'набрали 130+ баллов'], k: 'тыс.', head: 'Итоги ЕНТ-', src: 'Источник: МНВО РК / Национальный центр тестирования', official: 'Официальные результаты грантов: grant.testcenter.kz', thr: 'Минимум для конкурса грантов 2026: 65 — национальные вузы, 50 — остальные, 75 — педагогика и право, 70 — здравоохранение.' },
+  kz: { tiles: ['негізгі ҰБТ тапсырды', 'орташа балл (5 пән)', 'шекті балл жинады', '130+ балл жинады'], k: 'мың', head: 'ҰБТ-', src: 'Дереккөз: ҚР ҒЖБМ / Ұлттық тестілеу орталығы', official: 'Грант нәтижелері (ресми): grant.testcenter.kz', thr: '2026 грант конкурсына қатысу минимумы: ұлттық ЖОО — 65, қалғаны — 50, педагогика және құқық — 75, денсаулық сақтау — 70.' },
+  en: { tiles: ['took the main UNT', 'average score (5 subjects)', 'reached the threshold', 'scored 130+'], k: 'k', head: 'UNT ', src: 'Source: Ministry of Science and Higher Education / National Testing Center', official: 'Official grant results: grant.testcenter.kz', thr: 'Minimum to enter the 2026 grant competition: 65 — national universities, 50 — others, 75 — pedagogy and law, 70 — health.' }
+};
+window.entTiles = () => { const e = ENT, t = ET[LG()];
+  const data = [[`${Math.round(e.takers / 1000)}+ ${t.k}`, t.tiles[0], '#c8ff2e'], [`${e.avg}<span style="font-size:1rem;color:#77776f">/${e.max}</span>`, t.tiles[1], '#8b5cf6'], [`${e.passed_pct}%`, t.tiles[2], '#3de0ff'], [`${e.high130}`, t.tiles[3], '#ff5d73']];
+  return `<p class="mono" style="color:var(--accent)">📊 ${t.head}${e.year}</p><div class="grid grid-cols-2 sm:grid-cols-4 gap-3 mt-2">${data.map((x, i) => `<div class="tile p-4 text-center" style="animation:mdIn .5s ${i * 90}ms backwards"><p class="display text-2xl sm:text-3xl font-bold" style="color:${x[2]}">${x[0]}</p><p class="mono mt-1" style="font-size:.6rem">${x[1]}</p></div>`).join('')}</div>
+    <p class="ent-src mt-2">${t.src} · <a href="${esc(e.source)}" target="_blank" rel="noopener">${e.year}</a> · <a href="https://grant.testcenter.kz" target="_blank" rel="noopener">${t.official}</a></p><p class="ent-src mt-1">${t.thr}</p>`; };
+
+// ======================= ПРЕЗЕНТАЦИИ: демо-версия =======================
+const DEMO = { ru: ['Демо-версия.', 'Скоро обновление: раздел презентаций станет лучше. Пока возможны недочёты — спасибо, что тестируете!'], kz: ['Демо-нұсқа.', 'Жақында жаңарту: презентациялар бөлімі жақсартылады. Әзірге кемшіліктер болуы мүмкін — сынағаныңызға рахмет!'], en: ['Demo version.', 'An update is coming soon: the presentations section will get better. Some rough edges are possible for now — thanks for testing!'] };
+const _osv = window.openSlidesView;
+window.openSlidesView = function () {
+  _osv.apply(this, arguments); const root = $('result-container').firstElementChild; if (!root || $('slides-demo-note')) return; const d = DEMO[LG()];
+  root.insertAdjacentHTML('afterbegin', `<div id="slides-demo-note" class="demo-note">🚧<span><b>${d[0]}</b> ${d[1]}</span></div>`);
+};
+const SUB = { ru: 'демо-версия · скоро обновление', kz: 'демо-нұсқа · жақында жаңарту', en: 'demo version · update coming soon' };
+
+// ======================= ГРУППЫ 2.0 =======================
+const GL = {
+  ru: { title: 'Группы', desc: 'Учитесь вместе: общая цель, задачи, чат и рейтинг. Приглашайте друзей по @нику или ID.', myId: 'Ваш ID', copy: '⧉ Копировать', idHint: 'Друзья могут пригласить вас по @нику или этому ID.', create: 'Создать группу', namePh: 'Название группы', goalPh: 'Цель группы (необязательно)', mine: 'Мои группы', none: 'Пока нет групп. Создайте первую или примите приглашение.', invites: 'Приглашения', accept: 'Принять', decline: 'Отклонить', from: 'от',
+    members: 'Участники', owner: 'владелец', you: 'вы', invite: 'Пригласить', nickPh: '@ник или ID пользователя', pending: 'Ждут ответа', sent: 'Приглашение отправлено', pushed: 'Уведомление ушло в Telegram', nopush: 'В Telegram не доставлено — человек увидит приглашение на сайте',
+    tasks: 'Задачи', chat: 'Чат', top: 'Рейтинг', taskPh: 'Что нужно сделать?', add: 'Добавить', unassigned: 'Не назначено', all: 'Все', mineF: 'Мои', back: 'Назад', del: 'Удалить группу', delQ: 'Удалить группу вместе со всеми задачами и перепиской?', leave: 'Выйти', leaveQ: 'Выйти из группы?', kickQ: 'Исключить участника?', delTask: 'Удалить задачу?',
+    split: '✨ ИИ поделит работу', splitD: 'Опишите общую цель — ИИ разобьёт её на задачи и раздаст участникам. 1 токен.', splitPh: 'Например: подготовить доклад и презентацию по экологии к пятнице', splitBtn: 'Разделить · 1 токен', empty: 'Нет задач', open_n: 'в работе', done_n: 'готово',
+    goal: 'Цель группы', noGoal: 'Цель не задана — добавьте, чтобы всем было понятно, к чему идёте.', editGoal: 'Изменить', save: 'Сохранить', cancel: 'Отмена', deadline: 'Дедлайн', today: 'дедлайн сегодня', left: n => `осталось ${n} дн.`, late: n => `просрочено на ${n} дн.`, progress: 'Прогресс',
+    msgPh: 'Сообщение группе…', noMsgs: 'Пока тишина. Напишите первым 👋', rank: 'Рейтинг участников', rankD: 'По выполненным задачам группы, при равенстве — по XP.', doneN: 'выполнено', openN: 'в работе', refresh: 'Обновить', err: 'Ошибка', day: 'Срок' },
+  kz: { title: 'Топтар', desc: 'Бірге оқыңыз: ортақ мақсат, тапсырмалар, чат және рейтинг. Достарыңызды @ник немесе ID арқылы шақырыңыз.', myId: 'Сіздің ID', copy: '⧉ Көшіру', idHint: 'Достарыңыз сізді @ник немесе осы ID арқылы шақыра алады.', create: 'Топ құру', namePh: 'Топ атауы', goalPh: 'Топ мақсаты (міндетті емес)', mine: 'Менің топтарым', none: 'Әзірге топ жоқ. Біріншісін құрыңыз немесе шақыруды қабылдаңыз.', invites: 'Шақырулар', accept: 'Қабылдау', decline: 'Бас тарту', from: 'кімнен:',
+    members: 'Қатысушылар', owner: 'иесі', you: 'сіз', invite: 'Шақыру', nickPh: '@ник немесе пайдаланушы ID', pending: 'Жауап күтуде', sent: 'Шақыру жіберілді', pushed: 'Хабарлама Telegram-ға жіберілді', nopush: 'Telegram-ға жеткізілмеді — адам шақыруды сайттан көреді',
+    tasks: 'Тапсырмалар', chat: 'Чат', top: 'Рейтинг', taskPh: 'Не істеу керек?', add: 'Қосу', unassigned: 'Тағайындалмаған', all: 'Барлығы', mineF: 'Меніңше', back: 'Артқа', del: 'Топты жою', delQ: 'Топты барлық тапсырма мен хат алмасумен жою керек пе?', leave: 'Шығу', leaveQ: 'Топтан шығасыз ба?', kickQ: 'Қатысушыны шығару керек пе?', delTask: 'Тапсырманы жою керек пе?',
+    split: '✨ ЖИ жұмысты бөледі', splitD: 'Жалпы мақсатты сипаттаңыз — ЖИ тапсырмаларға бөліп, қатысушыларға таратады. 1 токен.', splitPh: 'Мысалы: жұмаға дейін экология бойынша баяндама мен презентация дайындау', splitBtn: 'Бөлу · 1 токен', empty: 'Тапсырма жоқ', open_n: 'орындалуда', done_n: 'дайын',
+    goal: 'Топ мақсаты', noGoal: 'Мақсат қойылмаған — бәріне қайда барамыз деген түсінікті болу үшін қосыңыз.', editGoal: 'Өзгерту', save: 'Сақтау', cancel: 'Бас тарту', deadline: 'Мерзім', today: 'мерзім бүгін', left: n => `${n} күн қалды`, late: n => `${n} күнге кешікті`, progress: 'Прогресс',
+    msgPh: 'Топқа хабарлама…', noMsgs: 'Әзірге тыныштық. Бірінші болып жазыңыз 👋', rank: 'Қатысушылар рейтингі', rankD: 'Топтың орындалған тапсырмалары бойынша, тең болса — XP бойынша.', doneN: 'орындалды', openN: 'орындалуда', refresh: 'Жаңарту', err: 'Қате', day: 'Мерзімі' },
+  en: { title: 'Groups', desc: 'Study together: a shared goal, tasks, chat and a leaderboard. Invite friends by @username or ID.', myId: 'Your ID', copy: '⧉ Copy', idHint: 'Friends can invite you by @username or this ID.', create: 'Create group', namePh: 'Group name', goalPh: 'Group goal (optional)', mine: 'My groups', none: 'No groups yet. Create one or accept an invitation.', invites: 'Invitations', accept: 'Accept', decline: 'Decline', from: 'from',
+    members: 'Members', owner: 'owner', you: 'you', invite: 'Invite', nickPh: '@username or user ID', pending: 'Waiting for reply', sent: 'Invitation sent', pushed: 'A Telegram notification was sent', nopush: 'Telegram notice not delivered — they will see the invite on the site',
+    tasks: 'Tasks', chat: 'Chat', top: 'Leaderboard', taskPh: 'What needs to be done?', add: 'Add', unassigned: 'Unassigned', all: 'All', mineF: 'Mine', back: 'Back', del: 'Delete group', delQ: 'Delete the group with all its tasks and messages?', leave: 'Leave', leaveQ: 'Leave this group?', kickQ: 'Remove this member?', delTask: 'Delete this task?',
+    split: '✨ AI splits the work', splitD: 'Describe the shared goal — the AI breaks it into tasks and assigns them to members. 1 token.', splitPh: 'e.g. prepare a report and slides about ecology by Friday', splitBtn: 'Split · 1 token', empty: 'No tasks', open_n: 'open', done_n: 'done',
+    goal: 'Group goal', noGoal: 'No goal yet — add one so everyone knows what you’re aiming for.', editGoal: 'Edit', save: 'Save', cancel: 'Cancel', deadline: 'Deadline', today: 'deadline today', left: n => `${n} days left`, late: n => `${n} days overdue`, progress: 'Progress',
+    msgPh: 'Message the group…', noMsgs: 'Quiet here. Be the first to write 👋', rank: 'Leaderboard', rankD: 'By completed group tasks, ties broken by XP.', doneN: 'done', openN: 'open', refresh: 'Refresh', err: 'Error', day: 'Due' }
+};
+const G = () => GL[LG()];
+const GS = { id: null, d: null, tab: 'tasks', only: false, last: 0, msgs: [], timer: null };
+const nm = u => u.username ? '@' + u.username : u.display_name;
+const gerr = r => alert((r.data && r.data.error) || G().err);
+const loader = () => '<div class="py-12 text-center"><div class="w-10 h-10 border-4 border-[#c8ff2e] border-t-transparent rounded-full animate-spin mx-auto"></div></div>';
+const stopChat = () => { clearInterval(GS.timer); GS.timer = null; };
+function dlChip(dl) { if (!dl) return ''; const L = G(), n = Math.ceil((new Date(dl + 'T23:59:59') - Date.now()) / 864e5); const late = n < 0, txt = n === 0 ? L.today : (late ? L.late(-n) : L.left(n));
+  return `<span class="g-dl ${late ? 'bad' : ''}">⏰ ${esc(dl)} · ${txt}</span>`; }
+const bar = pct => `<div class="tq-bar"><i style="width:${pct}%"></i></div>`;
+
+window.copyMyId = async b => { const ok = await window.copyToClipboard(String(currentUser.public_id)); const o = b.textContent; b.textContent = ok ? '✓' : '✕'; setTimeout(() => { b.textContent = o; }, 1400); };
+
+window.openGroupsView = async function () {
+  window.currentActiveView = 'groups'; stopChat(); if (!currentUser) return checkAuth(); GS.id = null; GS.d = null;
+  const c = $('result-container'), L = G(); c.innerHTML = loader();
+  const r = await api('/api/groups'); if (!r.ok) { c.innerHTML = errorBox((r.data && r.data.error) || L.err); return; }
+  const { groups, invites } = r.data;
+  ['g-badge-top', 'g-badge-menu', 'g-badge-side'].forEach(id => { const e = $(id); if (e) { e.textContent = invites.length; e.classList.toggle('hidden', !invites.length); } });
+  c.innerHTML = `<div class="w-full space-y-4 text-left quiz-slide-enter">
+    <div class="banner"><h3 class="display text-2xl font-bold text-white">👥 ${L.title}</h3><p class="text-xs text-neutral-400 mt-1">${L.desc}</p>${currentUser.public_id ? `<p class="mt-3 text-xs text-neutral-300 flex flex-wrap items-center gap-2">${L.myId}: <b class="text-white text-base">${esc(String(currentUser.public_id))}</b><button class="cp-btn" onclick="copyMyId(this)">${L.copy}</button><span class="text-neutral-500">${L.idHint}</span></p>` : ''}</div>
+    ${invites.length ? `<div class="space-y-2"><p class="mono" style="color:#ff8fa0">${L.invites}</p>${invites.map(i => `<div class="tile p-4 flex flex-wrap items-center justify-between gap-3"><div><p class="font-extrabold text-white text-sm">${esc(i.group_name)}</p><p class="text-[11px] text-neutral-400">${L.from} ${i.from ? esc(nm(i.from)) : '—'}</p></div><div class="flex gap-2"><button class="btn-accent px-4 py-2 text-xs" onclick="gAnswer(${i.id},true)">${L.accept}</button><button class="btn-ghost px-4 py-2 text-xs" onclick="gAnswer(${i.id},false)">${L.decline}</button></div></div>`).join('')}</div>` : ''}
+    <div class="tile p-4 space-y-2"><div class="flex flex-col sm:flex-row gap-2"><input id="g-name" class="field" maxlength="60" placeholder="${L.namePh}"><button class="btn-accent px-6 py-3 text-xs shrink-0" onclick="gCreate()">${L.create}</button></div><input id="g-goal-new" class="field" maxlength="300" placeholder="${L.goalPh}"></div>
+    <p class="mono">${L.mine}</p>
+    ${groups.length ? `<div class="grid sm:grid-cols-2 gap-3">${groups.map(x => { const tot = x.open + x.done, pct = tot ? Math.round(x.done / tot * 100) : 0; return `<button class="g-card" onclick="gOpen(${x.id})"><div class="flex items-center justify-between gap-2"><p class="font-extrabold text-white truncate">${esc(x.name)}</p>${x.role === 'owner' ? `<span class="mono" style="color:var(--accent)">${L.owner}</span>` : ''}</div>
+      ${x.goal ? `<p class="text-[11px] text-neutral-400 mt-1 truncate">🎯 ${esc(x.goal)}</p>` : ''}<div class="mt-2">${bar(pct)}</div><p class="text-[11px] text-neutral-400 mt-2">👥 ${x.members} · ✅ ${x.done}/${tot}${x.deadline ? ' · ' + dlChip(x.deadline) : ''}</p></button>`; }).join('')}</div>` : `<p class="text-sm text-neutral-500 py-6 text-center">${L.none}</p>`}</div>`;
+};
+window.gCreate = async function () { const n = $('g-name').value.trim(); if (n.length < 2) return; const goal = ($('g-goal-new').value || '').trim();
+  const r = await api('/api/groups', 'POST', { name: n }); if (!r.ok) return gerr(r); if (goal) await api('/api/groups/' + r.data.id, 'PATCH', { goal }); gOpen(r.data.id); };
+window.gAnswer = async function (id, ok) { const r = await api(`/api/invites/${id}/${ok ? 'accept' : 'decline'}`, 'POST', {}); if (!r.ok) gerr(r); if (r.ok && ok) gOpen(r.data.group_id); else openGroupsView(); };
+
+window.gOpen = async function (id) {
+  stopChat(); window.currentActiveView = 'group'; const c = $('result-container'); if (GS.id !== id) { GS.tab = 'tasks'; GS.msgs = []; GS.last = 0; GS.only = false; c.innerHTML = loader(); }
+  const r = await api('/api/groups/' + id); if (!r.ok) { gerr(r); GS.d = null; return openGroupsView(); }
+  GS.id = id; GS.d = r.data; gDraw();
+};
+function gDraw() {
+  const L = G(), d = GS.d, own = d.me.role === 'owner';
+  $('result-container').innerHTML = `<div class="w-full space-y-4 text-left quiz-slide-enter">
+    <div class="flex items-center justify-between gap-2 flex-wrap"><button class="mono hover:text-white" onclick="openGroupsView()">← ${L.back}</button><div class="flex gap-2"><button class="btn-ghost px-3 py-2 text-xs" onclick="gOpen(${d.group.id})" title="${L.refresh}">↻</button>${own ? `<button class="btn-ghost px-4 py-2 text-xs" style="color:#ff6b6b" onclick="gDelGroup()">${L.del}</button>` : `<button class="btn-ghost px-4 py-2 text-xs" onclick="gKick('${esc(d.me.user_id)}',true)">${L.leave}</button>`}</div></div>
+    <div id="g-head"></div>
+    <div class="g-tabs"><button class="g-tab" id="gt-tasks" onclick="gTab('tasks')">📋 ${L.tasks}</button><button class="g-tab" id="gt-chat" onclick="gTab('chat')">💬 ${L.chat}</button><button class="g-tab" id="gt-top" onclick="gTab('top')">🏆 ${L.top}</button></div>
+    <div id="g-body"></div></div>`;
+  drawHead(); gTab(GS.tab);
+}
+function stats() { const d = GS.d, done = d.tasks.filter(t => t.done).length, total = d.tasks.length; return { done, total, pct: total ? Math.round(done / total * 100) : 0 }; }
+function drawHead() {
+  const L = G(), d = GS.d, own = d.me.role === 'owner', s = stats(), box = $('g-head'); if (!box) return;
+  box.innerHTML = `<div class="banner space-y-3"><h3 class="display text-2xl font-bold text-white break-words">👥 ${esc(d.group.name)}</h3>
+    <div id="g-goalbox" class="space-y-2"><div class="flex items-start justify-between gap-2"><p class="mono">🎯 ${L.goal}</p>${own ? `<button class="mono hover:text-white" onclick="gGoalEdit()">✏️ ${L.editGoal}</button>` : ''}</div>
+      ${d.group.goal ? `<p class="text-sm text-white font-semibold break-words">${esc(d.group.goal)}</p>` : `<p class="text-xs text-neutral-500">${L.noGoal}</p>`}${d.group.deadline ? dlChip(d.group.deadline) : ''}</div>
+    <div id="g-prog">${bar(s.pct)}<p class="mono mt-1.5">${L.progress}: ${s.done}/${s.total} · ${s.pct}%</p></div></div>
+    <div class="tile p-4 space-y-3 mt-3"><p class="mono">${L.members} · ${d.members.length}</p><div class="flex flex-wrap gap-2">${d.members.map(m => `<span class="g-chip">${esc(nm(m))}${m.role === 'owner' ? ` <span class="mono" style="color:var(--accent)">${L.owner}</span>` : ''}${own && m.role !== 'owner' ? `<button onclick="gKick('${esc(m.user_id)}',false)" aria-label="remove">✕</button>` : ''}</span>`).join('')}</div>
+      ${own ? `<div class="flex flex-col sm:flex-row gap-2 pt-1"><input id="g-nick" class="field" maxlength="80" placeholder="${L.nickPh}" onkeydown="if(event.key==='Enter') gInvite()"><button class="btn-accent px-6 py-3 text-xs shrink-0" onclick="gInvite()">${L.invite}</button></div><p id="g-inv-msg" class="text-xs min-h-[1rem]"></p>
+      ${d.invites.length ? `<p class="mono">${L.pending}</p><div class="flex flex-wrap gap-2">${d.invites.map(i => `<span class="g-chip" style="opacity:.75">${esc(nm(i.user))}<button onclick="gCancelInv(${i.id})">✕</button></span>`).join('')}</div>` : ''}` : ''}</div>`;
+}
+function updProgress() { const s = stats(), L = G(), p = $('g-prog'); if (p) p.innerHTML = `${bar(s.pct)}<p class="mono mt-1.5">${L.progress}: ${s.done}/${s.total} · ${s.pct}%</p>`; }
+window.gGoalEdit = function () { const L = G(), d = GS.d, b = $('g-goalbox'); if (!b) return;
+  b.innerHTML = `<p class="mono">🎯 ${L.goal}</p><input id="g-goal-in" class="field" maxlength="300" value="${esc(d.group.goal)}" placeholder="${L.goalPh}"><div class="flex flex-wrap items-center gap-2"><span class="mono">${L.deadline}</span><input id="g-dl-in" type="date" class="field" style="width:11rem;color-scheme:dark" value="${esc(d.group.deadline || '')}"><button class="btn-accent px-5 py-2.5 text-xs" onclick="gGoalSave()">${L.save}</button><button class="btn-ghost px-4 py-2.5 text-xs" onclick="drawHead()">${L.cancel}</button></div>`; };
+window.drawHead = drawHead;
+window.gGoalSave = async function () { const goal = $('g-goal-in').value.trim(), dl = $('g-dl-in').value; const body = { goal }; if (dl) body.deadline = dl; else body.clear_deadline = true;
+  const r = await api('/api/groups/' + GS.id, 'PATCH', body); if (!r.ok) return gerr(r); GS.d.group.goal = goal; GS.d.group.deadline = dl || null; drawHead(); };
+
+window.gTab = function (tab) {
+  stopChat(); GS.tab = tab; ['tasks', 'chat', 'top'].forEach(k => { const b = $('gt-' + k); if (b) b.classList.toggle('on', k === tab); });
+  if (tab === 'tasks') tasksTab(); else if (tab === 'chat') chatTab(); else topTab();
+};
+
+// ---------- задачи (с мгновенным откликом: сначала меняем экран, потом сервер) ----------
+function tasksTab() {
+  const L = G(), d = GS.d, opts = sel => `<option value="">${L.unassigned}</option>` + d.members.map(m => `<option value="${esc(m.user_id)}" ${sel === m.user_id ? 'selected' : ''}>${esc(nm(m))}</option>`).join('');
+  $('g-body').innerHTML = `<div class="tile p-4 space-y-3"><div class="grid sm:grid-cols-[1fr_11rem_9rem_auto] gap-2"><input id="gt-title" class="field" maxlength="200" placeholder="${L.taskPh}" onkeydown="if(event.key==='Enter') gAddTask()"><select id="gt-as" class="field" style="padding:.8rem .6rem">${opts('')}</select><input id="gt-due" type="date" class="field" style="color-scheme:dark" title="${L.day}"><button class="btn-accent px-6 py-3 text-xs" onclick="gAddTask()">${L.add}</button></div>
+    <details class="rounded-2xl border border-white/10 p-3"><summary class="mono cursor-pointer" style="color:var(--accent)">${L.split}</summary><p class="text-xs text-neutral-400 mt-2">${L.splitD}</p><textarea id="g-goal" rows="3" class="field mt-2" maxlength="2000" placeholder="${L.splitPh}"></textarea><button class="btn-accent w-full py-3 text-xs mt-2" onclick="gSplit(this)">${L.splitBtn}</button></details>
+    <div class="flex gap-2"><button class="g-tab ${GS.only ? '' : 'on'}" id="gf-all" onclick="gFilter(false)">${L.all}</button><button class="g-tab ${GS.only ? 'on' : ''}" id="gf-me" onclick="gFilter(true)">${L.mineF}</button></div></div><div id="g-list" class="mt-3"></div>`;
+  drawList();
+}
+window.gFilter = v => { GS.only = v; const a = $('gf-all'), m = $('gf-me'); if (a) a.classList.toggle('on', !v); if (m) m.classList.toggle('on', v); drawList(); };
+function drawList() {
+  const box = $('g-list'); if (!box) return; const L = G(), d = GS.d, me = d.me.user_id, byId = {}; d.members.forEach(m => byId[m.user_id] = m);
+  const opts = sel => `<option value="">${L.unassigned}</option>` + d.members.map(m => `<option value="${esc(m.user_id)}" ${sel === m.user_id ? 'selected' : ''}>${esc(nm(m))}</option>`).join('');
+  const task = t => `<div class="g-task ${t.done ? 'done' : ''}" id="gtk-${t.id}"><button class="g-ck" onclick="gToggle(${t.id})">${t.done ? '✓' : ''}</button><div class="min-w-0 flex-1"><p class="g-t text-sm font-semibold text-white break-words">${esc(t.title)}</p>${t.description ? `<p class="text-[11px] text-neutral-400 mt-0.5 break-words">${esc(t.description)}</p>` : ''}${t.due_date ? `<p class="text-[10px] text-neutral-500 mt-0.5">📅 ${esc(t.due_date)}</p>` : ''}<select class="g-sel mt-1.5" onchange="gAssign(${t.id},this.value)">${opts(t.assignee_id)}</select></div><button class="text-neutral-500 hover:text-[#ff5d73] text-sm px-1" onclick="gDelTask(${t.id})">✕</button></div>`;
+  let cols = [{ id: null, title: L.unassigned }].concat(d.members.map(m => ({ id: m.user_id, title: nm(m) + (m.user_id === me ? ` (${L.you})` : '') })));
+  if (GS.only) cols = cols.filter(c => c.id === me);
+  const html = cols.map(col => { const ts = d.tasks.filter(t => (t.assignee_id || null) === col.id); if (col.id === null && !ts.length) return '';
+    return `<div class="g-col"><p class="font-extrabold text-white text-sm truncate">${esc(col.title)} <span class="mono">${ts.filter(t => t.done).length}/${ts.length}</span></p>${ts.length ? ts.map(task).join('') : `<p class="text-[11px] text-neutral-600 mt-2">${L.empty}</p>`}</div>`; }).join('');
+  box.innerHTML = `<div class="grid md:grid-cols-2 gap-3">${html}</div>`;
+}
+const taskById = id => GS.d.tasks.find(t => t.id === id);
+window.gAddTask = async function () {
+  const inp = $('gt-title'), title = inp.value.trim(); if (!title) return; const asg = $('gt-as').value || null, due = $('gt-due').value || null;
+  const tmp = { id: 'tmp' + Date.now(), title, description: '', assignee_id: asg, due_date: due, done: false }; GS.d.tasks.push(tmp); inp.value = ''; drawList(); updProgress();
+  const r = await api(`/api/groups/${GS.id}/tasks`, 'POST', { title, assignee_id: asg, due_date: due });
+  if (!r.ok) { GS.d.tasks = GS.d.tasks.filter(t => t !== tmp); drawList(); updProgress(); return gerr(r); } tmp.id = r.data.id; drawList();
+};
+window.gToggle = async function (tid) { const t = taskById(tid); if (!t || String(tid).startsWith('tmp')) return; t.done = !t.done; drawList(); updProgress();
+  const r = await api(`/api/groups/${GS.id}/tasks/${tid}`, 'PATCH', { done: t.done }); if (!r.ok) { t.done = !t.done; drawList(); updProgress(); gerr(r); } };
+window.gAssign = async function (tid, uid) { const t = taskById(tid); if (!t || String(tid).startsWith('tmp')) return; const old = t.assignee_id; t.assignee_id = uid || null; drawList();
+  const r = await api(`/api/groups/${GS.id}/tasks/${tid}`, 'PATCH', uid ? { assignee_id: uid } : { unassign: true }); if (!r.ok) { t.assignee_id = old; drawList(); gerr(r); } };
+window.gDelTask = async function (tid) { if (!confirm(G().delTask)) return; const old = GS.d.tasks.slice(); GS.d.tasks = GS.d.tasks.filter(t => t.id !== tid); drawList(); updProgress();
+  if (String(tid).startsWith('tmp')) return; const r = await api(`/api/groups/${GS.id}/tasks/${tid}`, 'DELETE'); if (!r.ok) { GS.d.tasks = old; drawList(); updProgress(); gerr(r); } };
+window.gSplit = async function (btn) { const goal = $('g-goal').value.trim(); if (goal.length < 5) return; const o = btn.textContent; btn.disabled = true; btn.textContent = '…';
+  const r = await api(`/api/groups/${GS.id}/split`, 'POST', { goal, lang: selectedLang }); btn.disabled = false; btn.textContent = o; if (!r.ok) return gerr(r); setTokens(r.data.tokens_left); gOpen(GS.id); };
+
+// ---------- участники ----------
+window.gInvite = async function () { const i = $('g-nick'), v = i.value.trim(); if (!v) return; const L = G();
+  const r = await api(`/api/groups/${GS.id}/invite`, 'POST', { nick: v }); const m = $('g-inv-msg');
+  if (!r.ok) { if (m) { m.style.color = '#ff6b6b'; m.textContent = (r.data && r.data.error) || L.err; } return; }
+  await gOpen(GS.id); const m2 = $('g-inv-msg'); if (m2) { m2.style.color = 'var(--accent)'; m2.textContent = '✓ ' + L.sent + ' (' + nm(r.data.user) + '). ' + (r.data.notified ? L.pushed : L.nopush); } };
+window.gCancelInv = async id => { await api(`/api/groups/${GS.id}/invites/${id}`, 'DELETE'); gOpen(GS.id); };
+window.gKick = async function (uid, leaving) { if (!confirm(leaving ? G().leaveQ : G().kickQ)) return; const r = await api(`/api/groups/${GS.id}/members/${uid}`, 'DELETE'); if (!r.ok) return gerr(r); if (leaving) openGroupsView(); else gOpen(GS.id); };
+window.gDelGroup = async function () { if (!confirm(G().delQ)) return; const r = await api('/api/groups/' + GS.id, 'DELETE'); if (!r.ok) return gerr(r); openGroupsView(); };
+
+// ---------- чат группы (опрос раз в 6 секунд, только новые сообщения) ----------
+const fmtT = at => { try { return new Date(at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }); } catch (e) { return ''; } };
+function msgHtml(m) { const mine = m.user_id === GS.d.me.user_id; return `<div class="gc-msg ${mine ? 'me' : ''}" data-id="${m.id}"><b>${esc(m.name)}</b>${esc(m.text)}<time>${fmtT(m.at)}</time></div>`; }
+function addMsgs(list) {
+  const box = $('gc-list'); if (!box) return; const near = box.scrollHeight - box.scrollTop - box.clientHeight < 120, seen = new Set(GS.msgs.map(m => m.id)); let any = false;
+  list.forEach(m => { if (seen.has(m.id)) return; GS.msgs.push(m); GS.last = Math.max(GS.last, +m.id || 0); box.insertAdjacentHTML('beforeend', msgHtml(m)); any = true; });
+  if (any) { const e = box.querySelector('.gc-empty'); if (e) e.remove(); if (near) box.scrollTop = box.scrollHeight; }
+}
+async function pollChat() { if (document.hidden || GS.tab !== 'chat' || window.currentActiveView !== 'group' || !GS.id) return;
+  const r = await api(`/api/groups/${GS.id}/messages?after=${GS.last}`); if (r.ok && r.data.messages.length) addMsgs(r.data.messages); }
+async function chatTab() {
+  const L = G(); $('g-body').innerHTML = `<div class="tile p-3 space-y-3"><div id="gc-list" class="gc-list"><p class="gc-empty text-xs text-neutral-500 text-center py-6">…</p></div><div class="flex gap-2"><input id="gc-in" class="field flex-grow" maxlength="1000" placeholder="${L.msgPh}" onkeydown="if(event.key==='Enter') gSend()"><button class="btn-accent px-5 text-xs" onclick="gSend()">↑</button></div></div>`;
+  GS.msgs = []; GS.last = 0; const r = await api(`/api/groups/${GS.id}/messages?after=0`); if (GS.tab !== 'chat') return; const box = $('gc-list'); if (!box) return;
+  if (r.ok && r.data.messages.length) { box.innerHTML = ''; addMsgs(r.data.messages); box.scrollTop = box.scrollHeight; } else box.innerHTML = `<p class="gc-empty text-xs text-neutral-500 text-center py-6">${L.noMsgs}</p>`;
+  stopChat(); GS.timer = setInterval(pollChat, 6000);
+}
+window.gSend = async function () {
+  const inp = $('gc-in'), text = inp.value.trim(); if (!text) return; inp.value = ''; const box = $('gc-list'), me = GS.d.me.user_id;
+  const e = box.querySelector('.gc-empty'); if (e) e.remove();
+  const tmp = { id: 'tmp' + Date.now(), user_id: me, text, at: new Date().toISOString(), name: '' }; box.insertAdjacentHTML('beforeend', msgHtml(tmp)); box.scrollTop = box.scrollHeight; const el = box.lastElementChild;
+  const r = await api(`/api/groups/${GS.id}/messages`, 'POST', { text });
+  if (!r.ok) { el.remove(); inp.value = text; return gerr(r); }
+  el.dataset.id = r.data.message.id; const seen = GS.msgs.some(m => m.id === r.data.message.id); if (!seen) { GS.msgs.push(r.data.message); GS.last = Math.max(GS.last, r.data.message.id); }
+  box.querySelectorAll(`.gc-msg[data-id="${r.data.message.id}"]`).forEach((x, i) => { if (i > 0) x.remove(); });                // если опрос успел принести то же сообщение
+};
+
+// ---------- рейтинг ----------
+function topTab() {
+  const L = G(), d = GS.d, medals = ['🥇', '🥈', '🥉'];
+  const rows = d.members.map(m => { const mine = d.tasks.filter(t => t.assignee_id === m.user_id); return { m, done: mine.filter(t => t.done).length, open: mine.filter(t => !t.done).length, xp: m.score || 0 }; })
+    .sort((a, b) => b.done - a.done || b.xp - a.xp), max = Math.max(1, ...rows.map(r => r.done));
+  $('g-body').innerHTML = `<div class="tile p-4 space-y-3"><div><p class="font-extrabold text-white">🏆 ${L.rank}</p><p class="text-[11px] text-neutral-500">${L.rankD}</p></div>
+    <div class="space-y-2">${rows.map((r, i) => `<div class="g-rank"><span class="pos">${medals[i] || (i + 1)}</span><div class="min-w-0 flex-1"><p class="text-sm font-bold text-white truncate">${esc(nm(r.m))}${r.m.user_id === d.me.user_id ? ` <span class="mono">(${L.you})</span>` : ''}</p>${bar(Math.round(r.done / max * 100))}<p class="text-[11px] text-neutral-400 mt-1">✅ ${r.done} ${L.doneN} · ⏳ ${r.open} ${L.openN} · ⭐ ${r.xp} XP</p></div></div>`).join('')}</div></div>`;
+}
+
+// ======================= подписи =======================
+function v8Labels() {
+  const s = $('slides-demo-sub'); if (s) s.textContent = SUB[LG()];
+  const b = $('btn-mode-groups'); if (b) b.textContent = '👥 ' + G().title;
+}
+const _cl8 = window.changeLanguage; window.changeLanguage = function () { _cl8(); v8Labels(); };
+v8Labels();
 })();
 </script>
 </body>
