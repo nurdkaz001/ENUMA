@@ -578,6 +578,53 @@ body.no-scroll{overflow:hidden}
 
 
 
+/* MOBILE-HOME:BEGIN */
+.mq{display:none}
+@media (max-width:767px){
+  #home{padding-top:5.2rem!important;padding-bottom:1.4rem!important}
+  #home .mono.mb-6{margin-bottom:.9rem!important}
+  #hero-chat{margin-top:1.1rem!important}
+  .hc-bar textarea::placeholder{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .hc-chips{flex-wrap:nowrap!important;overflow-x:auto;margin:.7rem -1.5rem 0!important;padding:0 1.5rem .15rem;scrollbar-width:none;-webkit-overflow-scrolling:touch}
+  .hc-chips::-webkit-scrollbar{display:none}
+  .hc-chips button{flex:none;white-space:nowrap}
+  #hc-note,#tour-help,#hero-cta,.marquee{display:none!important}
+  .mq{display:block;margin-top:1.2rem}
+  #work-main{min-height:300px!important}
+  #workspace-section{scroll-margin-top:5rem}
+  #work-main{scroll-margin-top:5.2rem}
+  input,select,textarea,.field{font-size:16px!important}          /* iOS не «зумит» страницу при фокусе */
+}
+.mq-mat{border:1.5px dashed var(--line);border-radius:1.4rem;padding:.85rem;background:var(--tile);transition:border-color .2s}
+.mq-mat.hl{border-color:var(--accent);animation:mqPulse 1s 2}
+@keyframes mqPulse{50%{box-shadow:0 0 0 5px rgba(200,255,46,.25)}}
+.mq-drop{display:flex;align-items:center;gap:.8rem;width:100%;text-align:left;color:var(--fg)}
+.mq-drop .ico{flex:none;width:2.7rem;height:2.7rem;border-radius:.95rem;background:var(--accent);color:#0a0a0a;display:flex;align-items:center;justify-content:center;font-size:1.25rem}
+.mq-drop b{display:block;font-size:.95rem;line-height:1.2}
+.mq-drop small{display:block;font-size:.72rem;color:var(--mute);margin-top:.2rem;line-height:1.35}
+.mq-topic{display:flex;gap:.5rem;margin-top:.7rem}
+.mq-topic input{flex:1;min-width:0;border:1px solid var(--line);background:transparent;color:var(--fg);border-radius:.95rem;padding:.7rem .9rem;outline:0}
+.mq-topic input:focus{border-color:var(--accent-line,var(--accent))}
+.mq-topic button{flex:none;width:2.8rem;border-radius:.95rem;background:var(--accent);color:#0a0a0a;font-weight:900}
+.mq-ok{display:flex;align-items:center;gap:.6rem}
+.mq-ok .nm{flex:1;min-width:0;font-weight:700;font-size:.85rem;color:var(--fg);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.mq-ok button{flex:none;font-size:.72rem;color:var(--mute);text-decoration:underline}
+.mq-head{display:flex;align-items:center;justify-content:space-between;margin:1.15rem 0 .6rem}
+.mq-head button{color:var(--fg);opacity:.75}
+.mq-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:.6rem}
+.mq-tile{position:relative;display:flex;flex-direction:column;align-items:flex-start;padding:.9rem;min-height:5.4rem;border:1px solid var(--line);border-radius:1.2rem;background:var(--tile);color:var(--fg);text-align:left;transition:transform .15s,border-color .15s}
+.mq-tile:active{transform:scale(.97);border-color:var(--accent-line,var(--accent))}
+.mq-tile .e{font-size:1.5rem;line-height:1}
+.mq-tile b{font-size:.88rem;margin-top:.4rem;line-height:1.15}
+.mq-tile small{font-size:.68rem;color:var(--mute);line-height:1.3;margin-top:.1rem}
+.mq-tile .bd{position:absolute;top:.55rem;right:.6rem;min-width:1.15rem;height:1.15rem;padding:0 .25rem;border-radius:99px;background:#ff5d73;color:#fff;font-size:.62rem;font-weight:800;display:flex;align-items:center;justify-content:center}
+.mq-tile.off{opacity:.55}
+.mq-toast{position:fixed;left:50%;bottom:5.2rem;transform:translateX(-50%);z-index:90;max-width:88vw;padding:.7rem 1.1rem;border-radius:999px;background:var(--fg);color:var(--bg);font-size:.78rem;font-weight:700;line-height:1.35;text-align:center;box-shadow:0 10px 30px rgba(0,0,0,.35);animation:mqToast .25s}
+@keyframes mqToast{from{opacity:0;transform:translate(-50%,10px)}}
+/* MOBILE-HOME:END */
+
+
+
 /* THEME-LIGHT:BEGIN */
 /* Светлая тема: тёплая «бумага», мягкий оливковый текст, салатовый акцент без «кислоты». Тёмная тема — исходные стили. */
 .theme-btn{flex:none;width:2.25rem;height:2.25rem;border-radius:999px;border:1px solid var(--line);display:flex;align-items:center;justify-content:center;color:var(--fg);background:transparent;transition:border-color .2s,background .2s,transform .2s}
@@ -749,6 +796,11 @@ html[data-theme="light"] .g-dl.bad{color:#bf182e}
 html[data-theme="light"] .demo-note{color:#746220}
 html[data-theme="light"] .ent-src{color:#6c6a5f}
 html[data-theme="light"] .ent-src a{color:var(--accent-ink)}
+html[data-theme="light"] .mq-mat.hl{border-color:var(--accent-line)}
+html[data-theme="light"] .mq-topic input:focus{border-color:var(--accent-line,var(--accent-line))}
+html[data-theme="light"] .mq-tile:active{border-color:var(--accent-line,var(--accent-line))}
+html[data-theme="light"] .mq-tile .bd{color:var(--fg)}
+html[data-theme="light"] .mq-toast{box-shadow:0 10px 30px rgba(60,52,30,0.105)}
 html[data-theme="light"] .text-white{color:var(--fg)!important}
 html[data-theme="light"] .text-neutral-100{color:#34332b!important}
 html[data-theme="light"] .text-neutral-200{color:#3a3930!important}
@@ -883,14 +935,14 @@ html[data-theme="light"] [style*="color-scheme:dark"],html[data-theme="light"] [
         <div class="bento-card rounded-[28px] p-6 sm:p-8 max-w-md w-full shadow-2xl space-y-4 text-center max-h-[94vh] overflow-y-auto">
             <div class="w-16 h-16 bg-[#c8ff2e] text-black rounded-full flex items-center justify-center text-3xl mx-auto animate-float">✈️</div>
             <h3 id="auth-title" class="display text-3xl font-bold text-white">HUB-қа кіру</h3>
+            <label class="consent-row" id="auth-consent-row"><input type="checkbox" id="auth-consent" onchange="consentTick(this.checked)"><span id="auth-consent-text"></span></label>
             <a id="tg-link" href="https://t.me/enuuma_bot" target="_blank" rel="noopener" class="btn-accent w-full py-4 text-sm inline-flex items-center justify-center gap-2">✈️ <span id="tg-btn-text">Открыть Telegram</span></a>
             <div class="text-left space-y-1 text-xs text-neutral-400 tile p-3.5">
                 <p id="auth-step-1">1. @enuuma_bot</p>
                 <p id="auth-step-2">2. 6</p>
                 <p id="auth-auto" class="text-[#c8ff2e] font-bold"></p>
             </div>
-            <label class="consent-row" id="auth-consent-row"><input type="checkbox" id="auth-consent" onchange="consentTick(this.checked)"><span id="auth-consent-text"></span></label>
-            <div class="flex items-center gap-3 text-neutral-600"><span class="flex-1 h-px bg-white/10"></span><span id="auth-or" class="mono">или</span><span class="flex-1 h-px bg-white/10"></span></div>
+                        <div class="flex items-center gap-3 text-neutral-600"><span class="flex-1 h-px bg-white/10"></span><span id="auth-or" class="mono">или</span><span class="flex-1 h-px bg-white/10"></span></div>
             <input id="otp" class="otp-one" type="text" inputmode="numeric" pattern="[0-9]*" autocomplete="one-time-code" maxlength="40" placeholder="······" oninput="otpInput(this)" onkeydown="if(event.key==='Enter') verifyCode()">
             <p id="auth-err" class="text-xs text-[#ff6b6b] min-h-[1rem]"></p>
             <div class="flex gap-2">
@@ -925,7 +977,8 @@ html[data-theme="light"] [style*="color-scheme:dark"],html[data-theme="light"] [
                 <div id="hc-chips" class="hc-chips"></div>
                 <p id="hc-note" class="hc-note"></p>
             </div>
-            <div class="mt-10 flex flex-col md:flex-row md:items-end md:justify-between gap-8">
+            <section id="mq" class="mq" aria-label="Tools"></section>
+            <div id="hero-cta" class="mt-10 flex flex-col md:flex-row md:items-end md:justify-between gap-8">
                 <p class="max-w-md text-base lg:text-lg font-medium text-neutral-400 leading-snug" id="hero-subtitle">
                     Твой путь к знаниям с искусственным интеллектом 2026 года
                 </p>
@@ -4529,7 +4582,7 @@ v8Labels();
 (function () {
   const KEY = 'enuma_theme', root = document.documentElement;
   const T = { ru: { label: 'Сменить тему', light: 'Светлая', dark: 'Тёмная' }, kz: { label: 'Тақырыпты ауыстыру', light: 'Жарық', dark: 'Қараңғы' }, en: { label: 'Switch theme', light: 'Light', dark: 'Dark' } };
-  const lg = () => (['ru', 'kz', 'en'].includes(window.selectedLang) ? window.selectedLang : 'ru');
+  const lg = () => { const l = (typeof selectedLang !== 'undefined') ? selectedLang : 'ru'; return ['ru', 'kz', 'en'].includes(l) ? l : 'ru'; };
   const cur = () => root.getAttribute('data-theme') === 'light' ? 'light' : 'dark';
   function labels() {
     const t = T[lg()], b = document.getElementById('theme-toggle'); if (b) { b.setAttribute('aria-label', t.label); b.title = t.label + ': ' + t[cur()]; }
@@ -4549,6 +4602,77 @@ v8Labels();
   const _cl = window.changeLanguage; window.changeLanguage = function () { _cl.apply(this, arguments); labels(); };
   const _ca = window.checkAuth; window.checkAuth = function () { const r = _ca.apply(this, arguments); labels(); return r; };
   labels();
+})();
+</script>
+<script id="mobile-home-js">
+(function () {
+  const $ = id => document.getElementById(id), esc = escapeHtml;
+  const LG = () => { const l = (typeof selectedLang !== 'undefined') ? selectedLang : 'ru'; return ['ru', 'kz', 'en'].includes(l) ? l : 'ru'; };
+  const isM = () => matchMedia('(max-width:767px)').matches;
+  const MQ = {
+    ru: { t1: 'Загрузите материал', t2: 'PDF, Word, Excel, TXT — ИИ сделает тест, карточки и конспект', topic: 'или введите тему…', ready: 'Материал готов', chg: 'Сменить', head: 'Инструменты', all: 'Все разделы →', need: 'Сначала загрузите материал или введите тему', load: 'Загружаю…', big: 'Файл больше 15 МБ', ph: 'Спросите что угодно…',
+      tiles: { quiz: ['Тест', '20 вопросов по материалу'], cards: ['Карточки', 'для быстрого заучивания'], sum: ['Конспект', 'кратко и по делу'], teacher: ['ИИ-учитель', 'объяснение, видео и вопросы'], plan: ['Планер', 'расписание и задачи'], groups: ['Группы', 'учитесь вместе'] } },
+    kz: { t1: 'Материалды жүктеңіз', t2: 'PDF, Word, Excel, TXT — ЖИ тест, карточка және конспект жасайды', topic: 'немесе тақырып жазыңыз…', ready: 'Материал дайын', chg: 'Ауыстыру', head: 'Құралдар', all: 'Барлық бөлімдер →', need: 'Алдымен материалды жүктеңіз немесе тақырып жазыңыз', load: 'Жүктелуде…', big: 'Файл 15 МБ-тан үлкен', ph: 'Сұрақ қойыңыз…',
+      tiles: { quiz: ['Тест', 'материал бойынша 20 сұрақ'], cards: ['Карточкалар', 'тез жаттау үшін'], sum: ['Конспект', 'қысқа әрі нақты'], teacher: ['ЖИ-мұғалім', 'түсіндірме, бейне, сұрақтар'], plan: ['Жоспарлаушы', 'кесте және тапсырмалар'], groups: ['Топтар', 'бірге оқыңыз'] } },
+    en: { t1: 'Upload your material', t2: 'PDF, Word, Excel, TXT — the AI makes a quiz, flashcards and a summary', topic: 'or type a topic…', ready: 'Material ready', chg: 'Change', head: 'Tools', all: 'All sections →', need: 'First upload a material or type a topic', load: 'Uploading…', big: 'File is larger than 15 MB', ph: 'Ask anything…',
+      tiles: { quiz: ['Quiz', '20 questions from your material'], cards: ['Flashcards', 'for quick memorizing'], sum: ['Summary', 'short and clear'], teacher: ['AI teacher', 'explanation, video and questions'], plan: ['Planner', 'schedule and tasks'], groups: ['Groups', 'study together'] } }
+  };
+  const TILES = [['quiz', '🎯', "generate('quiz'", true], ['cards', '🃏', "generate('flashcards'", true], ['sum', '📝', "generate('summary'", true], ['teacher', '🤖', 'openAITeacherView', false], ['plan', '📅', 'openPlannerView', false], ['groups', '👥', 'openGroupsView', false]];
+  let matName = '';
+  const L = () => MQ[LG()];
+
+  function build() {
+    const box = $('mq'); if (!box) return;
+    box.innerHTML = `<div class="mq-mat" id="mq-mat">
+        <div id="mq-empty"><button class="mq-drop" type="button" onclick="mqPick()"><span class="ico">📎</span><span><b id="mq-t1"></b><small id="mq-t2"></small></span></button>
+          <div class="mq-topic"><input id="mq-topic" type="text" enterkeyhint="go" autocomplete="off" onkeydown="if(event.key==='Enter')mqTopic()"><button type="button" onclick="mqTopic()" aria-label="OK">→</button></div></div>
+        <div id="mq-ok" class="mq-ok" style="display:none"><span>✅</span><span class="nm" id="mq-nm"></span><button type="button" id="mq-chg" onclick="mqChange()"></button></div>
+        <input type="file" id="mq-file" hidden accept=".pdf,.docx,.xlsx,.txt"></div>
+      <div class="mq-head"><span class="mono" id="mq-h"></span><button type="button" class="mono" id="mq-all" onclick="toggleSide(true)"></button></div>
+      <div class="mq-grid">${TILES.map(t => `<button type="button" class="mq-tile" data-k="${t[0]}" onclick="mqGo('${t[0]}')"><span class="e">${t[1]}</span><b></b><small></small>${t[0] === 'groups' ? '<span class="bd" id="mq-bd" style="display:none"></span>' : ''}</button>`).join('')}</div>`;
+    $('mq-file').addEventListener('change', e => { const f = e.target.files[0]; e.target.value = ''; if (f) upload(f); });
+    labels(); updMat();
+  }
+  function labels() {
+    const l = L(); if (!$('mq-t1')) return;
+    $('mq-t1').textContent = l.t1; $('mq-t2').textContent = l.t2; $('mq-topic').placeholder = l.topic; $('mq-chg').textContent = l.chg; $('mq-h').textContent = l.head; $('mq-all').textContent = l.all;
+    document.querySelectorAll('.mq-tile').forEach(b => { const t = l.tiles[b.dataset.k]; b.querySelector('b').textContent = t[0]; b.querySelector('small').textContent = t[1]; });
+    phMobile();
+  }
+  function phMobile() { const i = $('hc-input'); if (i && isM()) i.placeholder = L().ph; }
+  function toast(msg, ms) { const old = document.querySelector('.mq-toast'); if (old) old.remove(); const t = document.createElement('div'); t.className = 'mq-toast'; t.textContent = msg; document.body.appendChild(t); setTimeout(() => t.remove(), ms || 2600); }
+  function updMat() {
+    const has = !!(typeof currentDocId !== 'undefined' && currentDocId); if (!$('mq-empty')) return;
+    $('mq-empty').style.display = has ? 'none' : ''; $('mq-ok').style.display = has ? 'flex' : 'none';
+    if (has) { const nm = matName || (String(currentDocId).startsWith('topic_') ? String(currentDocId).slice(6) : L().ready); $('mq-nm').textContent = nm; }
+  }
+  function updBadge() { const src = $('g-badge-top'), bd = $('mq-bd'); if (!bd) return; const n = src && !src.classList.contains('hidden') ? (src.textContent || '').trim() : ''; bd.style.display = n ? 'flex' : 'none'; bd.textContent = n; }
+  async function upload(file) {
+    if (!currentUser) return checkAuth(); const l = L();
+    if (file.size > 15 * 1048576) return toast(l.big);
+    $('mq-nm').textContent = l.load; $('mq-empty').style.display = 'none'; $('mq-ok').style.display = 'flex';
+    const fd = new FormData(); fd.append('file', file); let res = null, data = {};
+    try { res = await fetch('/upload', { method: 'POST', body: fd }); data = await res.json().catch(() => ({})); } catch (e) {}
+    if (res && res.ok) { currentDocId = data.doc_id; matName = file.name; updMat(); toast('✅ ' + l.ready + (data.warning ? '\n⚠ ' + data.warning : ''), data.warning ? 6000 : 2200); }
+    else { matName = ''; currentDocId = null; updMat(); toast('⚠ ' + ((data && (data.error || data.detail)) || 'Error'), 4000); }
+  }
+  window.mqPick = () => { if (!currentUser) return checkAuth(); $('mq-file').click(); };
+  window.mqTopic = () => { if (!currentUser) return checkAuth(); const v = ($('mq-topic').value || '').trim(); if (v.length < 2) return; currentDocId = 'topic_' + v; matName = v; const ti = $('topic-input'); if (ti) ti.value = v; $('mq-topic').value = ''; $('mq-topic').blur(); updMat(); toast('✅ ' + L().ready); };
+  window.mqChange = () => { currentDocId = null; matName = ''; const ti = $('topic-input'); if (ti) ti.value = ''; updMat(); };
+  window.mqGo = key => {
+    const t = TILES.find(x => x[0] === key); if (!t) return;
+    if (!currentUser) return checkAuth();
+    if (t[3] && !currentDocId) { const m = $('mq-mat'); toast(L().need, 2800); m.classList.remove('hl'); void m.offsetWidth; m.classList.add('hl'); m.scrollIntoView({ block: 'center', behavior: 'smooth' }); return; }
+    const btn = [...document.querySelectorAll('#side-panel .mode-row')].find(b => (b.getAttribute('onclick') || '').includes(t[2]));
+    if (btn) btn.click();                       // тот же путь, что и у боковой панели: открывает раздел и прокручивает к нему
+  };
+  // обновления после действий в других частях сайта
+  const _um = window.uploadMaterial; if (_um) window.uploadMaterial = async function () { const r = await _um.apply(this, arguments); matName = ''; updMat(); return r; };
+  const _cl = window.changeLanguage; window.changeLanguage = function () { _cl.apply(this, arguments); labels(); };
+  const _ca = window.checkAuth; window.checkAuth = function () { const r = _ca.apply(this, arguments); phMobile(); updMat(); updBadge(); return r; };
+  matchMedia('(max-width:767px)').addEventListener && matchMedia('(max-width:767px)').addEventListener('change', phMobile);
+  setInterval(() => { updMat(); updBadge(); }, 2500);
+  build();
 })();
 </script>
 </body>
