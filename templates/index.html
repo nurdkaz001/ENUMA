@@ -625,6 +625,36 @@ body.no-scroll{overflow:hidden}
 
 
 
+/* CHAT-BIG:BEGIN */
+.hc{max-width:min(100%,60rem)!important}
+.hc-msgs{max-height:min(62vh,38rem)!important;min-height:10rem;padding:1.2rem!important;gap:1rem!important;border-radius:1.8rem!important}
+.hc .ai-bubble,.hc .me-bubble,#chat-wrap .ai-bubble,#chat-wrap .me-bubble,.hc-full .ai-bubble,.hc-full .me-bubble,.cw-full .ai-bubble,.cw-full .me-bubble{font-size:1rem;line-height:1.65}
+.hc .ai-row,.hc-full .ai-row,.cw-full .ai-row{max-width:100%}
+.hc .ai-av{width:2.2rem;height:2.2rem;border-radius:.9rem}
+.hc-bar{min-height:4.1rem;padding:.65rem .65rem .65rem .7rem!important;border-radius:2.1rem!important}
+.hc-bar textarea{font-size:1.06rem!important;min-height:2.7rem!important;max-height:12rem!important;padding:.65rem 0!important}
+.hc-send{width:2.9rem;height:2.9rem}
+.hc-attach{width:2.7rem;height:2.7rem}
+.hc-top{display:none;align-items:center;gap:.5rem;margin-bottom:.55rem}
+.hc-top.show{display:flex}
+.hc-top .ttl{display:none;font-weight:800;color:var(--fg);flex:1}
+.hc-top .sp{flex:1}
+.hc-tbtn{flex:none;min-width:2.3rem;height:2.3rem;padding:0 .7rem;border-radius:999px;border:1px solid var(--line);color:var(--fg);background:transparent;font-size:.95rem;font-weight:700;display:inline-flex;align-items:center;justify-content:center;transition:border-color .2s,background .2s}
+.hc-tbtn:hover{border-color:var(--accent-line,var(--accent));background:rgba(128,128,128,.1)}
+#hero-chat.hc-full{position:fixed;inset:0;z-index:85;max-width:none!important;margin:0!important;display:flex;flex-direction:column;background:var(--bg);padding:max(.75rem,env(safe-area-inset-top)) max(1rem,calc((100vw - 60rem)/2)) max(.75rem,env(safe-area-inset-bottom))}
+#hero-chat.hc-full .hc-top .ttl{display:block}
+#hero-chat.hc-full .hc-msgs{flex:1;max-height:none!important;background:transparent!important;border:0!important;backdrop-filter:none!important;padding:.5rem 0!important;margin-bottom:.5rem}
+#hero-chat.hc-full #hc-chips,#hero-chat.hc-full #hc-note,#hero-chat.hc-full #tour-help{display:none!important}
+#chat-wrap{height:min(82vh,54rem)!important}
+#chat-messages{padding:1.1rem!important;gap:1rem}
+#chat-input{padding:1rem 1.2rem!important;font-size:1.02rem!important;border-radius:1.3rem!important}
+#chat-wrap .chat-attach{width:2.8rem;height:2.8rem}
+@media (max-width:767px){#chat-wrap{height:calc(100vh - 10rem)!important;height:calc(100dvh - 10rem)!important}.hc-msgs{max-height:58vh!important}}
+#chat-wrap.cw-full{position:fixed;inset:0;z-index:85;width:100%!important;max-width:none!important;height:100vh!important;height:100dvh!important;margin:0!important;background:var(--bg);padding:max(.75rem,env(safe-area-inset-top)) max(1rem,calc((100vw - 60rem)/2)) max(.75rem,env(safe-area-inset-bottom))}
+#chat-wrap.cw-full #chat-messages{background:transparent!important;border-color:transparent!important}
+/* CHAT-BIG:END */
+
+
 /* THEME-LIGHT:BEGIN */
 /* Светлая тема: тёплая «бумага», мягкий оливковый текст, салатовый акцент без «кислоты». Тёмная тема — исходные стили. */
 .theme-btn{flex:none;width:2.25rem;height:2.25rem;border-radius:999px;border:1px solid var(--line);display:flex;align-items:center;justify-content:center;color:var(--fg);background:transparent;transition:border-color .2s,background .2s,transform .2s}
@@ -801,6 +831,7 @@ html[data-theme="light"] .mq-topic input:focus{border-color:var(--accent-line,va
 html[data-theme="light"] .mq-tile:active{border-color:var(--accent-line,var(--accent-line))}
 html[data-theme="light"] .mq-tile .bd{color:var(--fg)}
 html[data-theme="light"] .mq-toast{box-shadow:0 10px 30px rgba(60,52,30,0.105)}
+html[data-theme="light"] .hc-tbtn:hover{border-color:var(--accent-line,var(--accent-line))}
 html[data-theme="light"] .text-white{color:var(--fg)!important}
 html[data-theme="light"] .text-neutral-100{color:#34332b!important}
 html[data-theme="light"] .text-neutral-200{color:#3a3930!important}
@@ -967,6 +998,7 @@ html[data-theme="light"] [style*="color-scheme:dark"],html[data-theme="light"] [
                 <span id="hero-word-2" class="text-neutral-500">platform</span>
             </h1>
             <div id="hero-chat" class="hc mt-8 md:mt-10">
+                <div class="hc-top" id="hc-top"><span class="ttl" id="hc-ttl">✨ ИИ-чат</span><span class="sp"></span><button type="button" class="hc-tbtn" id="hc-clr" onclick="hcClear()">🗑</button><button type="button" class="hc-tbtn" id="hc-exp" onclick="hcExpand()">⤢</button></div>
                 <div id="hc-messages" class="hc-msgs hidden"></div>
                 <div id="hc-prev" class="img-prev hidden"></div>
                 <div class="hc-bar">
@@ -2838,7 +2870,7 @@ window.openChatView = function () {
   $('result-container').innerHTML = `
     <div id="chat-wrap" class="w-full flex flex-col h-[68vh] text-left quiz-slide-enter">
       <div class="border-b border-white/10 pb-3 mb-3 flex items-center gap-3"><div class="ai-av">✨</div>
-        <div><h3 class="display text-lg font-bold text-white leading-none">${esc(t.modeChat)}</h3><p class="mono mt-1" style="color:var(--accent)">● online</p></div></div>
+        <div><h3 class="display text-lg font-bold text-white leading-none">${esc(t.modeChat)}</h3><p class="mono mt-1" style="color:var(--accent)">● online</p></div><button type="button" class="hc-tbtn ml-auto" id="cw-exp" onclick="cwExpand()">⤢</button></div>
       <div id="chat-messages" class="flex-grow overflow-y-auto space-y-3 p-3 tile mb-3 flex flex-col"></div>
       ${currentDocId ? `<label class="mono flex items-center gap-2 mb-2 cursor-pointer"><input type="checkbox" id="chat-use-doc" style="accent-color:#c8ff2e"> 📎 ${selectedLang === 'en' ? 'Use my uploaded material' : selectedLang === 'kz' ? 'Жүктелген материалымды қолдану' : 'Опираться на мой загруженный материал'}</label>` : ''}
       <div id="chat-prev" class="img-prev hidden"></div>
@@ -3699,7 +3731,7 @@ GT.ru.copy = '⧉ Копировать'; GT.kz.copy = '⧉ Көшіру'; GT.en.
 GT.ru.idHint = 'Друзья могут пригласить вас по @нику или этому ID.'; GT.kz.idHint = 'Достарыңыз сізді @ник немесе осы ID арқылы шақыра алады.'; GT.en.idHint = 'Friends can invite you by @username or this ID.';
 window.copyMyId = async b => { const ok = await window.copyToClipboard(String(currentUser.public_id)); const o = b.textContent; b.textContent = ok ? '✓' : '✕'; setTimeout(() => { b.textContent = o; }, 1400); };
 const G = () => GT[LG()];
-let GID = null, GD = null; const HCH = [];
+let GID = null, GD = null; const HCH = []; window.hcReset = () => { HCH.length = 0; };
 const gload = () => `<div class="py-12 text-center"><div class="w-10 h-10 border-4 border-[#c8ff2e] border-t-transparent rounded-full animate-spin mx-auto"></div></div>`;
 const nm = u => u.username ? '@' + u.username : u.display_name;
 const gerr = (r) => alert((r.data && r.data.error) || G().err);
@@ -4673,6 +4705,42 @@ v8Labels();
   matchMedia('(max-width:767px)').addEventListener && matchMedia('(max-width:767px)').addEventListener('change', phMobile);
   setInterval(() => { updMat(); updBadge(); }, 2500);
   build();
+})();
+</script>
+<script id="chat-big-js">
+(function () {
+  const $ = id => document.getElementById(id);
+  const isM = () => matchMedia('(max-width:767px)').matches;
+  const lg = () => { const l = (typeof selectedLang !== 'undefined') ? selectedLang : 'ru'; return ['ru', 'kz', 'en'].includes(l) ? l : 'ru'; };
+  const T = { ru: { title: '✨ ИИ-чат', exp: 'Развернуть на весь экран', col: 'Свернуть', clr: 'Новый чат' }, kz: { title: '✨ ЖИ-чат', exp: 'Толық экранға жаю', col: 'Жию', clr: 'Жаңа чат' }, en: { title: '✨ AI chat', exp: 'Expand to full screen', col: 'Collapse', clr: 'New chat' } };
+  // Перенос в <body>: у карточек сайта есть backdrop-filter, из-за которого position:fixed «запирается» внутри карточки
+  function expand(el, cls, on) {
+    if (!el) return false; if (on === undefined) on = !el.classList.contains(cls);
+    if (on) { if (!el.__ph) { el.__ph = document.createComment('chat'); el.parentNode.insertBefore(el.__ph, el); } document.body.appendChild(el); el.classList.add(cls); document.body.classList.add('no-scroll'); }
+    else { if (el.__ph && el.__ph.parentNode) el.__ph.parentNode.insertBefore(el, el.__ph); el.classList.remove(cls); if (!document.querySelector('.hc-full,.cw-full')) document.body.classList.remove('no-scroll'); }
+    return on;
+  }
+  function icons() {
+    const t = T[lg()], h = $('hero-chat'), w = $('chat-wrap');
+    const hb = $('hc-exp'); if (hb && h) { const f = h.classList.contains('hc-full'); hb.textContent = f ? '✕' : '⤢'; hb.title = f ? t.col : t.exp; }
+    const wb = $('cw-exp'); if (wb && w) { const f = w.classList.contains('cw-full'); wb.textContent = f ? '✕' : '⤢'; wb.title = f ? t.col : t.exp; }
+    const c = $('hc-clr'); if (c) c.title = t.clr; const ti = $('hc-ttl'); if (ti) ti.textContent = t.title;
+  }
+  window.hcExpand = function (on) { const h = $('hero-chat'); expand(h, 'hc-full', on); icons(); const m = $('hc-messages'); if (m) m.scrollTop = m.scrollHeight; };
+  window.cwExpand = function (on) { const w = $('chat-wrap'); expand(w, 'cw-full', on); icons(); const m = $('chat-messages'); if (m) m.scrollTop = m.scrollHeight; };
+  window.hcClear = function () {
+    const m = $('hc-messages'); if (!m) return; m.innerHTML = ''; m.classList.add('hidden'); const ch = $('hc-chips'); if (ch) ch.style.display = '';
+    const top = $('hc-top'); if (top) top.classList.remove('show'); if (window.hcReset) window.hcReset(); window.__hcAutoDone = false; window.hcExpand(false);
+  };
+  // как только появились сообщения — показываем панель кнопок; на телефоне чат сам разворачивается на весь экран (как в мобильных ИИ-приложениях)
+  const box = $('hc-messages');
+  if (box) new MutationObserver(() => {
+    const has = box.childElementCount > 0, top = $('hc-top'); if (top) top.classList.toggle('show', has);
+    if (has && isM() && !window.__hcAutoDone) { window.__hcAutoDone = true; window.hcExpand(true); }
+  }).observe(box, { childList: true });
+  document.addEventListener('keydown', e => { if (e.key !== 'Escape') return; if ($('hero-chat') && $('hero-chat').classList.contains('hc-full')) window.hcExpand(false); else if ($('chat-wrap') && $('chat-wrap').classList.contains('cw-full')) window.cwExpand(false); });
+  const _cl = window.changeLanguage; window.changeLanguage = function () { _cl.apply(this, arguments); icons(); };
+  icons();
 })();
 </script>
 </body>
