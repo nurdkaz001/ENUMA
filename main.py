@@ -527,6 +527,40 @@ def lang_line(lang: str) -> str:
     return LANG_LINE.get(lang, LANG_LINE["ru"])
 
 
+_KZ_LETTERS = re.compile(r"[әіңғүұқөһӘІҢҒҮҰҚӨҺ]")
+_CYR = re.compile(r"[А-Яа-яЁё]")
+_LAT = re.compile(r"[A-Za-z]")
+
+
+def detect_lang(text: str) -> Optional[str]:
+    """Язык запроса по алфавиту: kz (есть казахские буквы), ru (кириллица), en (латиница). None — если букв почти нет (цифры, формулы, код)."""
+    t = text or ""
+    kz = len(_KZ_LETTERS.findall(t))
+    cyr = len(_CYR.findall(t)) + kz
+    lat = len(_LAT.findall(t))
+    if cyr + lat < 2:
+        return None
+    if cyr >= lat:
+        return "kz" if kz >= 1 else "ru"
+    return "en"
+
+
+def request_lang_line(text: str, ui_lang: str = "ru") -> str:
+    """Отвечать надо на языке самого запроса, а не интерфейса сайта."""
+    base = ("ЯЗЫК ОТВЕТА: отвечай на том же языке, на котором написан запрос студента, независимо от выбранного языка интерфейса сайта. "
+            "Если в запросе смешаны языки — на языке основной части. Ключи JSON и служебные поля не переводи. ")
+    d = detect_lang(text)
+    if d == "ru":
+        hint = "Запрос написан по-русски — отвечай по-русски."
+    elif d == "kz":
+        hint = "Запрос написан по-казахски — отвечай на казахском языке (Жауапты қазақ тілінде бер)."
+    elif d == "en":
+        hint = "The request is written in English (or another Latin-script language) — answer in the same language as the request."
+    else:
+        hint = "Если язык запроса определить невозможно (только цифры, формулы или код) — " + LANG_LINE.get(ui_lang, LANG_LINE["ru"])
+    return base + hint
+
+
 # ==================== СТРАНИЦА / ЗАГРУЗКА / ГЕНЕРАЦИЯ ====================
 @app.get("/", response_class=HTMLResponse)
 def read_root():
@@ -697,10 +731,15 @@ def generate_content(
     return {"result": result, "tokens_left": left, "history_id": hid}
 
 
+OCR_MARK = "[Текст, распознанный с фото]"
+PHOTO_DEFAULT = {"ru": "Опиши и разбери это фото.", "kz": "Бұл фотоны сипаттап, талдап бер.", "en": "Describe and analyze this photo."}
+
+
 def _chat_prompt(message: str, doc_id: str, lang: str, history: str, user: dict) -> tuple[str, str]:
     message = message.strip()[:2000]
     if not message:
         raise HTTPException(400, "Пустое сообщение.")
+    own = message.split(OCR_MARK)[0].strip() or message          # язык определяем по словам пользователя, а не по тексту, распознанному с фото
     ctx = get_doc_text(doc_id, user) or ""
     # память — только текущая беседа, которую присылает страница (старые чаты тему не навязывают)
     past: list = []
@@ -712,7 +751,7 @@ def _chat_prompt(message: str, doc_id: str, lang: str, history: str, user: dict)
     dialog = "\n".join(f"Студент: {m['message']}\nНаставник: {m['reply']}" for m in past)
     prompt = (
         "Ты — дружелюбный ИИ-наставник для студентов. Отвечай понятно и по делу. "
-        "Формулы пиши в LaTeX: короткие — между $...$, отдельные (длинные, предел, дробь, сумма) — между $$...$$ на отдельной строке. Не используй \\[ \\] и \\( \\). " + lang_line(lang) + "\n"
+        "Формулы пиши в LaTeX: короткие — между $...$, отдельные (длинные, предел, дробь, сумма) — между $$...$$ на отдельной строке. Не используй \\[ \\] и \\( \\). " + request_lang_line(own, lang) + "\n"
         "ВАЖНО: не выбирай тему за студента и не додумывай её. Если сообщение — приветствие или в нём нет конкретного вопроса/темы, "
         "коротко поздоровайся и спроси, какую тему или задачу он хочет разобрать (1–2 предложения, без списка тем и без лекции).\n\n"
         + (MATERIAL_RULES + f"Материал студента:\n{fit_context(ctx)}\nОтвечай по материалу; если ответа в нём нет — скажи об этом прямо.\n\n" if ctx else "")
@@ -767,7 +806,7 @@ def chat_stream(message: str = Form(""), doc_id: str = Form("default"), lang: st
     imgs = _read_images(images)
     if imgs and not VISION_API_KEY:                     # до списания токена: страница сама распознает текст на фото (OCR)
         return JSONResponse({"error": "Распознавание фото на сервере не настроено.", "code": "no_vision"}, status_code=501)
-    message = message.strip() or ("Опиши и разбери это фото." if imgs else "")
+    message = message.strip() or (PHOTO_DEFAULT.get(lang, PHOTO_DEFAULT["ru"]) if imgs else "")
     message, prompt = _chat_prompt(message, doc_id, lang, history, user)
     left = spend_token(user["id"])                      # 402 вернётся обычным JSON ещё до начала потока
     if imgs:
@@ -838,7 +877,7 @@ def tickets(theme: str = Form(...), comment: str = Form(""), count: int = Form(3
     ctx = fit_context(get_doc_text(doc_id, user) or "")
     prompt = (
         f"Составь {count} экзаменационных билетов по теме «{theme}» в формате игры-викторины. "
-        f"Дополнительные требования: {comment[:500] or 'нет'}. " + lang_line(lang) + "\n"
+        f"Дополнительные требования: {comment[:500] or 'нет'}. " + request_lang_line(theme + " " + comment, lang) + "\n"
         + (MATERIAL_RULES + QUESTION_RULES + f"Материал студента:\n{ctx}\n" if ctx else "")
         + 'Верни ТОЛЬКО JSON-объект: {"tickets":[{"ticket_num":1,"question":"...","game_task":"короткое игровое задание",'
           '"options":["A) ...","B) ...","C) ..."],"correct":"A"}]}. correct — буква правильного варианта.'
@@ -1437,7 +1476,7 @@ def _generate_deck(body: "SlidesIn", user: dict) -> dict:
         "КАРТИНКИ: для слайдов title, section, bullets, quote и closing задай vq — описание иллюстрации НА АНГЛИЙСКОМ (8–18 слов: "
         "предмет, действие, обстановка, настроение; без текста, букв, цифр и логотипов) и kw — 2–3 английских слова через запятую для поиска "
         "стокового фото (конкретные существительные, например \"solar panels,energy\"). Для остальных layout vq и kw оставь пустыми.\n\n"
-        f"{theme_rule}\n{lang_line(body.lang)}\n\n"
+        f"{theme_rule}\n{request_lang_line(body.prompt, body.lang)}\n\n"
         'Верни ТОЛЬКО JSON: {"title":"название презентации","theme":{...},"slides":[{"layout":"bullets","title":"...","subtitle":"","icon":"🚀",'
         '"bullets":["..."],"left":{"h":"","items":[]},"right":{"h":"","items":[]},"stats":[{"v":"","l":""}],'
         '"steps":[{"h":"","t":""}],"quote":"","author":"","vq":"","kw":"","notes":"..."}]}'
@@ -2589,7 +2628,7 @@ def group_split(gid: int, body: SplitIn, user: dict = Depends(current_user)):
         "Ты — тимлид учебной группы. Раздели общую цель на конкретные задачи и справедливо распредели между участниками.\n"
         f"ЦЕЛЬ ГРУППЫ:\n<<<\n{body.goal.strip()}\n>>>\n\nУЧАСТНИКИ (используй ники ТОЧНО как написано):\n{roster}\n\n"
         f"Сделай от {len(people)} до {n} задач. Каждому участнику — хотя бы одна задача, нагрузка примерно равная. "
-        "Заголовок — короткое действие (до 10 слов), description — 1–2 предложения, что именно сделать. " + lang_line(body.lang) + "\n"
+        "Заголовок — короткое действие (до 10 слов), description — 1–2 предложения, что именно сделать. " + request_lang_line(body.goal, body.lang) + "\n"
         'Верни ТОЛЬКО JSON: {"tasks":[{"title":"...","description":"...","assignee":"@ник"}]}'
     )
     data, left = paid(user, lambda: parse_json(ask_ai(prompt, json_mode=True, max_tokens=2500, temperature=0.6)))
@@ -2781,7 +2820,7 @@ def planner_ask(body: PlanIn, user: dict = Depends(current_user)):
         f"ЗАНЯТОСТЬ И СВОБОДНОЕ ВРЕМЯ НА 14 ДНЕЙ (расписание повторяется каждую неделю):\n" + "\n".join(lines) + "\n\n"
         f"УЖЕ ЗАПЛАНИРОВАНО:\n{existing}\n\n"
         'Верни ТОЛЬКО JSON: {"message":"одно короткое предложение студенту — что именно ты запланировал","tasks":[{"title":"...","date":"YYYY-MM-DD","start":"HH:MM","minutes":45,"desc":"..."}]}. '
-        + lang_line(lang)
+        + request_lang_line(body.query, lang)
     )
 
     def run():
@@ -3068,7 +3107,7 @@ def find_video(query: str, lang: str) -> Optional[dict]:
 def _teacher_explain(topic: str, comment: str, ctx: str, lang: str) -> dict:
     prompt = (
         f"Ты — лучший преподаватель: объясняешь так, что тема «щёлкает» с первого раза и читать интересно. Тема: «{topic}». "
-        f"Пожелания студента: {comment or 'нет'}. " + lang_line(lang) + "\n"
+        f"Пожелания студента: {comment or 'нет'}. " + request_lang_line(topic + " " + comment, lang) + "\n"
         + (MATERIAL_RULES + f"Материал студента:\n{ctx}\n" if ctx else "")
         + "Напиши объяснение в Markdown, чтобы его было легко и приятно читать. Строго такая структура (заголовки с эмодзи):\n"
           "### 🎯 Суть в одной фразе — 1–2 предложения.\n"
@@ -3117,7 +3156,7 @@ def _gen_questions(topic: str, comment: str, ctx: str, lang: str, asked: Optiona
     avoid = ("\nНЕ повторяй и не перефразируй уже заданные вопросы:\n" + "\n".join(f"- {a}" for a in (asked or [])[-40:])) if asked else ""
     prompt = (
         f"Составь ровно 10 хороших тестовых вопросов по теме «{topic}», чтобы по-настоящему проверить понимание, а не память. Пожелания: {comment or 'нет'}. "
-        + lang_line(lang) + "\n"
+        + request_lang_line(topic + " " + comment, lang) + "\n"
         + (MATERIAL_RULES + QUESTION_RULES + f"Материал студента:\n{ctx}\n" if ctx else "")
         + "Сложность: 3 лёгких (термины, суть), 4 средних (применение, небольшие расчёты или ситуации), 3 сложных (анализ, ловушки, сравнение). "
           "У каждого вопроса 4 варианта и ровно один правильный; неправильные варианты правдоподобны (типичные ошибки), без «все вышеперечисленные» и «ничего из этого». "
@@ -3153,8 +3192,9 @@ def ai_teacher(topic: str = Form(...), comment: str = Form(""), doc_id: str = Fo
         f_expl = _TEACH_POOL.submit(_teacher_explain, topic, comment, ctx, lang)      # объяснение и вопросы пишутся параллельно — быстрее
         f_qs = _TEACH_POOL.submit(_gen_questions, topic, comment, ctx, lang, None)
         expl, qs = f_expl.result(), f_qs.result()
-        query = expl["video_query"] or f"{topic} {'объяснение' if lang != 'en' else 'explained'}"
-        return {"explanation": expl["explanation"], "video_query": query, "video": find_video(query, lang), "game_questions": qs}
+        vlang = detect_lang(topic + " " + comment) or lang                          # видео подбираем на языке запроса
+        query = expl["video_query"] or f"{topic} {'объяснение' if vlang != 'en' else 'explained'}"
+        return {"explanation": expl["explanation"], "video_query": query, "video": find_video(query, vlang), "game_questions": qs}
 
     data, left = paid(user, run)
     save_generation(user["id"], "teacher", topic, json.dumps(data, ensure_ascii=False), doc_id)
