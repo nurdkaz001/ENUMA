@@ -655,6 +655,8 @@ body.no-scroll{overflow:hidden}
 /* CHAT-BIG:END */
 
 
+
+
 /* THEME-LIGHT:BEGIN */
 /* Светлая тема: тёплая «бумага», мягкий оливковый текст, салатовый акцент без «кислоты». Тёмная тема — исходные стили. */
 .theme-btn{flex:none;width:2.25rem;height:2.25rem;border-radius:999px;border:1px solid var(--line);display:flex;align-items:center;justify-content:center;color:var(--fg);background:transparent;transition:border-color .2s,background .2s,transform .2s}
@@ -2118,7 +2120,7 @@ html[data-theme="light"] [style*="color-scheme:dark"],html[data-theme="light"] [
 
         // --- 5. КАБИНЕТ (данные из Supabase через API) ---
         const cabText = {
-            kz: { title: 'Жеке кабинет', level: 'Деңгей', xpLeft: 'XP келесі деңгейге дейін', tokens: 'Токен', tokensHint: 'Күн сайын жаңарады', streak: 'күн қатарынан', days: 'күн',
+            kz: { title: 'Жеке кабинет', level: 'Деңгей', xpLeft: 'XP келесі деңгейге дейін', tokens: 'Токен', tokensHint: 'Күн сайын +3 тегін', streak: 'күн қатарынан', days: 'күн',
                   sub: 'Жазылым', active: 'Белсенді', free: 'Тегін', logout: 'Шығу', since: 'Тіркелген',
                   tabs: { overview: 'Шолу', materials: 'Материалдар', chat: 'Чат', tasks: 'Тапсырмалар', achievements: 'Жетістіктер' },
                   xp: 'XP', mats: 'Материал', chats: 'Чат', tasksLbl: 'Тапсырма', activity: 'Соңғы 14 күндегі белсенділік (XP)', recent: 'Соңғы материалдар', upcoming: 'Жақын тапсырмалар',
@@ -2127,7 +2129,7 @@ html[data-theme="light"] [style*="color-scheme:dark"],html[data-theme="light"] [
                   types: { quiz: 'Тест', flashcards: 'Карточкалар', summary: 'Конспект', simple: 'Түсіндіру', plan: 'Жоспар', teacher: 'ИИ Мұғалім', tickets: 'Билеттер' },
                   ach: [['Алғашқы қадам', 'Алғашқы материалды жасаңыз'], ['Зерттеуші', '10 материал жасаңыз'], ['Сұрақшы', 'ЖИ-мен чатта сөйлесіңіз'], ['Жүз ұпай', '100 XP жинаңыз'],
                         ['Жұлдыз', '500 XP жинаңыз'], ['Тәртіпті', '5 тапсырма орындаңыз'], ['Қатарынан', '3 күн қатарынан оқыңыз'], ['Әмбебап', '4 түрлі режимді қолданыңыз']] },
-            ru: { title: 'Личный кабинет', level: 'Уровень', xpLeft: 'XP до следующего уровня', tokens: 'Токены', tokensHint: 'Обновляются каждый день', streak: 'дней подряд', days: 'дн.',
+            ru: { title: 'Личный кабинет', level: 'Уровень', xpLeft: 'XP до следующего уровня', tokens: 'Токены', tokensHint: 'Бесплатно +3 каждый день', streak: 'дней подряд', days: 'дн.',
                   sub: 'Подписка', active: 'Активна', free: 'Бесплатно', logout: 'Выйти', since: 'С нами с',
                   tabs: { overview: 'Обзор', materials: 'Материалы', chat: 'Чат', tasks: 'Задачи', achievements: 'Достижения' },
                   xp: 'XP', mats: 'Материалов', chats: 'Сообщений', tasksLbl: 'Задач', activity: 'Активность за 14 дней (XP)', recent: 'Последние материалы', upcoming: 'Ближайшие задачи',
@@ -2136,7 +2138,7 @@ html[data-theme="light"] [style*="color-scheme:dark"],html[data-theme="light"] [
                   types: { quiz: 'Тест', flashcards: 'Карточки', summary: 'Конспект', simple: 'Объяснение', plan: 'План', teacher: 'ИИ Учитель', tickets: 'Билеты' },
                   ach: [['Первый шаг', 'Создайте первый материал'], ['Исследователь', 'Создайте 10 материалов'], ['Любознательный', 'Поговорите с ИИ в чате'], ['Сотка', 'Наберите 100 XP'],
                         ['Звезда', 'Наберите 500 XP'], ['Организованный', 'Выполните 5 задач'], ['На волне', 'Занимайтесь 3 дня подряд'], ['Универсал', 'Попробуйте 4 разных режима']] },
-            en: { title: 'Personal cabinet', level: 'Level', xpLeft: 'XP to next level', tokens: 'Tokens', tokensHint: 'Refill every day', streak: 'day streak', days: 'd',
+            en: { title: 'Personal cabinet', level: 'Level', xpLeft: 'XP to next level', tokens: 'Tokens', tokensHint: '+3 free every day', streak: 'day streak', days: 'd',
                   sub: 'Subscription', active: 'Active', free: 'Free', logout: 'Logout', since: 'Member since',
                   tabs: { overview: 'Overview', materials: 'Materials', chat: 'Chat', tasks: 'Tasks', achievements: 'Achievements' },
                   xp: 'XP', mats: 'Materials', chats: 'Messages', tasksLbl: 'Tasks', activity: 'Activity, last 14 days (XP)', recent: 'Recent materials', upcoming: 'Upcoming tasks',
@@ -3052,13 +3054,13 @@ modeLabels();
 (function () {
 const $ = id => document.getElementById(id), esc = escapeHtml;
 const T4 = {
-  ru: { t: 'Токены закончились', s: 'Бесплатные токены обновятся завтра. Или откройте Premium и продолжайте прямо сейчас.',
+  ru: { t: 'Токены закончились', s: 'Завтра добавим ещё 3 бесплатных токена. Или откройте Premium и продолжайте прямо сейчас.',
     b: [['⚡', 'В 16 раз больше токенов', '50 в день вместо 3 — хватит на тесты, билеты, карточки и Humanizer каждый день'], ['📅', 'ИИ-планер', 'План подготовки к экзаменам за секунды: ИИ сам расставит задачи по дням'], ['🚀', 'Без ожидания', 'Не нужно ждать завтра, когда токены кончились посреди подготовки'], ['💸', 'Всего 499 ₸ в месяц', 'Это около 16 ₸ в день — дешевле одной жвачки']],
     cta: 'Получить Premium · 499 ₸', later: 'Подожду до завтра', how: 'Переведите 499 ₸ на Kaspi Freedom и отправьте чек с вашим ником на тот же номер', copy: 'Копировать номер', copied: 'Скопировано ✓' },
-  kz: { t: 'Токендер таусылды', s: 'Тегін токендер ертең жаңарады. Немесе Premium ашып, дәл қазір жалғастырыңыз.',
+  kz: { t: 'Токендер таусылды', s: 'Ертең тағы 3 тегін токен қосылады. Немесе Premium ашып, дәл қазір жалғастырыңыз.',
     b: [['⚡', '16 есе көп токен', 'Күніне 3 емес, 50 — тест, билет, карточка және Humanizer күн сайын жетеді'], ['📅', 'ЖИ-жоспарлаушы', 'Емтиханға дайындық жоспары секундтарда: ЖИ тапсырмаларды күндерге өзі бөледі'], ['🚀', 'Күтусіз', 'Дайындық ортасында токен біткенде ертеңді күтудің қажеті жоқ'], ['💸', 'Айына небәрі 499 ₸', 'Бұл күніне шамамен 16 ₸']],
     cta: 'Premium алу · 499 ₸', later: 'Ертеңге дейін күтемін', how: '499 ₸ Kaspi Freedom-ға аударып, чекті никіңізбен сол нөмірге жіберіңіз', copy: 'Нөмірді көшіру', copied: 'Көшірілді ✓' },
-  en: { t: 'You are out of tokens', s: 'Free tokens refresh tomorrow. Or open Premium and keep going right now.',
+  en: { t: 'You are out of tokens', s: 'We’ll add 3 more free tokens tomorrow. Or open Premium and keep going right now.',
     b: [['⚡', '16× more tokens', '50 a day instead of 3 — enough for quizzes, tickets, flashcards and Humanizer every day'], ['📅', 'AI Planner', 'An exam-prep plan in seconds: the AI spreads tasks across your days'], ['🚀', 'No waiting', 'No more waiting for tomorrow when tokens run out mid-prep'], ['💸', 'Just 499 ₸ a month', 'About 16 ₸ a day']],
     cta: 'Get Premium · 499 ₸', later: 'I will wait until tomorrow', how: 'Send 499 ₸ to Kaspi Freedom and send the receipt with your nickname to the same number', copy: 'Copy number', copied: 'Copied ✓' }
 };
@@ -3533,12 +3535,12 @@ const $ = id => document.getElementById(id), esc = escapeHtml;
 const PACKS = [{ t: 100, p: 300, c: '#3de0ff' }, { t: 300, p: 800, c: '#a78bfa' }, { t: 500, p: 1200, c: '#c8ff2e' }];
 const BASE = 3, KASPI_VIEW = '8 708 147 74 26';
 const S = {
-  ru: { title: 'Пополни токены', sub: 'Токены не сгорают. Бесплатно каждый день — по 3.', tokens: 'токенов', per: 'за токен', save: 'Выгода', best: 'Лучшая цена', pop: 'Популярный', enough: 'хватит на', tests: 'тестов', decks: 'презентаций (по 8 слайдов)', kaspi: 'Kaspi Freedom', transfer: 'Переведите', send: 'Отправьте чек на этот номер и свой ник — и токены придут на аккаунт', nick: 'Ваш ник', copy: 'Скопировать', copied: 'Скопировано ✓', login: 'Войдите, чтобы увидеть свой ник', s1: 'Выберите пакет', s2: 'Переведите сумму на Kaspi', s3: 'Отправьте чек и ник — получите токены',
-    pwT: 'Токены закончились', pwS: 'Бесплатные токены обновятся завтра. Или пополните прямо сейчас — выгоднее брать больше.', pwCta: 'Выбрать пакет', pwLater: 'Подожду до завтра' },
-  kz: { title: 'Токенді толықтыр', sub: 'Токен жанбайды. Күн сайын тегін — 3.', tokens: 'токен', per: 'бір токен', save: 'Артықшылық', best: 'Ең жақсы баға', pop: 'Танымал', enough: 'жетеді', tests: 'тестке', decks: 'презентацияға (8 слайдтан)', kaspi: 'Kaspi Freedom', transfer: 'Аударыңыз', send: 'Чекті осы нөмірге және өз никіңізді жіберіңіз — токен аккаунтқа түседі', nick: 'Сіздің ник', copy: 'Көшіру', copied: 'Көшірілді ✓', login: 'Никіңізді көру үшін кіріңіз', s1: 'Пакетті таңдаңыз', s2: 'Kaspi-ге аударыңыз', s3: 'Чек пен ник жіберіңіз — токен аласыз',
-    pwT: 'Токендер таусылды', pwS: 'Тегін токендер ертең жаңарады. Немесе қазір толықтырыңыз — көп алған тиімді.', pwCta: 'Пакетті таңдау', pwLater: 'Ертеңге дейін күтемін' },
-  en: { title: 'Top up tokens', sub: 'Tokens never expire. Free every day: 3.', tokens: 'tokens', per: 'per token', save: 'You save', best: 'Best value', pop: 'Popular', enough: 'enough for', tests: 'quizzes', decks: 'presentations (8 slides each)', kaspi: 'Kaspi Freedom', transfer: 'Transfer', send: 'Send the receipt to this number with your nickname — and tokens arrive on your account', nick: 'Your nickname', copy: 'Copy', copied: 'Copied ✓', login: 'Log in to see your nickname', s1: 'Pick a pack', s2: 'Transfer via Kaspi', s3: 'Send receipt and nickname — get tokens',
-    pwT: 'You are out of tokens', pwS: 'Free tokens refresh tomorrow. Or top up now — bigger packs are cheaper.', pwCta: 'Choose a pack', pwLater: 'I will wait until tomorrow' }
+  ru: { title: 'Пополни токены', sub: 'Токены не сгорают. Новым пользователям — 50 токенов в подарок, дальше бесплатно по 3 каждый день.', tokens: 'токенов', per: 'за токен', save: 'Выгода', best: 'Лучшая цена', pop: 'Популярный', enough: 'хватит на', tests: 'тестов', decks: 'презентаций (по 8 слайдов)', kaspi: 'Kaspi Freedom', transfer: 'Переведите', send: 'Отправьте чек на этот номер и свой ник — и токены придут на аккаунт', nick: 'Ваш ник', copy: 'Скопировать', copied: 'Скопировано ✓', login: 'Войдите, чтобы увидеть свой ник', s1: 'Выберите пакет', s2: 'Переведите сумму на Kaspi', s3: 'Отправьте чек и ник — получите токены',
+    pwT: 'Токены закончились', pwS: 'Завтра добавим ещё 3 бесплатных токена. Или пополните прямо сейчас — выгоднее брать больше.', pwCta: 'Выбрать пакет', pwLater: 'Подожду до завтра' },
+  kz: { title: 'Токенді толықтыр', sub: 'Токен жанбайды. Жаңа қолданушыға — 50 токен сыйға, одан кейін күн сайын тегін 3.', tokens: 'токен', per: 'бір токен', save: 'Артықшылық', best: 'Ең жақсы баға', pop: 'Танымал', enough: 'жетеді', tests: 'тестке', decks: 'презентацияға (8 слайдтан)', kaspi: 'Kaspi Freedom', transfer: 'Аударыңыз', send: 'Чекті осы нөмірге және өз никіңізді жіберіңіз — токен аккаунтқа түседі', nick: 'Сіздің ник', copy: 'Көшіру', copied: 'Көшірілді ✓', login: 'Никіңізді көру үшін кіріңіз', s1: 'Пакетті таңдаңыз', s2: 'Kaspi-ге аударыңыз', s3: 'Чек пен ник жіберіңіз — токен аласыз',
+    pwT: 'Токендер таусылды', pwS: 'Ертең тағы 3 тегін токен қосылады. Немесе қазір толықтырыңыз — көп алған тиімді.', pwCta: 'Пакетті таңдау', pwLater: 'Ертеңге дейін күтемін' },
+  en: { title: 'Top up tokens', sub: 'Tokens never expire. New users get 50 tokens as a gift, then 3 free every day.', tokens: 'tokens', per: 'per token', save: 'You save', best: 'Best value', pop: 'Popular', enough: 'enough for', tests: 'quizzes', decks: 'presentations (8 slides each)', kaspi: 'Kaspi Freedom', transfer: 'Transfer', send: 'Send the receipt to this number with your nickname — and tokens arrive on your account', nick: 'Your nickname', copy: 'Copy', copied: 'Copied ✓', login: 'Log in to see your nickname', s1: 'Pick a pack', s2: 'Transfer via Kaspi', s3: 'Send receipt and nickname — get tokens',
+    pwT: 'You are out of tokens', pwS: 'We’ll add 3 more free tokens tomorrow. Or top up now — bigger packs are cheaper.', pwCta: 'Choose a pack', pwLater: 'I will wait until tomorrow' }
 };
 const L = () => S[selectedLang] || S.ru, fmt = n => n.toLocaleString('ru-RU');
 const sv = p => p.t * BASE - p.p, pct = p => Math.round(sv(p) / (p.t * BASE) * 100);
@@ -3603,12 +3605,12 @@ const POL = {
     ['3. Зачем мы это используем', 'Чтобы вы могли войти, пользоваться ИИ-функциями, сохранять историю, получать напоминания в Telegram, работать в группах, учитывать токены и подписку, а также защищать сервис от злоупотреблений. Если вы пользуетесь планером, сервис ежедневно присылает в Telegram сводку (уроки и задачи на день) — её можно отключить в планере. Мы не продаём ваши данные и не показываем рекламу.'],
     ['4. Кому передаются данные', '<ul><li><b>Supabase</b> — хранение базы данных.</li><li><b>DeepSeek</b> (ИИ-провайдер) — ваши запросы и тексты материалов отправляются для генерации ответов. Серверы провайдера могут находиться за пределами Казахстана (трансграничная передача). Не отправляйте в чат и материалы чужие персональные, финансовые и иные конфиденциальные сведения.</li><li><b>Telegram</b> — вход, коды, уведомления о приглашениях и напоминания.</li><li><b>Сервисы картинок</b> (Pollinations, LoremFlickr) — получают только текстовое описание иллюстрации, без личных данных.</li><li><b>Google Fonts и CDN</b> — шрифты и библиотеки; при загрузке они видят ваш IP.</li></ul>'],
     ['5. Группы', 'Ваш ник и имя видны участникам групп, в которые вы вступили. Пригласить вас может любой владелец группы, зная ваш ник; приглашение вступает в силу только после вашего принятия. Из группы можно выйти в любой момент.'],
-    ['6. Срок хранения', 'Данные хранятся, пока существует ваш аккаунт. Историю и задачи можно удалить в личном кабинете. При удалении аккаунта все связанные данные удаляются безвозвратно (группы, где вы владелец, передаются другому участнику или удаляются, если он один).'],
+    ['6. Срок хранения', 'Данные хранятся, пока существует ваш аккаунт. Историю и задачи можно удалить в личном кабинете. При удалении аккаунта все связанные данные удаляются безвозвратно (группы, где вы владелец, передаются другому участнику или удаляются, если он один). Мы сохраняем только Telegram ID и дату получения приветственных токенов, чтобы подарок нельзя было получить повторно.'],
     ['7. Безопасность', 'Доступ к базе данных возможен только через наш сервер; сессии защищены подписанным токеном; применяются ограничения частоты запросов. Ни одна система не защищена на 100%, поэтому не загружайте особо чувствительные документы.'],
     ['8. Ваши права', 'Вы вправе: получить копию своих данных, исправить или удалить их, отозвать согласие. В этом окне (после входа) есть кнопки «Скачать мои данные» и «Удалить аккаунт». Отзыв согласия означает прекращение использования Сервиса и удаление аккаунта. По другим вопросам пишите: ' + CONTACT + '.'],
     ['9. Возраст', 'Сервис рассчитан на школьников и студентов. Если вам нет 18 лет, пользоваться Сервисом можно с согласия родителей или законных представителей.'],
     ['10. Файлы cookie и localStorage', 'Мы используем только технические данные браузера (вход, язык, последняя презентация). Рекламных и аналитических трекеров нет.'],
-    ['11. Условия использования', '<ul><li>Ответы ИИ могут содержать ошибки — проверяйте важные факты. Сервис не заменяет учителя, врача или юриста.</li><li>Соблюдайте правила своей школы или вуза об академической честности. Вы отвечаете за то, как используете созданные материалы.</li><li>Запрещено загружать незаконный контент, нарушать авторские права, пытаться обойти лимиты, взломать сервис или оскорблять участников групп.</li><li>Токены и Premium оплачиваются переводом через Kaspi и активируются вручную; неиспользованные токены не сгорают. Бесплатные токены обновляются ежедневно.</li><li>Мы можем ограничить доступ при нарушении условий и обновлять Сервис.</li></ul>'],
+    ['11. Условия использования', '<ul><li>Ответы ИИ могут содержать ошибки — проверяйте важные факты. Сервис не заменяет учителя, врача или юриста.</li><li>Соблюдайте правила своей школы или вуза об академической честности. Вы отвечаете за то, как используете созданные материалы.</li><li>Запрещено загружать незаконный контент, нарушать авторские права, пытаться обойти лимиты, взломать сервис или оскорблять участников групп.</li><li>Токены и Premium оплачиваются переводом через Kaspi и активируются вручную; неиспользованные токены не сгорают. Новым пользователям при регистрации даём 50 токенов, затем каждый день добавляем ещё 3 бесплатных токена.</li><li>Мы можем ограничить доступ при нарушении условий и обновлять Сервис.</li></ul>'],
     ['12. Изменения', 'При существенных изменениях мы попросим вас принять новую версию. Актуальная версия всегда доступна по ссылке /privacy.'] ] },
   kz: { t: 'Құпиялылық саясаты және Пайдалану шарттары', s: [
     ['1. Біз кімбіз', `EnumaAI Hub сервисін (бұдан әрі — «Сервис») басқарады: ${OPERATOR}. Деректер мәселесі бойынша байланыс: Telegram-да ${CONTACT}. Саясат «Дербес деректер және оларды қорғау туралы» Қазақстан Республикасының № 94-V Заңын ескере отырып жасалған.`],
@@ -3616,12 +3618,12 @@ const POL = {
     ['3. Не үшін қолданамыз', 'Кіруіңіз, ЖИ-функцияларды пайдалануыңыз, тарихты сақтауыңыз, Telegram-да еске салғыштар алуыңыз, топтарда жұмыс істеуіңіз, токендер мен жазылымды есепке алуыңыз және сервисті теріс пайдаланудан қорғау үшін. Жоспарлаушыны қолдансаңыз, сервис Telegram-ға күн сайын жиынтық (күннің сабақтары мен тапсырмалары) жібереді — оны жоспарлаушыдан өшіруге болады. Деректеріңізді сатпаймыз, жарнама көрсетпейміз.'],
     ['4. Деректер кімге беріледі', '<ul><li><b>Supabase</b> — дерекқорды сақтау.</li><li><b>DeepSeek</b> (ЖИ-провайдер) — жауап жасау үшін сұраныстарыңыз бен материал мәтіндері жіберіледі. Провайдер серверлері Қазақстаннан тыс жерде болуы мүмкін (трансшекаралық беру). Чатқа және материалдарға басқа адамдардың жеке, қаржылық және өзге құпия мәліметтерін жүктемеңіз.</li><li><b>Telegram</b> — кіру, кодтар, шақыру хабарламалары және еске салғыштар.</li><li><b>Сурет сервистері</b> (Pollinations, LoremFlickr) — тек иллюстрацияның мәтіндік сипаттамасын алады, жеке деректерсіз.</li><li><b>Google Fonts және CDN</b> — қаріптер мен кітапханалар; жүктеу кезінде IP-ңызды көреді.</li></ul>'],
     ['5. Топтар', 'Ник пен атыңыз сіз қосылған топ қатысушыларына көрінеді. Сізді ник арқылы кез келген топ иесі шақыра алады; шақыру тек сіз қабылдағаннан кейін күшіне енеді. Топтан кез келген уақытта шыға аласыз.'],
-    ['6. Сақтау мерзімі', 'Деректер аккаунтыңыз бар кезде сақталады. Тарих пен тапсырмаларды жеке кабинетте жоюға болады. Аккаунт жойылғанда барлық байланысты деректер қайтарусыз жойылады (сіз иесі болған топтар басқа қатысушыға беріледі немесе қатысушы жалғыз болса, жойылады).'],
+    ['6. Сақтау мерзімі', 'Деректер аккаунтыңыз бар кезде сақталады. Тарих пен тапсырмаларды жеке кабинетте жоюға болады. Аккаунт жойылғанда барлық байланысты деректер қайтарусыз жойылады (сіз иесі болған топтар басқа қатысушыға беріледі немесе қатысушы жалғыз болса, жойылады). Сыйлық қайта алынбау үшін тек Telegram ID мен сыйлық алған күнді сақтаймыз.'],
     ['7. Қауіпсіздік', 'Дерекқорға тек біздің сервер арқылы қол жеткізіледі; сессиялар қол қойылған токенмен қорғалған; сұраныс жиілігіне шектеу бар. Ешбір жүйе 100% қорғалмаған, сондықтан аса құпия құжаттарды жүктемеңіз.'],
     ['8. Сіздің құқықтарыңыз', 'Сіз: деректеріңіздің көшірмесін алуға, оларды түзетуге немесе жоюға, келісімді қайтарып алуға құқылысыз. Осы терезеде (кіргеннен кейін) «Деректерімді жүктеу» және «Аккаунтты жою» батырмалары бар. Келісімді қайтару — Сервисті пайдалануды тоқтату және аккаунтты жою дегенді білдіреді. Басқа сұрақтар бойынша: ' + CONTACT + '.'],
     ['9. Жас', 'Сервис мектеп оқушылары мен студенттерге арналған. 18 жасқа толмасаңыз, ата-анаңыздың немесе заңды өкілдеріңіздің келісімімен пайдалана аласыз.'],
     ['10. Cookie және localStorage', 'Біз тек браузердің техникалық деректерін қолданамыз (кіру, тіл, соңғы презентация). Жарнамалық және аналитикалық трекерлер жоқ.'],
-    ['11. Пайдалану шарттары', '<ul><li>ЖИ жауаптарында қате болуы мүмкін — маңызды фактілерді тексеріңіз. Сервис мұғалімді, дәрігерді немесе заңгерді алмастырмайды.</li><li>Мектебіңіз немесе ЖОО-ның академиялық адалдық ережелерін сақтаңыз. Жасалған материалдарды қалай қолданатыныңызға өзіңіз жауаптысыз.</li><li>Заңсыз контент жүктеуге, авторлық құқықты бұзуға, лимиттерді айналып өтуге, сервисті бұзуға немесе топ қатысушыларын қорлауға тыйым салынады.</li><li>Токендер мен Premium Kaspi арқылы аударыммен төленеді және қолмен қосылады; пайдаланылмаған токендер жанбайды. Тегін токендер күн сайын жаңарады.</li><li>Шарттар бұзылса, қолжетімділікті шектеуге және Сервисті жаңартуға құқылымыз.</li></ul>'],
+    ['11. Пайдалану шарттары', '<ul><li>ЖИ жауаптарында қате болуы мүмкін — маңызды фактілерді тексеріңіз. Сервис мұғалімді, дәрігерді немесе заңгерді алмастырмайды.</li><li>Мектебіңіз немесе ЖОО-ның академиялық адалдық ережелерін сақтаңыз. Жасалған материалдарды қалай қолданатыныңызға өзіңіз жауаптысыз.</li><li>Заңсыз контент жүктеуге, авторлық құқықты бұзуға, лимиттерді айналып өтуге, сервисті бұзуға немесе топ қатысушыларын қорлауға тыйым салынады.</li><li>Токендер мен Premium Kaspi арқылы аударыммен төленеді және қолмен қосылады; пайдаланылмаған токендер жанбайды. Жаңа қолданушыларға тіркелгенде 50 токен береміз, одан кейін күн сайын тағы 3 тегін токен қосамыз.</li><li>Шарттар бұзылса, қолжетімділікті шектеуге және Сервисті жаңартуға құқылымыз.</li></ul>'],
     ['12. Өзгерістер', 'Елеулі өзгерістер болса, жаңа нұсқаны қабылдауды сұраймыз. Өзекті нұсқа әрқашан /privacy сілтемесінде қолжетімді.'] ] },
   en: { t: 'Privacy Policy and Terms of Use', s: [
     ['1. Who we are', `EnumaAI Hub (the “Service”) is operated by: ${OPERATOR}. Contact for data questions: ${CONTACT} on Telegram. This policy takes into account the Law of the Republic of Kazakhstan “On Personal Data and Their Protection” No. 94-V.`],
@@ -3629,12 +3631,12 @@ const POL = {
     ['3. Why we use it', 'To let you log in, use AI features, keep your history, get Telegram reminders, work in groups, account for tokens and subscriptions, and protect the Service from abuse. If you use the planner, the service sends a daily digest (the day’s classes and tasks) to Telegram — you can turn it off in the planner. We do not sell your data and show no ads.'],
     ['4. Who receives data', '<ul><li><b>Supabase</b> — database hosting.</li><li><b>DeepSeek</b> (AI provider) — your requests and material texts are sent to generate answers. The provider’s servers may be outside Kazakhstan (cross-border transfer). Do not put other people’s personal, financial or otherwise confidential information into the chat or materials.</li><li><b>Telegram</b> — login, codes, invitation notices and reminders.</li><li><b>Image services</b> (Pollinations, LoremFlickr) — receive only a text description of the illustration, no personal data.</li><li><b>Google Fonts and CDNs</b> — fonts and libraries; they see your IP when loading.</li></ul>'],
     ['5. Groups', 'Your username and name are visible to members of groups you join. Any group owner who knows your username can invite you; an invitation takes effect only after you accept. You can leave a group at any time.'],
-    ['6. Retention', 'Data is kept while your account exists. You can delete history and tasks in your cabinet. When you delete your account, all related data is permanently erased (groups you own pass to another member, or are deleted if you are the only one).'],
+    ['6. Retention', 'Data is kept while your account exists. You can delete history and tasks in your cabinet. When you delete your account, all related data is permanently erased (groups you own pass to another member, or are deleted if you are the only one). We keep only your Telegram ID and the date of the welcome gift so that it cannot be claimed twice.'],
     ['7. Security', 'The database is reachable only through our server; sessions are protected by a signed token; rate limits apply. No system is 100% secure, so do not upload highly sensitive documents.'],
     ['8. Your rights', 'You may obtain a copy of your data, correct or delete it, and withdraw consent. This window (when logged in) has “Download my data” and “Delete account” buttons. Withdrawing consent means you stop using the Service and your account is deleted. Other requests: ' + CONTACT + '.'],
     ['9. Age', 'The Service is meant for school and university students. If you are under 18, use it with the consent of your parent or legal guardian.'],
     ['10. Cookies and localStorage', 'We only use technical browser data (login, language, last presentation). There are no advertising or analytics trackers.'],
-    ['11. Terms of use', '<ul><li>AI answers can contain mistakes — verify important facts. The Service does not replace a teacher, doctor or lawyer.</li><li>Follow your school’s or university’s academic integrity rules. You are responsible for how you use generated materials.</li><li>Do not upload illegal content, infringe copyright, bypass limits, attack the Service or harass group members.</li><li>Tokens and Premium are paid by Kaspi transfer and activated manually; unused tokens do not expire. Free tokens refresh daily.</li><li>We may restrict access for violations and may update the Service.</li></ul>'],
+    ['11. Terms of use', '<ul><li>AI answers can contain mistakes — verify important facts. The Service does not replace a teacher, doctor or lawyer.</li><li>Follow your school’s or university’s academic integrity rules. You are responsible for how you use generated materials.</li><li>Do not upload illegal content, infringe copyright, bypass limits, attack the Service or harass group members.</li><li>Tokens and Premium are paid by Kaspi transfer and activated manually; unused tokens do not expire. New users get 50 tokens on sign-up, then we add 3 more free tokens every day.</li><li>We may restrict access for violations and may update the Service.</li></ul>'],
     ['12. Changes', 'If changes are material, we will ask you to accept the new version. The current version is always available at /privacy.'] ] }
 };
 
@@ -3878,7 +3880,7 @@ const TR = {
     ['🧭 Разделы', 'Здесь все инструменты: тесты, карточки, конспект, объяснение проще, план подготовки, ИИ-учитель, билеты и презентации. Выбирайте нужный раздел.'],
     ['📎 Свой материал', 'Загрузите PDF, Word, Excel или TXT — или впишите тему. Тесты, карточки и конспекты ИИ будет делать по вашему материалу.'],
     ['👥 Группы', 'Создавайте группы, приглашайте друзей по @нику или ID и делите задачи. ИИ может сам разбить общую цель на задачи.'],
-    ['⚡ Токены', 'Каждое действие ИИ тратит токены. Бесплатные обновляются каждый день, а Premium снимает ограничения.'],
+    ['⚡ Токены', 'Каждое действие ИИ тратит токены. При регистрации — 50 токенов в подарок, дальше +3 каждый день, а Premium снимает ограничения.'],
     ['👤 Кабинет', 'В кабинете — ваш ID, уровень, история, задачи и награды. Здесь же можно скачать свои данные.'],
     ['🚀 Всё готово!', 'Загрузите материал или просто задайте вопрос ИИ. Этот тур всегда можно открыть снова: «Как пользоваться сайтом».'] ] },
   kz: { next: 'Әрі қарай', back: 'Артқа', skip: 'Өткізу', done: 'Бастау!', help: '❓ Сайтты қалай пайдалану', of: '/', steps: [
@@ -3887,7 +3889,7 @@ const TR = {
     ['🧭 Бөлімдер', 'Мұнда барлық құрал: тесттер, карточкалар, конспект, қарапайым түсіндіру, дайындық жоспары, ЖИ-мұғалім, билеттер және презентациялар.'],
     ['📎 Өз материалыңыз', 'PDF, Word, Excel немесе TXT жүктеңіз — не тақырып жазыңыз. Тесттер, карточкалар мен конспектілерді ЖИ сіздің материалыңыз бойынша жасайды.'],
     ['👥 Топтар', 'Топ құрып, достарыңызды @ник немесе ID арқылы шақырыңыз да, тапсырмаларды бөлісіңіз. ЖИ жалпы мақсатты тапсырмаларға өзі бөле алады.'],
-    ['⚡ Токендер', 'ЖИ-дің әр әрекеті токен жұмсайды. Тегін токендер күн сайын жаңарады, Premium шектеуді алады.'],
+    ['⚡ Токендер', 'ЖИ-дің әр әрекеті токен жұмсайды. Тіркелгенде — 50 токен сыйға, одан кейін күн сайын +3, ал Premium шектеуді алады.'],
     ['👤 Кабинет', 'Кабинетте — ID-іңіз, деңгейіңіз, тарих, тапсырмалар және марапаттар. Деректеріңізді де осы жерден жүктеуге болады.'],
     ['🚀 Бәрі дайын!', 'Материал жүктеңіз немесе ЖИ-ге сұрақ қойыңыз. Бұл турды «Сайтты қалай пайдалану» арқылы қайта ашуға болады.'] ] },
   en: { next: 'Next', back: 'Back', skip: 'Skip', done: 'Let’s go!', help: '❓ How to use the site', of: 'of', steps: [
@@ -3896,7 +3898,7 @@ const TR = {
     ['🧭 Sections', 'All tools live here: quizzes, flashcards, summary, simpler explanation, study plan, AI teacher, tickets and presentations.'],
     ['📎 Your material', 'Upload a PDF, Word, Excel or TXT file — or type a topic. Quizzes, cards and summaries are built from your material.'],
     ['👥 Groups', 'Create groups, invite friends by @username or ID and split tasks. The AI can even break a shared goal into tasks.'],
-    ['⚡ Tokens', 'Every AI action spends tokens. Free tokens refresh daily; Premium removes the limits.'],
+    ['⚡ Tokens', 'Every AI action spends tokens. You get 50 tokens as a gift on sign-up, then +3 every day; Premium removes the limits.'],
     ['👤 Cabinet', 'Your ID, level, history, tasks and rewards are here. You can also download your data.'],
     ['🚀 You’re all set!', 'Upload a material or just ask the AI something. You can reopen this tour any time: “How to use the site”.'] ] }
 };
@@ -4741,6 +4743,22 @@ v8Labels();
   document.addEventListener('keydown', e => { if (e.key !== 'Escape') return; if ($('hero-chat') && $('hero-chat').classList.contains('hc-full')) window.hcExpand(false); else if ($('chat-wrap') && $('chat-wrap').classList.contains('cw-full')) window.cwExpand(false); });
   const _cl = window.changeLanguage; window.changeLanguage = function () { _cl.apply(this, arguments); icons(); };
   icons();
+})();
+</script>
+<script id="welcome-js">
+(function () {
+  const M = { ru: n => `🎁 Добро пожаловать! Вам подарено ${n} токенов`, kz: n => `🎁 Қош келдіңіз! Сізге ${n} токен сыйға тартылды`, en: n => `🎁 Welcome! ${n} tokens are yours` };
+  const _ca = window.checkAuth;
+  window.checkAuth = function () {
+    const r = _ca.apply(this, arguments);
+    try {
+      if (currentUser && currentUser.welcome_bonus) {
+        const n = currentUser.welcome_bonus; delete currentUser.welcome_bonus; persistUser();
+        const l = (typeof selectedLang !== 'undefined' && M[selectedLang]) ? selectedLang : 'ru'; showScorePopup(M[l](n)); if (typeof confetti === 'function') confetti(90);
+      }
+    } catch (e) {}
+    return r;
+  };
 })();
 </script>
 </body>
