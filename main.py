@@ -50,7 +50,8 @@ SUPABASE_SERVICE_KEY = os.getenv("SUPABASE_SERVICE_KEY", "")
 JWT_SECRET = os.getenv("JWT_SECRET", "")
 TELEGRAM_BOT_TOKEN = os.getenv("TELEGRAM_BOT_TOKEN", "")
 TELEGRAM_WEBHOOK_SECRET = os.getenv("TELEGRAM_WEBHOOK_SECRET", "")
-DAILY_TOKENS = int(os.getenv("DAILY_TOKENS", "3"))
+WELCOME_TOKENS = int(os.getenv("WELCOME_TOKENS", "50"))      # подарок при первой регистрации
+DAILY_TOKENS = int(os.getenv("DAILY_TOKENS", "3"))            # бесплатно каждый день (добавляется к балансу)
 PRO_TOKENS = int(os.getenv("PRO_TOKENS", "50"))          # токенов в день по подписке
 ADMIN_IDS = {int(x) for x in re.split(r"[,\s]+", os.getenv("ADMIN_TELEGRAM_IDS", "")) if x.isdigit()}
 MAX_DOC_CHARS = int(os.getenv("MAX_DOC_CHARS", "70000"))   # сколько текста отдаём модели (DeepSeek держит 64K+ токенов контекста)
@@ -193,6 +194,36 @@ def current_user(authorization: Optional[str] = Header(default=None)) -> dict:
     return user
 
 
+def login_profile(row: dict) -> tuple[dict, int]:
+    """Находит профиль по Telegram ID или создаёт новый. Возвращает (профиль, размер приветственного подарка: 0, если профиль уже был).
+    Подарок выдаётся один раз на Telegram-аккаунт: удаление аккаунта и повторная регистрация его не возвращают."""
+    tg = row["telegram_id"]
+    names = {"username": row.get("username"), "display_name": row.get("display_name")}
+    found = sb.table("profiles").select("*").eq("telegram_id", tg).limit(1).execute().data
+    if found:
+        p = found[0]
+        if (p.get("username"), p.get("display_name")) != (names["username"], names["display_name"]):
+            sb.table("profiles").update(names).eq("id", p["id"]).execute()
+            p.update(names)
+        return p, 0
+    tokens = WELCOME_TOKENS
+    try:
+        sb.table("welcome_grants").insert({"telegram_id": tg}).execute()
+    except Exception as e:
+        if "23505" in str(e) or "duplicate" in str(e).lower():        # уже получал подарок раньше (удалил аккаунт и зарегистрировался снова)
+            tokens = DAILY_TOKENS
+        else:
+            log.warning("welcome_grants unavailable (%s) — выполните migration_v7.sql", type(e).__name__)
+    try:
+        p = sb.table("profiles").insert({"telegram_id": tg, **names, "tokens": tokens}).execute().data[0]
+    except Exception:                                                   # параллельный вход уже создал профиль
+        again = sb.table("profiles").select("*").eq("telegram_id", tg).limit(1).execute().data
+        if not again:
+            raise
+        return again[0], 0
+    return p, (tokens if tokens > DAILY_TOKENS else 0)
+
+
 def public_profile(u: dict) -> dict:
     return {
         "user_id": u["id"], "telegram_id": u.get("telegram_id"),
@@ -233,12 +264,8 @@ def verify_code(request: Request, code: str = Form(...)):
     if not claimed:
         raise HTTPException(400, "Код уже использован.")
 
-    prof = sb.table("profiles").upsert(
-        {"telegram_id": row["telegram_id"], "username": row.get("username"),
-         "display_name": row.get("display_name")},
-        on_conflict="telegram_id",
-    ).execute().data[0]
-    return {**public_profile(prof), "token": make_token(prof["id"])}
+    prof, bonus = login_profile(row)
+    return {**public_profile(prof), "token": make_token(prof["id"]), "welcome_bonus": bonus}
 
 
 @app.post("/api/auth/start")
@@ -260,10 +287,8 @@ def auth_poll(request: Request, nonce: str):
     row = found[0]
     if not sb.table("auth_codes").update({"used": True}).eq("code", row["code"]).eq("used", False).execute().data:
         return {"ready": False}
-    prof = sb.table("profiles").upsert(
-        {"telegram_id": row["telegram_id"], "username": row.get("username"), "display_name": row.get("display_name")},
-        on_conflict="telegram_id").execute().data[0]
-    return {"ready": True, **public_profile(prof), "token": make_token(prof["id"])}
+    prof, bonus = login_profile(row)
+    return {"ready": True, **public_profile(prof), "token": make_token(prof["id"]), "welcome_bonus": bonus}
 
 
 def tg_send(chat_id: int, text: str) -> bool:
