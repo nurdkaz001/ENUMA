@@ -657,6 +657,24 @@ body.no-scroll{overflow:hidden}
 
 
 
+/* CAB-IDS:BEGIN */
+.idbox{padding:1rem!important;text-align:left}
+.idbox .t{display:flex;align-items:center;justify-content:space-between;margin-bottom:.65rem}
+.idrow{display:flex;align-items:center;gap:.7rem;padding:.6rem .65rem;border:1px solid var(--line);border-radius:1rem;background:rgba(128,128,128,.06)}
+.idrow+.idrow{margin-top:.5rem}
+.idrow .ico{flex:none;width:2.2rem;height:2.2rem;border-radius:.8rem;display:flex;align-items:center;justify-content:center;font-size:1rem;background:rgba(61,224,255,.16)}
+.idrow.g .ico{background:rgba(139,92,246,.18)}
+.idrow .tx{flex:1;min-width:0}
+.idrow .tx small{display:block;font-size:.6rem;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--mute)}
+.idrow .tx b{display:block;margin-top:.1rem;font-size:1rem;letter-spacing:.02em;color:var(--fg);font-variant-numeric:tabular-nums;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.idcopy{flex:none;width:2.2rem;height:2.2rem;border-radius:999px;border:1px solid var(--line);color:var(--fg);background:transparent;font-size:.85rem;font-weight:700;transition:border-color .2s,background .2s,transform .15s}
+.idcopy:hover{border-color:var(--accent-line,var(--accent));background:rgba(128,128,128,.1)}
+.idcopy:active{transform:scale(.92)}
+.idnote{margin-top:.65rem;font-size:.66rem;line-height:1.45;color:var(--mute)}
+/* CAB-IDS:END */
+
+
+
 /* THEME-LIGHT:BEGIN */
 /* Светлая тема: тёплая «бумага», мягкий оливковый текст, салатовый акцент без «кислоты». Тёмная тема — исходные стили. */
 .theme-btn{flex:none;width:2.25rem;height:2.25rem;border-radius:999px;border:1px solid var(--line);display:flex;align-items:center;justify-content:center;color:var(--fg);background:transparent;transition:border-color .2s,background .2s,transform .2s}
@@ -834,6 +852,7 @@ html[data-theme="light"] .mq-tile:active{border-color:var(--accent-line,var(--ac
 html[data-theme="light"] .mq-tile .bd{color:var(--fg)}
 html[data-theme="light"] .mq-toast{box-shadow:0 10px 30px rgba(60,52,30,0.105)}
 html[data-theme="light"] .hc-tbtn:hover{border-color:var(--accent-line,var(--accent-line))}
+html[data-theme="light"] .idcopy:hover{border-color:var(--accent-line,var(--accent-line))}
 html[data-theme="light"] .text-white{color:var(--fg)!important}
 html[data-theme="light"] .text-neutral-100{color:#34332b!important}
 html[data-theme="light"] .text-neutral-200{color:#3a3930!important}
@@ -2125,7 +2144,7 @@ html[data-theme="light"] [style*="color-scheme:dark"],html[data-theme="light"] [
                   tabs: { overview: 'Шолу', materials: 'Материалдар', chat: 'Чат', tasks: 'Тапсырмалар', achievements: 'Жетістіктер' },
                   xp: 'XP', mats: 'Материал', chats: 'Чат', tasksLbl: 'Тапсырма', activity: 'Соңғы 14 күндегі белсенділік (XP)', recent: 'Соңғы материалдар', upcoming: 'Жақын тапсырмалар',
                   empty: 'Әзірше бос. Оқуды бастаңыз!', noTasks: 'Тапсырмалар жоқ', noChat: 'Чат тарихы жоқ', search: 'Іздеу...', all: 'Барлығы', back: '← Артқа', copy: 'Көшіру', copied: 'Көшірілді ✓', del: 'Жою',
-                  clear: 'Тазалау', confirmClear: 'Барлығын өшіру керек пе?', openPlanner: 'Планерді ашу', overdue: 'мерзімі өтті', loading: 'Жүктелуде...', loadErr: 'Деректерді жүктеу мүмкін болмады', retry: 'Қайталау',
+                  clear: 'Тазалау', confirmClear: 'Тарихты тазалау керек пе? Жетістіктер, статистика және қатарынан күндер (🔥) сақталады.', openPlanner: 'Планерді ашу', overdue: 'мерзімі өтті', loading: 'Жүктелуде...', loadErr: 'Деректерді жүктеу мүмкін болмады', retry: 'Қайталау',
                   types: { quiz: 'Тест', flashcards: 'Карточкалар', summary: 'Конспект', simple: 'Түсіндіру', plan: 'Жоспар', teacher: 'ИИ Мұғалім', tickets: 'Билеттер' },
                   ach: [['Алғашқы қадам', 'Алғашқы материалды жасаңыз'], ['Зерттеуші', '10 материал жасаңыз'], ['Сұрақшы', 'ЖИ-мен чатта сөйлесіңіз'], ['Жүз ұпай', '100 XP жинаңыз'],
                         ['Жұлдыз', '500 XP жинаңыз'], ['Тәртіпті', '5 тапсырма орындаңыз'], ['Қатарынан', '3 күн қатарынан оқыңыз'], ['Әмбебап', '4 түрлі режимді қолданыңыз']] },
@@ -2134,7 +2153,7 @@ html[data-theme="light"] [style*="color-scheme:dark"],html[data-theme="light"] [
                   tabs: { overview: 'Обзор', materials: 'Материалы', chat: 'Чат', tasks: 'Задачи', achievements: 'Достижения' },
                   xp: 'XP', mats: 'Материалов', chats: 'Сообщений', tasksLbl: 'Задач', activity: 'Активность за 14 дней (XP)', recent: 'Последние материалы', upcoming: 'Ближайшие задачи',
                   empty: 'Пока пусто. Начните обучение!', noTasks: 'Нет задач', noChat: 'История чата пуста', search: 'Поиск...', all: 'Все', back: '← Назад', copy: 'Копировать', copied: 'Скопировано ✓', del: 'Удалить',
-                  clear: 'Очистить', confirmClear: 'Удалить всё?', openPlanner: 'Открыть планер', overdue: 'просрочено', loading: 'Загрузка...', loadErr: 'Не удалось загрузить данные', retry: 'Повторить',
+                  clear: 'Очистить', confirmClear: 'Очистить историю? Достижения, статистика и дни подряд (🔥) сохранятся.', openPlanner: 'Открыть планер', overdue: 'просрочено', loading: 'Загрузка...', loadErr: 'Не удалось загрузить данные', retry: 'Повторить',
                   types: { quiz: 'Тест', flashcards: 'Карточки', summary: 'Конспект', simple: 'Объяснение', plan: 'План', teacher: 'ИИ Учитель', tickets: 'Билеты' },
                   ach: [['Первый шаг', 'Создайте первый материал'], ['Исследователь', 'Создайте 10 материалов'], ['Любознательный', 'Поговорите с ИИ в чате'], ['Сотка', 'Наберите 100 XP'],
                         ['Звезда', 'Наберите 500 XP'], ['Организованный', 'Выполните 5 задач'], ['На волне', 'Занимайтесь 3 дня подряд'], ['Универсал', 'Попробуйте 4 разных режима']] },
@@ -2143,7 +2162,7 @@ html[data-theme="light"] [style*="color-scheme:dark"],html[data-theme="light"] [
                   tabs: { overview: 'Overview', materials: 'Materials', chat: 'Chat', tasks: 'Tasks', achievements: 'Achievements' },
                   xp: 'XP', mats: 'Materials', chats: 'Messages', tasksLbl: 'Tasks', activity: 'Activity, last 14 days (XP)', recent: 'Recent materials', upcoming: 'Upcoming tasks',
                   empty: 'Nothing here yet. Start learning!', noTasks: 'No tasks', noChat: 'No chat history', search: 'Search...', all: 'All', back: '← Back', copy: 'Copy', copied: 'Copied ✓', del: 'Delete',
-                  clear: 'Clear', confirmClear: 'Delete everything?', openPlanner: 'Open planner', overdue: 'overdue', loading: 'Loading...', loadErr: 'Could not load data', retry: 'Retry',
+                  clear: 'Clear', confirmClear: 'Clear history? Your achievements, stats and streak (🔥) will be kept.', openPlanner: 'Open planner', overdue: 'overdue', loading: 'Loading...', loadErr: 'Could not load data', retry: 'Retry',
                   types: { quiz: 'Quiz', flashcards: 'Flashcards', summary: 'Summary', simple: 'Explanation', plan: 'Plan', teacher: 'AI Teacher', tickets: 'Tickets' },
                   ach: [['First step', 'Create your first material'], ['Explorer', 'Create 10 materials'], ['Curious', 'Chat with the AI'], ['Hundred', 'Earn 100 XP'],
                         ['Star', 'Earn 500 XP'], ['Organized', 'Complete 5 tasks'], ['On a roll', 'Study 3 days in a row'], ['All-rounder', 'Try 4 different modes']] }
@@ -2296,13 +2315,19 @@ html[data-theme="light"] [style*="color-scheme:dark"],html[data-theme="light"] [
                         <div>
                             <h3 class="display text-xl font-bold text-white truncate">${escapeHtml(name)}</h3>
                             ${prof.username ? `<p class="mono">@${escapeHtml(prof.username)}</p>` : ''}
-                            ${(prof.public_id ?? currentUser.public_id) ? `<p class="mono mt-1">ID: <b class="text-white">${escapeHtml(prof.public_id ?? currentUser.public_id)}</b> <button class="copy-btn" data-v="${escapeHtml(prof.public_id ?? currentUser.public_id)}" onclick="copyNick(this, this.dataset.v)">${L.copy || '⧉'}</button></p>` : ''}
                         </div>
                         <div>
                             <p class="display text-2xl font-bold text-[#c8ff2e]">${L.level} ${lvl}</p>
                             <p class="mono">${200 - into} ${L.xpLeft}</p>
                         </div>
                     </div>
+                    ${(() => {
+                        const tg = prof.telegram_id, gid = prof.public_id ?? currentUser.public_id;
+                        const T = { ru: ['Мои ID', 'Telegram ID', 'ID для групп', 'Ваш числовой идентификатор в Telegram', 'Друзья приглашают вас в группы по этому ID или по @нику'], kz: ['Менің ID-лерім', 'Telegram ID', 'Топтарға арналған ID', 'Telegram-дағы сандық идентификаторыңыз', 'Достарыңыз сізді топқа осы ID немесе @ник арқылы шақырады'], en: ['My IDs', 'Telegram ID', 'Group ID', 'Your numeric ID in Telegram', 'Friends invite you to groups by this ID or your @username'] }[['ru', 'kz', 'en'].includes(selectedLang) ? selectedLang : 'ru'];
+                        if (!tg && !gid) return '';
+                        const row = (cls, ico, label, val, hint) => `<div class="idrow ${cls}" title="${escapeHtml(hint)}"><span class="ico">${ico}</span><div class="tx"><small>${escapeHtml(label)}</small><b>${escapeHtml(val)}</b></div><button type="button" class="idcopy" data-v="${escapeHtml(val)}" onclick="copyId(this)" aria-label="copy">⧉</button></div>`;
+                        return `<div class="tile idbox"><div class="t"><p class="mono">🪪 ${T[0]}</p></div>${tg ? row('', '✈️', T[1], tg, T[3]) : ''}${gid ? row('g', '👥', T[2], gid, T[4]) : ''}${gid ? `<p class="idnote">${T[4]}</p>` : ''}</div>`;
+                    })()}
                     <div class="grid grid-cols-2 lg:grid-cols-1 gap-3">
                         <div class="tile p-4 flex items-center justify-between"><div><p class="display text-2xl font-bold text-white">⚡ ${escapeHtml(currentUser.tokens ?? 0)}</p><p class="mono">${L.tokens}</p></div><p class="text-[10px] text-neutral-500 text-right max-w-[90px]">${L.tokensHint}</p></div>
                         <div class="tile p-4 flex items-center justify-between"><div><p class="display text-2xl font-bold text-white">🔥 ${streak}</p><p class="mono">${L.streak}</p></div></div>
@@ -4758,6 +4783,14 @@ v8Labels();
       }
     } catch (e) {}
     return r;
+  };
+})();
+</script>
+<script id="cab-ids-js">
+(function () {
+  window.copyId = async function (btn) {
+    const ok = await (window.copyToClipboard ? window.copyToClipboard(btn.dataset.v) : Promise.resolve(false));
+    const o = btn.textContent; btn.textContent = ok ? '✓' : '✕'; setTimeout(() => { btn.textContent = o; }, 1400);
   };
 })();
 </script>
