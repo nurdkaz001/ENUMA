@@ -168,6 +168,25 @@ def today_utc() -> date:
     return datetime.now(timezone.utc).date()
 
 
+_ACTIVE_DAY: dict[str, str] = {}
+
+
+def _touch_activity(user: dict) -> None:
+    """Записывает, что пользователь сегодня заходил (локальный день по его часовому поясу) — на этом строится серия 🔥.
+    Пишем не чаще раза в сутки на пользователя; данные не зависят от истории материалов."""
+    try:
+        tz = user.get("tz_offset")
+        day = (datetime.now(timezone.utc) + timedelta(hours=5 if tz is None else int(tz))).date().isoformat()
+        if _ACTIVE_DAY.get(user["id"]) == day:
+            return
+        if len(_ACTIVE_DAY) > 20000:
+            _ACTIVE_DAY.clear()
+        _ACTIVE_DAY[user["id"]] = day
+        sb.table("activity_days").upsert({"user_id": user["id"], "day": day}, on_conflict="user_id,day").execute()
+    except Exception as e:
+        log.warning("activity not recorded (%s) — выполните migration_v8.sql", type(e).__name__)
+
+
 def current_user(authorization: Optional[str] = Header(default=None)) -> dict:
     if not authorization or not authorization.lower().startswith("bearer "):
         raise HTTPException(401, "Нужно войти в аккаунт.")
@@ -191,6 +210,7 @@ def current_user(authorization: Optional[str] = Header(default=None)) -> dict:
         refilled = sb.rpc("refill_tokens", {"p_user": user["id"], "p_amount": DAILY_TOKENS}).execute().data
         if refilled is not None:
             user["tokens"] = refilled
+    _touch_activity(user)
     return user
 
 
@@ -231,7 +251,7 @@ def public_profile(u: dict) -> dict:
         "tokens": u.get("tokens", 0), "score": u.get("score", 0),
         "is_subscribed": bool(u.get("is_subscribed")), "is_admin": u.get("telegram_id") in ADMIN_IDS, "subscription_until": u.get("subscription_until"), "created_at": u.get("created_at"),
         "consent_version": u.get("consent_version"), "consent_at": u.get("consent_at"),
-        "public_id": u.get("public_id"), "onboarded": ("onboarded_at" not in u) or bool(u.get("onboarded_at")),
+        "public_id": u.get("public_id"), "telegram_id": u.get("telegram_id"), "onboarded": ("onboarded_at" not in u) or bool(u.get("onboarded_at")),
     }
 
 
@@ -1901,8 +1921,26 @@ def overview(tz: int = 0, user: dict = Depends(current_user)):
     recent_gens = (sb.table("generations").select("created_at").eq("user_id", uid)
                    .gte("created_at", since).limit(2000).execute().data or [])
 
+    # пожизненная статистика и дни входа хранятся отдельно от истории — «Очистить» их не затрагивает
+    life: dict[str, int] = {}
+    try:
+        life = {r["kind"]: int(r["n"]) for r in (sb.table("usage_counters").select("kind,n").eq("user_id", uid).limit(200).execute().data or [])}
+    except Exception:
+        log.warning("usage_counters unavailable — выполните migration_v8.sql")
+    stored_days: list = []
+    try:
+        stored_days = (sb.table("activity_days").select("day").eq("user_id", uid)
+                       .gte("day", (local_today - timedelta(days=400)).isoformat()).limit(1000).execute().data or [])
+    except Exception:
+        pass
+
     xp_by_day: dict[date, int] = defaultdict(int)
     active_days: set[date] = set()
+    for r in stored_days:
+        try:
+            active_days.add(date.fromisoformat(str(r["day"])[:10]))
+        except ValueError:
+            pass
     for e in events:
         d = (_dt(e["created_at"]) + off).date()
         xp_by_day[d] += e["amount"]
@@ -1921,11 +1959,15 @@ def overview(tz: int = 0, user: dict = Depends(current_user)):
         streak += 1
         d -= timedelta(days=1)
 
+    materials_now = len(gens)
+    for kind, n in life.items():
+        if kind.startswith("gen:") and n > 0:
+            by_type[kind[4:]] = max(by_type.get(kind[4:], 0), n)
     return {
-        "profile": public_profile(user),
+        "profile": {**public_profile(user), "telegram_id": user.get("telegram_id")},
         "counts": {
-            "materials": len(gens), "chats": chats, "by_type": by_type,
-            "tasks_total": len(tasks), "tasks_done": sum(1 for t in tasks if t["done"]),
+            "materials": max(life.get("gen", 0), materials_now), "chats": max(life.get("chat", 0), chats), "by_type": by_type,
+            "tasks_total": len(tasks), "tasks_done": max(life.get("task_done", 0), sum(1 for t in tasks if t["done"])),
         },
         "streak": streak,
         "activity": activity,
