@@ -913,6 +913,31 @@ html[data-theme="light"] [style*="color-scheme:dark"],html[data-theme="light"] [
 
 /* THEME-LIGHT:END */
     </style>
+
+<style id="home-glow-css">
+/* ===== Главная рабочей зоны: светящиеся карточки разделов ===== */
+.home-wrap{width:100%;text-align:left}
+.home-head{text-align:center}
+.home-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(170px,1fr));gap:.75rem;margin-top:1.5rem}
+.home-card{--c:#c8ff2e;position:relative;display:flex;flex-direction:column;align-items:flex-start;gap:.55rem;padding:1rem;border-radius:1.25rem;text-align:left;
+  color:#fff;font-size:.8rem;font-weight:700;line-height:1.25;cursor:pointer;
+  background:linear-gradient(160deg,color-mix(in srgb,var(--c) 16%,#121212),#121212 72%);
+  border:1px solid color-mix(in srgb,var(--c) 50%,transparent);
+  box-shadow:0 8px 26px -16px var(--c);
+  transition:transform .2s ease,box-shadow .25s ease;
+  animation:homeGlow 3.4s ease-in-out infinite;animation-delay:calc(var(--i,0)*.22s)}
+.home-card:hover{transform:translateY(-3px);box-shadow:0 0 24px -2px var(--c)}
+.home-card .hc-ico{font-size:1.7rem;filter:drop-shadow(0 0 8px var(--c))}
+.home-card .hc-n{font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--c);opacity:.9}
+.home-card .hc-new{position:absolute;top:.7rem;right:.8rem;font-size:9px;font-weight:800;color:var(--c)}
+@keyframes homeGlow{50%{box-shadow:0 0 20px -4px var(--c)}}
+@media (prefers-reduced-motion:reduce){.home-card{animation:none}}
+html[data-theme="light"] .home-card{color:#1d1c17;background:linear-gradient(160deg,color-mix(in srgb,var(--c) 20%,#fff),#f4f1e8 78%)}
+html[data-theme="light"] .home-card .hc-n,html[data-theme="light"] .home-card .hc-new{color:inherit;opacity:.55}
+/* боковое меню: цветная подсветка строк */
+.mode-row.glow{--c:#c8ff2e;border-color:color-mix(in srgb,var(--c) 28%,transparent);box-shadow:inset 3px 0 0 var(--c)}
+.mode-row.glow:hover{box-shadow:inset 3px 0 0 var(--c),0 0 16px -6px var(--c)}
+</style>
 </head>
 <body class="min-h-screen flex flex-col">
 
@@ -4792,6 +4817,59 @@ v8Labels();
     const ok = await (window.copyToClipboard ? window.copyToClipboard(btn.dataset.v) : Promise.resolve(false));
     const o = btn.textContent; btn.textContent = ok ? '✓' : '✕'; setTimeout(() => { btn.textContent = o; }, 1400);
   };
+})();
+
+// ===== Правки: 1) запоминание языка, 2) светящиеся карточки разделов на входе =====
+(function () {
+  const KEY = 'studyai_lang', LANGS = ['kz', 'ru', 'en'];
+  const sel = document.getElementById('lang-select');
+  const COLORS = ['#c8ff2e', '#8b5cf6', '#ff5d73', '#3de0ff', '#ffd23f'];
+  const SECTIONS = ['quiz', 'cards', 'summary', 'explain', 'chat', 'teacher', 'tickets', 'planner', 'human', 'career', 'slides', 'groups'];
+
+  // --- главная: карточки разделов (берём подписи прямо из бокового меню — они уже переведены) ---
+  function homeVisible() {
+    const box = document.getElementById('result-container');
+    return !!(box && !window.currentActiveView && (document.getElementById('welcome-title') || box.querySelector('.home-grid')));
+  }
+  function renderHome() {
+    if (!homeVisible()) return;
+    const box = document.getElementById('result-container');
+    const t = (translations[selectedLang] || translations.kz);
+    const cards = SECTIONS.map((k, i) => {
+      const lab = document.getElementById('btn-mode-' + k); if (!lab) return '';
+      const raw = lab.textContent.trim(), m = raw.match(/^(\S+)\s+(.*)$/) || [0, '✨', raw];
+      const title = m[2].replace(/^\d+\.\s*/, '');
+      const isNew = lab.closest('.mode-row') && lab.closest('.mode-row').classList.contains('accent');
+      return `<button type="button" class="home-card" data-k="${k}" style="--c:${COLORS[i % COLORS.length]};--i:${i}">
+        <span class="hc-n">${String(i + 1).padStart(2, '0')}</span><span class="hc-ico">${m[1]}</span><span>${escapeHtml(title)}</span>
+        ${isNew ? '<span class="hc-new">NEW</span>' : ''}</button>`;
+    }).join('');
+    box.className = 'flex-grow flex flex-col justify-center items-center py-8';
+    box.innerHTML = `<div class="home-wrap quiz-slide-enter">
+      <div class="home-head"><h3 id="welcome-title" class="display text-2xl font-bold text-white mb-1">${t.welcomeTitle}</h3>
+      <p id="welcome-desc" class="text-sm text-neutral-400 max-w-md mx-auto">${t.welcomeDesc}</p></div>
+      <div class="home-grid">${cards}</div></div>`;
+    box.querySelectorAll('.home-card').forEach(b => b.onclick = () => {
+      const row = document.getElementById('btn-mode-' + b.dataset.k); const btn = row && row.closest('button'); if (btn) btn.click();
+    });
+  }
+
+  // --- подсветка строк бокового меню ---
+  document.querySelectorAll('#side-panel .mode-row').forEach((r, i) => {
+    if (r.style.opacity) return;               // «СКОРО» (ЕНТ) не подсвечиваем
+    r.classList.add('glow'); r.style.setProperty('--c', COLORS[i % COLORS.length]);
+  });
+
+  // --- язык: сохраняем при смене, восстанавливаем при загрузке ---
+  const _cl = window.changeLanguage;
+  window.changeLanguage = function () {
+    _cl();
+    try { localStorage.setItem(KEY, selectedLang); } catch (e) {}
+    renderHome();
+  };
+  let saved = null; try { saved = localStorage.getItem(KEY); } catch (e) {}
+  if (sel && LANGS.includes(saved) && saved !== sel.value) { sel.value = saved; window.changeLanguage(); }
+  else renderHome();
 })();
 </script>
 </body>
