@@ -3156,11 +3156,16 @@ document.addEventListener('keydown', e => {
 });
 
 // ---------- Humanizer ----------
+const DISC_RE = /таким образом|важно отметить|стоит отметить|следует отметить|кроме того|более того|помимо этого|в заключение|в целом|во-первых|во-вторых|тем не менее|в первую очередь|moreover|furthermore|additionally|in addition|in conclusion|overall|however|therefore|thus|осылайша|сонымен қатар|қорытындылай келе|алайда|жалпы алғанда/gi;
 const AI_RE = /важно отметить|таким образом|в заключение|несомненно|ключев\w+ аспект|стоит упомянуть|погрузи\w+ в|экосистем\w+|инновацион\w+|трансформаци\w+|в современном мире|играет (?:ключевую|важную) роль|in conclusion|furthermore|moreover|delve|tapestry|it is important to note|қорытындылай келе|атап өткен жөн/gi;
 function stats(t) {
   const s = t.split(/(?<=[.!?…])\s+/).map(x => x.trim()).filter(Boolean), len = s.map(x => x.split(/\s+/).length), n = len.length || 1;
   const avg = len.reduce((a, b) => a + b, 0) / n, sd = Math.sqrt(len.reduce((a, b) => a + (b - avg) ** 2, 0) / n);
-  return { sd, short: len.filter(x => x <= 3).length, ai: (t.match(AI_RE) || []).length, avg };
+  const lw = (t.toLowerCase().match(/[\p{L}\d]+/gu) || []).filter(w => w.length >= 5), uq = new Set(lw).size;
+  const op = {}; s.forEach(x => { const w = (x.toLowerCase().match(/[\p{L}\d]+/u) || [''])[0]; if (w) op[w] = (op[w] || 0) + 1; });
+  return { sd, short: len.filter(x => x <= 3).length, ai: (t.match(AI_RE) || []).length, avg,
+    rep: lw.length ? Math.round((1 - uq / lw.length) * 100) : 0, mk: (t.match(DISC_RE) || []).length,
+    op: Object.values(op).filter(n => n >= 3).reduce((a, b) => a + b, 0) };
 }
 const ring = (id, col) => `<div class="gauge"><svg viewBox="0 0 100 100"><circle cx="50" cy="50" r="44" fill="none" stroke="rgba(255,255,255,.08)" stroke-width="9"/><circle id="${id}" class="g-fg" cx="50" cy="50" r="44" fill="none" stroke="${col}" stroke-width="9" stroke-linecap="round" stroke-dasharray="276.5" stroke-dashoffset="276.5"/></svg><div class="g-n"><span id="${id}-n" class="display text-3xl font-bold text-white">0%</span></div></div>`;
 function animRing(id, pct) {
@@ -3194,6 +3199,11 @@ window.runHumanize = async function () {
   if (!res || !res.ok) { out.innerHTML = errorBox(data.error || 'Error'); return; }
   setTokens(data.tokens_left); HZ.res = data.result; renderHuman();
 };
+const HZX = () => ({
+  ru: { rep: 'Повторы слов', mk: 'Шаблонные связки («таким образом», «кроме того»…)', op: 'Предложения с одинаковым началом', note: 'Признаки взяты из описания ИИ-детекторов в Wikipedia: повторы слов, шаблонные переходы, однотипные начала и ровный ритм. Оценка ориентировочная: детекторы ошибаются, особенно с текстами тех, для кого язык неродной.' },
+  kz: { rep: 'Сөздердің қайталануы', mk: 'Үлгі байланыстырғыштар («осылайша», «сонымен қатар»…)', op: 'Бірдей басталатын сөйлемдер', note: 'Белгілер Wikipedia-дағы ЖИ-детекторлар сипаттамасынан алынған: сөз қайталау, үлгі өтпелер, бірдей басталулар және біркелкі ырғақ. Баға шамамен: детекторлар қателеседі, әсіресе тілі ана тілі емес адамдардың мәтініне.' },
+  en: { rep: 'Repeated words', mk: 'Formulaic transitions (“moreover”, “in conclusion”…)', op: 'Sentences with the same opening', note: 'Signs follow the description of AI detectors on Wikipedia: repeated words, formulaic transitions, same openings and an even rhythm. The score is approximate: detectors make mistakes, especially on texts by non-native speakers.' }
+})[selectedLang] || {};
 function renderHuman() {
   const l = L3(), r = HZ.res, out = $('hz-out'); if (!out) return;
   const ai = Math.max(0, Math.min(100, +r.ai_score || 0)), hu = Math.max(0, Math.min(100, +r.human_score || 0));
@@ -3210,7 +3220,9 @@ function renderHuman() {
     ${(r.markers || []).length ? `<div class="tile p-5 space-y-3"><h4 class="mono" style="color:var(--coral)">${l.markers}</h4><div class="flex flex-wrap gap-2">${r.markers.slice(0, 6).map((m, i) => `<span class="chip" style="animation-delay:${i * 90}ms" title="${esc(m.why || '')}">“${esc(m.phrase || '')}”</span>`).join('')}</div>
       <ul class="text-[11px] text-neutral-400 space-y-1">${r.markers.slice(0, 6).map(m => `<li>• <b class="text-neutral-200">${esc(m.phrase || '')}</b> — ${esc(m.why || '')}</li>`).join('')}</ul></div>` : ''}
     <div class="tile p-5 space-y-4"><h4 class="mono" style="color:var(--cyan)">${l.metrics}</h4>
-      ${metric(l.m1, a.sd, b.sd, f1)}${metric(l.m2, a.short, b.short, f0)}${metric(l.m3, a.ai, b.ai, f0)}${metric(l.m4, a.avg, b.avg, f1)}</div>
+      ${metric(l.m1, a.sd, b.sd, f1)}${metric(l.m2, a.short, b.short, f0)}${metric(l.m3, a.ai, b.ai, f0)}${metric(l.m4, a.avg, b.avg, f1)}
+      ${metric(HZX().rep, a.rep, b.rep, v => Math.round(v) + '%')}${metric(HZX().mk, a.mk, b.mk, f0)}${metric(HZX().op, a.op, b.op, f0)}
+      <p class="text-[11px] text-neutral-500 leading-snug">${HZX().note}</p></div>
     <div class="tile p-5 space-y-3"><div class="flex items-center justify-between gap-2"><div class="flex gap-2"><button class="hz-tab on" id="hz-t1" onclick="hzTab(1)">${l.result}</button><button class="hz-tab" id="hz-t2" onclick="hzTab(2)">${l.changes}</button></div>
       <button class="btn-ghost px-4 py-2 text-[11px]" onclick="hzCopy(this)">${l.copy}</button></div>
       <div id="hz-p1"><div id="hz-res" class="text-sm leading-relaxed text-neutral-100 whitespace-pre-wrap max-h-[50vh] overflow-y-auto"></div><p class="mono mt-3">${words} ${l.words}${r.changed_pct != null ? " · " + ({ru:"изменено",kz:"өзгерді",en:"changed"}[selectedLang] || "изменено") + " " + r.changed_pct + "%" : ""}</p></div>
