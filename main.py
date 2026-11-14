@@ -3286,6 +3286,8 @@ def ai_teacher_more(topic: str = Form(...), comment: str = Form(""), doc_id: str
 
 
 # ==================== ПОСТУПЛЕНИЕ ЗА РУБЕЖ + МОТИВАЦИОННЫЕ ПИСЬМА ====================
+ABROAD_COST = 30   # токенов за подбор стран
+LETTER_COST = 30   # токенов за мотивационное письмо
 ABROAD_NOTE = ("Суммы, сроки и требования — ориентиры и меняются каждый год. Перед подачей обязательно сверьтесь "
                "с официальным сайтом программы или университета.")
 
@@ -3415,7 +3417,7 @@ class AbroadIn(BaseModel):
 @app.get("/api/abroad/info")
 def abroad_info():
     """Публичный каталог стран и стипендий — стартовый экран раздела."""
-    return {"countries": [{"id": k, **v} for k, v in ABROAD_KB.items()], "note": ABROAD_NOTE}
+    return {"countries": [{"id": k, **v} for k, v in ABROAD_KB.items()], "note": ABROAD_NOTE, "cost": ABROAD_COST, "letter_cost": LETTER_COST}
 
 
 @app.post("/api/abroad")
@@ -3448,7 +3450,7 @@ def abroad(body: AbroadIn, user: dict = Depends(current_user)):
             raise HTTPException(502, "ИИ вернул неверный формат. Попробуйте ещё раз.")
         return d
 
-    d, left = paid(user, run)
+    d, left, _ = paid_n(user, ABROAD_COST, run)
     out, seen = [], set()
     for c in d["countries"][:8]:
         if not isinstance(c, dict) or c.get("id") not in ABROAD_KB or c["id"] in seen:
@@ -3544,7 +3546,7 @@ def letter(body: LetterIn, user: dict = Depends(current_user)):
             raise HTTPException(502, "ИИ вернул неверный формат. Попробуйте ещё раз.")
         return d
 
-    d, left = paid(user, run)
+    d, left, _ = paid_n(user, LETTER_COST, run)
     text = _str(d.get("letter"), 6000)
     result = {"subject": _str(d.get("subject"), 200), "letter": text, "tips": _list(d.get("tips"), 4, 220),
               "words": len(text.split()), "tokens_left": left}
