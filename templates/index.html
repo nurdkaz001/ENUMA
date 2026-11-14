@@ -1251,10 +1251,12 @@ html.door-pending #door-gate { display: block; }
                         <button onclick="openPlannerView()" class="mode-row"><span class="num">08</span><span id="btn-mode-planner">📅 Күнтізбе & ЖИ-Планер</span><span class="arrow">→</span></button>
                         <button onclick="openHumanizerView()" class="mode-row accent"><span class="num">09</span><span id="btn-mode-human">✍️ Мәтінді адамдандыру</span><span class="arrow">NEW</span></button>
                         <button onclick="openCareerView()" class="mode-row accent"><span class="num">10</span><span id="btn-mode-career">🎓 11 сынып: түсу кеңесі</span><span class="arrow">NEW</span></button>
-                        <button onclick="openSlidesView()" class="mode-row accent"><span class="num">11</span><span id="btn-mode-slides">🎞️ ЖИ-презентациялар</span><span class="arrow" style="color:var(--gold)">DEMO</span></button>
+                        <button onclick="openAbroadView()" class="mode-row accent"><span class="num">11</span><span id="btn-mode-abroad">🌍 Шетелге түсу</span><span class="arrow">NEW</span></button>
+                        <button onclick="openLetterView()" class="mode-row accent"><span class="num">12</span><span id="btn-mode-letter">✉️ Мотивациялық хат</span><span class="arrow">NEW</span></button>
+                        <button onclick="openSlidesView()" class="mode-row accent"><span class="num">13</span><span id="btn-mode-slides">🎞️ ЖИ-презентациялар</span><span class="arrow" style="color:var(--gold)">DEMO</span></button>
                         <p id="slides-demo-sub" class="mono" style="font-size:.58rem;color:var(--gold);margin:-.15rem 0 .25rem 2.6rem">демо-версия · скоро обновление</p>
-                        <button onclick="openGroupsView()" class="mode-row accent"><span class="num">12</span><span id="btn-mode-groups">👥 Группы</span><span class="arrow"><span id="g-badge-side" class="g-badge hidden"></span><span id="g-new">NEW</span></span></button>
-                        <button onclick="openEntView()" class="mode-row" style="opacity:.6"><span class="num">13</span><span id="btn-mode-ent">🎯 Подготовка к ЕНТ</span><span class="arrow" style="color:var(--gold)" id="ent-soon">СКОРО</span></button>
+                        <button onclick="openGroupsView()" class="mode-row accent"><span class="num">14</span><span id="btn-mode-groups">👥 Группы</span><span class="arrow"><span id="g-badge-side" class="g-badge hidden"></span><span id="g-new">NEW</span></span></button>
+                        <button onclick="openEntView()" class="mode-row" style="opacity:.6"><span class="num">15</span><span id="btn-mode-ent">🎯 Подготовка к ЕНТ</span><span class="arrow" style="color:var(--gold)" id="ent-soon">СКОРО</span></button>
                     </div>
                 </div>
 
@@ -4948,6 +4950,192 @@ v8Labels();
   };
 })();
 </script>
+<script>
+// ===== Поступление за рубеж + мотивационные письма =====
+(function () {
+const $ = id => document.getElementById(id), esc = escapeHtml;
+const T = {
+  ru: { ab: '🌍 Поступление за рубеж', abD: 'ИИ расспросит о твоих интересах, откуда ты и на сколько хочешь учиться — и подберёт страны со стипендиями, стоимостью, сроками и шагами подготовки.', abStart: 'Подобрать страны · 1 токен', cat: 'Каталог стран и стипендий', catD: 'Нажми на страну, чтобы посмотреть подробности.',
+    step: 'Вопрос', of: 'из', from: 'Откуда ты и что ещё важно?', fromD: 'Город или регион, оценки/баллы, языки, пожелания — всё, что поможет подобрать страны.', fromPh: 'Например: Караганда, GPA 4.2, IELTS 6.0, хочу программу по IT и жизнь недорого', go: 'Показать варианты ✨',
+    l1: 'Анализирую твои ответы…', l2: 'Сверяю страны и стипендии…', l3: 'Готовлю рекомендации…', prof: 'Твой профиль', top: 'Лучшие страны для тебя', match: 'совпадение', why: 'Почему подходит', progs: 'Программы', unis: 'Университеты', steps: 'Шаги подготовки', risk: 'На что обратить внимание', sch: 'Стипендии и гранты', tips: 'Общие советы', retry: 'Пройти заново',
+    tuition: 'Обучение, $/год', living: 'Жизнь, $/год', lang: 'Язык', langreq: 'Требования к языку', work: 'Подработка', post: 'После учёбы', intakes: 'Сроки подачи', covers: 'Что покрывает', again: '← Назад', letterBtn: '✉️ Написать мотивационное письмо',
+    q: [['Что тебе интереснее всего?', [['💻', 'IT, данные и ИИ'], ['⚙️', 'Инженерия и технологии'], ['🧬', 'Наука и медицина'], ['📈', 'Бизнес и экономика'], ['🎨', 'Дизайн, искусство, гуманитарные науки']]],
+        ['Какой уровень ты планируешь?', [['🎓', 'Бакалавриат', 'bachelor'], ['📘', 'Магистратура', 'master'], ['🔬', 'PhD / аспирантура', 'phd'], ['🔄', 'Семестр по обмену', 'exchange']]],
+        ['Сколько готов(а) учиться за рубежом?', [['🗓️', 'Семестр–год'], ['📚', '2 года (магистратура)'], ['🎓', '4 года и больше'], ['🧭', 'Пока не знаю']]],
+        ['Какой у тебя бюджет?', [['🎁', 'Только полная стипендия'], ['💶', 'До 5 000 $ в год'], ['💼', 'До 15 000 $ в год'], ['🏦', 'Бюджет не ограничен']]],
+        ['Какие языки ты знаешь?', [['🇬🇧', 'Английский (IELTS/TOEFL)'], ['🇩🇪', 'Немецкий'], ['🇰🇷', 'Корейский / японский / китайский'], ['🇹🇷', 'Турецкий'], ['🌱', 'Пока только базовый английский']]]],
+    lt: '✉️ Мотивационное письмо', ltD: 'Напиши письмо по структуре академического письма: зацепка, учёба, жизнь за пределами учёбы и итог. ИИ использует только твои факты — ничего не выдумывает.', kinds: [['admission', 'Поступление'], ['exchange', 'Обмен'], ['scholarship', 'Стипендия']],
+    fUni: 'Университет *', fProg: 'Программа *', fCountry: 'Страна', fName: 'Твоё имя', fHome: 'Твой вуз / школа', fStudy: 'Что ты изучаешь сейчас', fAch: 'Проекты, результаты, исследования', fWhy: 'Почему эта страна / город', fBeyond: 'Интересы вне учёбы (волонтёрство, спорт, творчество)', fGoals: 'Как применишь знания дома',
+    phStudy: 'Например: 3 курс, информатика; курсовая по машинному обучению', phAch: 'Например: сделал(а) приложение для расписания (500 пользователей); выступил(а) на студенческой конференции', phWhy: 'Например: учу немецкий 2 года, интересна культура переработки отходов', phBeyond: 'Например: волонтёр в доме престарелых, играю в баскетбол', phGoals: 'Например: открою лабораторию в родном вузе',
+    tone: 'Тон', tones: [['formal', 'Строгий'], ['warm', 'Тёплый']], len: 'Объём', lens: [['short', 'Короткое'], ['medium', 'Среднее'], ['long', 'Подробное']], ll: 'Язык письма', gen: 'Написать письмо · 1 токен', needUni: 'Укажи университет и программу.',
+    lg1: 'Читаю твои факты…', lg2: 'Выстраиваю структуру…', lg3: 'Шлифую стиль…', subject: 'Тема письма', copy: 'Копировать', dl: '⬇ Скачать .txt', copied: 'Скопировано ✓', edit: 'Можно править текст прямо здесь', words: 'слов', ltips: 'Сделай письмо своим', redo: '↻ Новый вариант', back: '← К форме', hint: 'Заполни хотя бы пару полей: чем больше фактов, тем живее письмо.' },
+  kz: { ab: '🌍 Шетелге түсу', abD: 'ЖИ қызығушылығыңды, қайдан екенің мен қанша оқығың келетінін сұрайды да, стипендиясы, құны, мерзімі бар елдерді таңдайды.', abStart: 'Елдерді таңдау · 1 токен', cat: 'Елдер мен стипендиялар каталогы', catD: 'Толығырақ білу үшін елді бас.',
+    step: 'Сұрақ', of: '/', from: 'Қайдансың және тағы не маңызды?', fromD: 'Қала, баға/балл, тілдер, тілектер — елдерді таңдауға көмектесетін барлығы.', fromPh: 'Мысалы: Қарағанды, GPA 4.2, IELTS 6.0, IT бағдарламасы және арзан өмір', go: 'Нұсқаларды көрсету ✨',
+    l1: 'Жауаптарыңды талдаудамын…', l2: 'Елдер мен стипендияларды тексерудемін…', l3: 'Ұсыныстар дайындаудамын…', prof: 'Сенің профилің', top: 'Саған ең сай елдер', match: 'сәйкестік', why: 'Неге сәйкес', progs: 'Бағдарламалар', unis: 'Университеттер', steps: 'Дайындық қадамдары', risk: 'Назар аударатын жайт', sch: 'Стипендиялар мен гранттар', tips: 'Жалпы кеңестер', retry: 'Қайта өту',
+    tuition: 'Оқу, $/жыл', living: 'Өмір, $/жыл', lang: 'Тіл', langreq: 'Тіл талаптары', work: 'Жұмыс', post: 'Оқудан кейін', intakes: 'Құжат тапсыру', covers: 'Нені жабады', again: '← Артқа', letterBtn: '✉️ Мотивациялық хат жазу',
+    q: [['Саған не қызықты?', [['💻', 'IT, деректер және ЖИ'], ['⚙️', 'Инженерия және технология'], ['🧬', 'Ғылым және медицина'], ['📈', 'Бизнес және экономика'], ['🎨', 'Дизайн, өнер, гуманитарлық ғылымдар']]],
+        ['Қай деңгейді жоспарлайсың?', [['🎓', 'Бакалавриат', 'bachelor'], ['📘', 'Магистратура', 'master'], ['🔬', 'PhD', 'phd'], ['🔄', 'Алмасу семестрі', 'exchange']]],
+        ['Шетелде қанша оқуға дайынсың?', [['🗓️', 'Семестр–жыл'], ['📚', '2 жыл (магистратура)'], ['🎓', '4 жыл және одан көп'], ['🧭', 'Әзірге білмеймін']]],
+        ['Бюджетің қандай?', [['🎁', 'Тек толық стипендия'], ['💶', 'Жылына 5 000 $ дейін'], ['💼', 'Жылына 15 000 $ дейін'], ['🏦', 'Шектеусіз']]],
+        ['Қандай тілдерді білесің?', [['🇬🇧', 'Ағылшын (IELTS/TOEFL)'], ['🇩🇪', 'Неміс тілі'], ['🇰🇷', 'Корей / жапон / қытай'], ['🇹🇷', 'Түрік тілі'], ['🌱', 'Әзірге негізгі ағылшын']]]],
+    lt: '✉️ Мотивациялық хат', ltD: 'Академиялық хат құрылымымен жаз: ілмек, оқу, оқудан тыс өмір және қорытынды. ЖИ тек сенің деректеріңді қолданады.', kinds: [['admission', 'Түсу'], ['exchange', 'Алмасу'], ['scholarship', 'Стипендия']],
+    fUni: 'Университет *', fProg: 'Бағдарлама *', fCountry: 'Ел', fName: 'Атың', fHome: 'Оқу орның', fStudy: 'Қазір не оқисың', fAch: 'Жобалар, нәтижелер, зерттеулер', fWhy: 'Неге бұл ел / қала', fBeyond: 'Оқудан тыс қызығушылықтар', fGoals: 'Білімді үйде қалай қолданасың',
+    phStudy: 'Мысалы: 3 курс, информатика', phAch: 'Мысалы: кесте қосымшасын жасадым', phWhy: 'Мысалы: неміс тілін 2 жыл оқыдым', phBeyond: 'Мысалы: еріктімін, баскетбол', phGoals: 'Мысалы: университетімде зертхана ашамын',
+    tone: 'Тон', tones: [['formal', 'Қатаң'], ['warm', 'Жылы']], len: 'Көлем', lens: [['short', 'Қысқа'], ['medium', 'Орташа'], ['long', 'Толық']], ll: 'Хат тілі', gen: 'Хат жазу · 1 токен', needUni: 'Университет пен бағдарламаны көрсет.',
+    lg1: 'Деректеріңді оқудамын…', lg2: 'Құрылым жасаудамын…', lg3: 'Стильді жетілдіруде…', subject: 'Хат тақырыбы', copy: 'Көшіру', dl: '⬇ .txt жүктеу', copied: 'Көшірілді ✓', edit: 'Мәтінді осы жерде түзетуге болады', words: 'сөз', ltips: 'Хатты өзіңдікі ет', redo: '↻ Жаңа нұсқа', back: '← Формаға', hint: 'Кемінде бірнеше өрісті толтыр: дерек көп болса, хат жандырақ болады.' },
+  en: { ab: '🌍 Study abroad', abD: 'The AI asks about your interests, where you are from and how long you want to study — then picks countries with scholarships, costs, deadlines and next steps.', abStart: 'Find countries · 1 token', cat: 'Countries and scholarships', catD: 'Tap a country to see the details.',
+    step: 'Question', of: 'of', from: 'Where are you from and what else matters?', fromD: 'City or region, grades/scores, languages, wishes — anything that helps pick countries.', fromPh: 'E.g.: Karaganda, GPA 4.2, IELTS 6.0, I want IT and affordable living', go: 'Show my options ✨',
+    l1: 'Analyzing your answers…', l2: 'Matching countries and scholarships…', l3: 'Preparing recommendations…', prof: 'Your profile', top: 'Best countries for you', match: 'match', why: 'Why it fits', progs: 'Programs', unis: 'Universities', steps: 'Preparation steps', risk: 'Watch out for', sch: 'Scholarships and grants', tips: 'General tips', retry: 'Start over',
+    tuition: 'Tuition, $/yr', living: 'Living, $/yr', lang: 'Language', langreq: 'Language requirements', work: 'Part-time work', post: 'After graduation', intakes: 'Application window', covers: 'Covers', again: '← Back', letterBtn: '✉️ Write a motivation letter',
+    q: [['What interests you most?', [['💻', 'IT, data and AI'], ['⚙️', 'Engineering and technology'], ['🧬', 'Science and medicine'], ['📈', 'Business and economics'], ['🎨', 'Design, arts, humanities']]],
+        ['Which level are you planning?', [['🎓', 'Bachelor', 'bachelor'], ['📘', 'Master', 'master'], ['🔬', 'PhD', 'phd'], ['🔄', 'Exchange semester', 'exchange']]],
+        ['How long do you want to study abroad?', [['🗓️', 'A semester–a year'], ['📚', '2 years (master)'], ['🎓', '4 years or more'], ['🧭', 'Not sure yet']]],
+        ['What is your budget?', [['🎁', 'Full scholarship only'], ['💶', 'Up to $5,000 a year'], ['💼', 'Up to $15,000 a year'], ['🏦', 'No limit']]],
+        ['Which languages do you speak?', [['🇬🇧', 'English (IELTS/TOEFL)'], ['🇩🇪', 'German'], ['🇰🇷', 'Korean / Japanese / Chinese'], ['🇹🇷', 'Turkish'], ['🌱', 'Basic English only']]]],
+    lt: '✉️ Motivation letter', ltD: 'Write a letter in the classic academic structure: hook, academics, life beyond academics, and a closing. The AI uses only your facts and invents nothing.', kinds: [['admission', 'Admission'], ['exchange', 'Exchange'], ['scholarship', 'Scholarship']],
+    fUni: 'University *', fProg: 'Program *', fCountry: 'Country', fName: 'Your name', fHome: 'Your university / school', fStudy: 'What you study now', fAch: 'Projects, results, research', fWhy: 'Why this country / city', fBeyond: 'Interests beyond academics (volunteering, sport, creativity)', fGoals: 'How you will use the knowledge at home',
+    phStudy: 'E.g.: 3rd year, computer science; coursework on machine learning', phAch: 'E.g.: built a timetable app (500 users); presented at a student conference', phWhy: 'E.g.: studied German for 2 years, interested in recycling culture', phBeyond: 'E.g.: volunteer at a care home, play basketball', phGoals: 'E.g.: open a lab at my home university',
+    tone: 'Tone', tones: [['formal', 'Formal'], ['warm', 'Warm']], len: 'Length', lens: [['short', 'Short'], ['medium', 'Medium'], ['long', 'Detailed']], ll: 'Letter language', gen: 'Write the letter · 1 token', needUni: 'Enter the university and the program.',
+    lg1: 'Reading your facts…', lg2: 'Building the structure…', lg3: 'Polishing the style…', subject: 'Subject line', copy: 'Copy', dl: '⬇ Download .txt', copied: 'Copied ✓', edit: 'You can edit the text right here', words: 'words', ltips: 'Make it yours', redo: '↻ New version', back: '← Back to form', hint: 'Fill in a few fields: the more facts, the more alive the letter.' }
+};
+const L = () => T[selectedLang] || T.ru;
+const COL = ['#8ab4f8', '#8b5cf6', '#3de0ff', '#ffd23f', '#ff5d73', '#7be495'];
+let A = null, CAT = null;
+
+// ---------- Страны ----------
+function facts(c, l) {
+  const rows = [['tuition', c.tuition], ['living', c.living], ['lang', c.lang], ['langreq', c.langreq], ['work', c.work], ['post', c.post], ['intakes', c.intakes]];
+  return `<div class="grid sm:grid-cols-2 gap-2">${rows.map(r => `<div class="tile p-3"><p class="mono">${l[r[0]]}</p><p class="text-xs text-neutral-200 mt-1">${esc(r[1] || '—')}</p></div>`).join('')}</div>`;
+}
+function schol(c, l) {
+  return `<div class="space-y-2"><p class="mono" style="color:var(--gold)">${l.sch}</p>${(c.scholarships || []).map(s => `<div class="tile p-3 space-y-1"><p class="font-bold text-white text-sm">🏆 ${esc(s.name)} <span class="chip" style="margin-left:.4rem">${esc(s.level)}</span></p><p class="text-xs text-neutral-300"><span class="text-neutral-500">${l.covers}:</span> ${esc(s.covers)}</p>${/^https:\/\//.test(s.link || '') ? `<a href="${esc(s.link)}" target="_blank" rel="noopener noreferrer" class="text-xs" style="color:var(--accent)">${esc(s.link.replace('https://', ''))} ↗</a>` : ''}</div>`).join('')}</div>`;
+}
+window.openAbroadView = async function () {
+  window.currentActiveView = 'abroad'; A = { i: 0, ans: [], level: 'bachelor', duration: '', budget: '' }; const l = L();
+  $('result-container').innerHTML = `<div class="w-full space-y-5 text-left quiz-slide-enter">
+    <div class="banner relative overflow-hidden"><h3 class="display text-2xl font-bold text-white">${l.ab}</h3><p class="text-xs text-neutral-400 mt-1.5 max-w-xl">${l.abD}</p></div>
+    <button onclick="abroadAsk()" class="btn-accent w-full py-4 text-sm">${l.abStart}</button>
+    <div><h4 class="mono mb-1" style="color:var(--cyan)">${l.cat}</h4><p class="text-xs text-neutral-500 mb-3">${l.catD}</p><div id="ab-cat" class="grid sm:grid-cols-2 gap-2.5"><div class="tile p-4 text-center"><span class="dots"><i></i><i></i><i></i></span></div></div></div></div>`;
+  try {
+    if (!CAT) { const r = await fetch('/api/abroad/info'); CAT = await r.json(); }
+    const box = $('ab-cat'); if (!box || window.currentActiveView !== 'abroad') return;
+    box.innerHTML = CAT.countries.map((c, i) => `<details class="tile p-4" style="animation:mdIn .45s ${i * 40}ms backwards"><summary class="cursor-pointer flex items-center gap-3 list-none"><span class="text-2xl">${c.flag}</span><span class="min-w-0"><b class="text-white text-sm block">${esc(c.name)}</b><span class="text-[11px] text-neutral-400">${esc(((c.scholarships || [])[0] || {}).name || '')}</span></span></summary><div class="space-y-3 mt-3">${facts(c, l)}${schol(c, l)}<p class="text-xs text-neutral-400">${esc(c.note || '')}</p></div></details>`).join('');
+  } catch (e) { const box = $('ab-cat'); if (box) box.innerHTML = ''; }
+};
+window.abroadAsk = function () {
+  if (!currentUser) return checkAuth(); const l = L();
+  if (A.i >= l.q.length) return abroadFrom();
+  const [q, opts] = l.q[A.i];
+  $('result-container').innerHTML = `<div class="w-full max-w-2xl mx-auto text-left space-y-4">
+    <div class="flex items-center justify-between"><span class="mono">${l.step} ${A.i + 1} ${l.of} ${l.q.length + 1}</span><div class="flex gap-1.5">${[...l.q, 0].map((_, k) => `<i class="w-6 h-1.5 rounded-full ${k <= A.i ? 'bg-[#8ab4f8]' : 'bg-white/10'}"></i>`).join('')}</div></div>
+    <div class="ai-row" id="aq"><div class="ai-av">🌍</div><div class="ai-bubble"><span class="dots"><i></i><i></i><i></i></span></div></div>
+    <div id="aopts" class="grid gap-2.5"></div></div>`;
+  setTimeout(() => {
+    const b = $('aq'); if (!b) return; b.querySelector('.ai-bubble').innerHTML = `<p class="font-bold text-white text-sm md-p">${esc(q)}</p>`;
+    $('aopts').innerHTML = opts.map((o, k) => `<button class="qopt" style="animation:mdIn .45s ${k * 80}ms backwards" onclick="abroadPick(${k})"><b style="font-size:1.1rem">${o[0]}</b><span>${esc(o[1])}</span></button>`).join('');
+  }, 600);
+};
+window.abroadPick = k => {
+  const l = L(), [q, o] = l.q[A.i], pick = o[k];
+  A.ans.push({ q, a: pick[1] });
+  if (A.i === 1 && pick[2]) A.level = pick[2];
+  if (A.i === 2) A.duration = pick[1];
+  if (A.i === 3) A.budget = pick[1];
+  A.i++; abroadAsk();
+};
+function abroadFrom() {
+  const l = L();
+  $('result-container').innerHTML = `<div class="w-full max-w-xl mx-auto text-left space-y-4 quiz-slide-enter">
+    <div class="ai-row"><div class="ai-av">🌍</div><div class="ai-bubble"><p class="font-bold text-white text-sm md-p">${l.from}</p><p class="text-xs text-neutral-400">${l.fromD}</p></div></div>
+    <textarea id="ab-from" rows="4" maxlength="300" class="field" placeholder="${esc(l.fromPh)}"></textarea>
+    <button onclick="abroadRun()" class="btn-accent w-full py-4 text-sm">${l.go}</button></div>`;
+}
+window.abroadRun = async function () {
+  const l = L(), extra = ($('ab-from').value || '').trim().slice(0, 300); A.ans.push({ q: l.from, a: extra || '—' });
+  const steps = [l.l1, l.l2, l.l3]; let k = 0;
+  $('result-container').innerHTML = `<div class="tile scan p-10 text-center w-full max-w-xl mx-auto"><div class="text-5xl mb-3" style="animation:pwBob 1.6s ease-in-out infinite">🌍</div><p id="ab-s" class="mono" style="color:var(--accent)">${steps[0]}</p><div class="dots mt-4"><i></i><i></i><i></i></div></div>`;
+  const t = setInterval(() => { k = (k + 1) % 3; const e = $('ab-s'); if (e) e.textContent = steps[k]; }, 1800);
+  const r = await api('/api/abroad', 'POST', { answers: A.ans, level: A.level, duration: A.duration, budget: A.budget, lang: selectedLang });
+  clearInterval(t);
+  if (!r.ok) { $('result-container').innerHTML = errorBox(r.data.error || 'Error') + `<button onclick="abroadFrom()" class="btn-ghost px-5 py-2.5 text-xs mt-3">←</button>`; return; }
+  setTokens(r.data.tokens_left); abroadResult(r.data);
+};
+window.abroadFrom = abroadFrom;
+function abroadResult(d) {
+  const l = L();
+  $('result-container').innerHTML = `<div class="w-full max-w-3xl mx-auto text-left space-y-5 quiz-slide-enter max-h-[75vh] overflow-y-auto pr-1">
+    <div class="price-card space-y-2"><p class="mono">${l.prof}</p><p class="text-sm text-neutral-200">${esc(d.profile || '')}</p></div>
+    <h4 class="mono" style="color:var(--accent)">${l.top}</h4>
+    ${d.countries.map((c, i) => { const col = COL[i % COL.length]; return `<div class="tile p-4 space-y-3" style="animation:mdIn .5s ${i * 90}ms backwards;border-color:${col}55">
+      <div class="flex items-center justify-between gap-3"><div class="flex items-center gap-3 min-w-0"><span class="text-3xl">${c.flag}</span><div class="min-w-0"><p class="font-extrabold text-white">${esc(c.name)}</p><p class="mono">${c.match}% ${l.match}</p></div></div></div>
+      <div class="h-2 rounded-full bg-white/10"><i class="ub block h-full rounded-full" data-w="${c.match}" style="width:0;background:${col};transition:width 1.2s ${i * 90}ms cubic-bezier(.2,.8,.2,1)"></i></div>
+      <p class="text-sm text-neutral-200"><b class="text-white">${l.why}.</b> ${esc(c.why)}</p>
+      ${c.programs.length ? `<p class="text-xs text-neutral-300"><span class="mono">${l.progs}:</span> ${c.programs.map(esc).join(' · ')}</p>` : ''}
+      ${c.unis.length ? `<p class="text-xs text-neutral-300"><span class="mono">${l.unis}:</span> ${c.unis.map(esc).join(' · ')}</p>` : ''}
+      <details><summary class="cursor-pointer text-xs font-bold" style="color:var(--accent)">${l.cat} ▾</summary><div class="space-y-3 mt-3">${facts(c, l)}${schol(c, l)}
+        ${c.steps.length ? `<div><p class="mono mb-1">${l.steps}</p><ol class="list-decimal pl-5 space-y-1 text-xs text-neutral-200">${c.steps.map(s => `<li>${esc(s)}</li>`).join('')}</ol></div>` : ''}
+        ${c.risk ? `<p class="text-xs" style="color:#ffb347">⚠️ ${l.risk}: ${esc(c.risk)}</p>` : ''}<p class="text-xs text-neutral-400">${esc(c.note || '')}</p></div></details></div>`; }).join('')}
+    ${(d.tips || []).length ? `<div class="banner space-y-2"><h4 class="mono" style="color:var(--gold)">${l.tips}</h4><ul class="space-y-1.5 text-sm text-neutral-200 list-disc pl-5">${d.tips.map(x => `<li>${esc(x)}</li>`).join('')}</ul></div>` : ''}
+    <p class="text-[11px] text-neutral-500 leading-relaxed">${esc(d.note || '')}</p>
+    <div class="flex flex-col sm:flex-row gap-2.5"><button class="btn-accent flex-1 py-3.5 text-sm" onclick="openLetterView()">${l.letterBtn}</button><button class="btn-ghost flex-1 py-3.5 text-sm" onclick="openAbroadView()">${l.retry}</button></div></div>`;
+  requestAnimationFrame(() => requestAnimationFrame(() => document.querySelectorAll('.ub').forEach(b => b.style.width = b.dataset.w + '%')));
+  confetti(40);
+}
+
+// ---------- Мотивационное письмо ----------
+let LS = { kind: 'admission', tone: 'formal', length: 'medium', ll: 'en' };
+function seg(group, items, cur) { return `<div class="flex flex-wrap gap-2">${items.map(x => `<button type="button" class="hz-tab ${cur === x[0] ? 'on' : ''}" data-g="${group}" onclick="letterSet('${group}','${x[0]}')">${x[1]}</button>`).join('')}</div>`; }
+window.letterSet = (g, v) => { LS[g] = v; document.querySelectorAll(`[data-g="${g}"]`).forEach(b => b.classList.toggle('on', b.getAttribute('onclick').includes(`'${v}'`))); };
+const FIELDS = ['lt-name', 'lt-home', 'lt-study', 'lt-ach', 'lt-why', 'lt-beyond', 'lt-goals', 'lt-uni', 'lt-prog', 'lt-country'];
+let LV = {};
+function keep() { FIELDS.forEach(k => { const e = $(k); if (e) LV[k] = e.value; }); }
+window.openLetterView = function () {
+  window.currentActiveView = 'letter'; const l = L(), v = k => esc(LV[k] || '');
+  const inp = (id, label, ph) => `<label class="block space-y-1"><span class="mono">${label}</span><input id="${id}" class="field" maxlength="160" value="${v(id)}" ${ph ? `placeholder="${esc(ph)}"` : ''}></label>`;
+  const area = (id, label, ph, n = 3) => `<label class="block space-y-1"><span class="mono">${label}</span><textarea id="${id}" rows="${n}" maxlength="800" class="field" placeholder="${esc(ph)}">${v(id)}</textarea></label>`;
+  $('result-container').innerHTML = `<div class="w-full max-w-3xl mx-auto text-left space-y-4 quiz-slide-enter max-h-[78vh] overflow-y-auto pr-1">
+    <div class="banner"><h3 class="display text-2xl font-bold text-white">${l.lt}</h3><p class="text-xs text-neutral-400 mt-1.5 max-w-xl">${l.ltD}</p></div>
+    ${seg('kind', l.kinds, LS.kind)}
+    <div class="grid sm:grid-cols-2 gap-3">${inp('lt-uni', l.fUni)}${inp('lt-prog', l.fProg)}${inp('lt-country', l.fCountry)}${inp('lt-name', l.fName)}</div>
+    ${inp('lt-home', l.fHome)}
+    ${area('lt-study', l.fStudy, l.phStudy)}${area('lt-ach', l.fAch, l.phAch, 4)}${area('lt-why', l.fWhy, l.phWhy)}${area('lt-beyond', l.fBeyond, l.phBeyond)}${area('lt-goals', l.fGoals, l.phGoals)}
+    <div class="grid sm:grid-cols-3 gap-3"><div class="space-y-1"><p class="mono">${l.tone}</p>${seg('tone', l.tones, LS.tone)}</div><div class="space-y-1"><p class="mono">${l.len}</p>${seg('length', l.lens, LS.length)}</div><div class="space-y-1"><p class="mono">${l.ll}</p>${seg('ll', [['en', 'English'], ['ru', 'Русский'], ['kz', 'Қазақша']], LS.ll)}</div></div>
+    <p class="text-[11px] text-neutral-500">${l.hint}</p>
+    <button onclick="letterRun()" class="btn-accent w-full py-4 text-sm">${l.gen}</button></div>`;
+};
+window.letterRun = async function () {
+  if (!currentUser) return checkAuth(); const l = L(); keep();
+  const g = k => (LV[k] || '').trim();
+  if (!g('lt-uni') || !g('lt-prog')) { const m = $('lt-uni'); if (m) m.focus(); return alert(l.needUni); }
+  const steps = [l.lg1, l.lg2, l.lg3]; let k = 0;
+  $('result-container').innerHTML = `<div class="tile scan p-10 text-center w-full max-w-xl mx-auto"><div class="text-5xl mb-3" style="animation:pwBob 1.6s ease-in-out infinite">✉️</div><p id="lt-s" class="mono" style="color:var(--accent)">${steps[0]}</p><div class="dots mt-4"><i></i><i></i><i></i></div></div>`;
+  const t = setInterval(() => { k = (k + 1) % 3; const e = $('lt-s'); if (e) e.textContent = steps[k]; }, 2000);
+  const r = await api('/api/letter', 'POST', { kind: LS.kind, country: g('lt-country'), university: g('lt-uni'), program: g('lt-prog'), name: g('lt-name'), home_uni: g('lt-home'), studying: g('lt-study'), achievements: g('lt-ach'), why_country: g('lt-why'), beyond: g('lt-beyond'), goals: g('lt-goals'), tone: LS.tone, length: LS.length, letter_lang: LS.ll, lang: selectedLang });
+  clearInterval(t);
+  if (!r.ok) { $('result-container').innerHTML = errorBox(r.data.error || 'Error') + `<button onclick="openLetterView()" class="btn-ghost px-5 py-2.5 text-xs mt-3">←</button>`; return; }
+  setTokens(r.data.tokens_left); letterResult(r.data);
+};
+function letterResult(d) {
+  const l = L();
+  $('result-container').innerHTML = `<div class="w-full max-w-3xl mx-auto text-left space-y-4 quiz-slide-enter max-h-[78vh] overflow-y-auto pr-1">
+    ${d.subject ? `<div class="tile p-3"><p class="mono">${l.subject}</p><p class="text-sm font-bold text-white mt-1">${esc(d.subject)}</p></div>` : ''}
+    <div class="rounded-2xl p-6 sm:p-10" style="background:#fbf8f1;color:#1f1d1a;box-shadow:0 20px 60px rgba(0,0,0,.35)">
+      <textarea id="lt-out" spellcheck="false" class="w-full bg-transparent outline-none resize-none" style="font-family:Georgia,'Times New Roman',serif;font-size:1.02rem;line-height:1.75;color:#1f1d1a;min-height:26rem" oninput="this.style.height='auto';this.style.height=this.scrollHeight+'px'">${esc(d.letter)}</textarea></div>
+    <p class="mono text-center">${l.edit} · ${d.words} ${l.words}</p>
+    <div class="flex flex-wrap gap-2.5"><button class="btn-accent flex-1 py-3 text-sm" onclick="letterCopy(this)">${l.copy}</button><button class="btn-ghost flex-1 py-3 text-sm" onclick="letterDl()">${l.dl}</button><button class="btn-ghost flex-1 py-3 text-sm" onclick="letterRun()">${l.redo}</button><button class="btn-ghost flex-1 py-3 text-sm" onclick="openLetterView()">${l.back}</button></div>
+    ${(d.tips || []).length ? `<div class="banner space-y-2"><h4 class="mono" style="color:var(--gold)">💡 ${l.ltips}</h4><ul class="space-y-1.5 text-sm text-neutral-200 list-disc pl-5">${d.tips.map(x => `<li>${esc(x)}</li>`).join('')}</ul></div>` : ''}</div>`;
+  const o = $('lt-out'); if (o) { o.style.height = 'auto'; o.style.height = o.scrollHeight + 'px'; }
+  confetti(30);
+}
+window.letterCopy = async b => { const o = $('lt-out'); try { await navigator.clipboard.writeText(o.value); } catch (e) { o.select(); document.execCommand('copy'); } const t = b.textContent; b.textContent = L().copied; setTimeout(() => b.textContent = t, 1400); };
+window.letterDl = () => { const o = $('lt-out'); if (!o) return; const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([o.value], { type: 'text/plain;charset=utf-8' })); a.download = 'motivation-letter.txt'; a.click(); setTimeout(() => URL.revokeObjectURL(a.href), 1000); };
+
+// ---------- подписи меню ----------
+const lab = () => { const l = L(), a = $('btn-mode-abroad'), b = $('btn-mode-letter'); if (a) a.textContent = l.ab; if (b) b.textContent = l.lt; };
+const _clA = window.changeLanguage; window.changeLanguage = function () { _clA.apply(this, arguments); lab(); if (window.currentActiveView === 'abroad' && $('ab-cat')) openAbroadView(); };
+lab();
+})();
+</script>
 <script id="cab-ids-js">
 (function () {
   window.copyId = async function (btn) {
@@ -4961,7 +5149,7 @@ v8Labels();
   const KEY = 'studyai_lang', LANGS = ['kz', 'ru', 'en'];
   const sel = document.getElementById('lang-select');
   const COLORS = ['#8ab4f8', '#8b5cf6', '#ff5d73', '#3de0ff', '#ffd23f'];
-  const SECTIONS = ['quiz', 'cards', 'summary', 'explain', 'chat', 'teacher', 'tickets', 'planner', 'human', 'career', 'slides', 'groups'];
+  const SECTIONS = ['quiz', 'cards', 'summary', 'explain', 'chat', 'teacher', 'tickets', 'planner', 'human', 'career', 'abroad', 'letter', 'slides', 'groups'];
 
   // --- главная: карточки разделов (берём подписи прямо из бокового меню — они уже переведены) ---
   function homeVisible() {
