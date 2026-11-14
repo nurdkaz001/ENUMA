@@ -618,6 +618,31 @@ def read_privacy():
     return HTMLResponse(INDEX_FILE.read_text(encoding="utf-8"))
 
 
+@app.get("/manifest.webmanifest")
+def pwa_manifest():
+    """Манифест: чтобы сайт можно было поставить на экран телефона как приложение."""
+    data = {
+        "name": "EnumaAI Hub", "short_name": "EnumaAI",
+        "description": "ИИ-наставник: тесты, конспекты, планер, поступление",
+        "start_url": "/?source=pwa", "scope": "/", "display": "standalone",
+        "background_color": "#131314", "theme_color": "#131314", "lang": "ru",
+        "icons": [
+            {"src": "/static/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any"},
+            {"src": "/static/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any"},
+            {"src": "/static/icon-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable"},
+        ],
+    }
+    return Response(json.dumps(data, ensure_ascii=False), media_type="application/manifest+json",
+                    headers={"Cache-Control": "public, max-age=3600"})
+
+
+@app.get("/sw.js")
+def pwa_sw():
+    """Минимальный service worker (нужен Chrome для установки). Ничего не кэширует, API не трогает."""
+    js = "self.addEventListener('install',e=>self.skipWaiting());self.addEventListener('activate',e=>e.waitUntil(self.clients.claim()));self.addEventListener('fetch',()=>{});"
+    return Response(js, media_type="application/javascript", headers={"Cache-Control": "no-cache", "Service-Worker-Allowed": "/"})
+
+
 @app.get("/static/{name}")
 def static_file(name: str, request: Request):
     """Раздача медиа из папки static/ (аватар-анимация и т.п.) с поддержкой Range — без него видео не играет в Safari/iPhone."""
