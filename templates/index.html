@@ -5,6 +5,13 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>EnumaAI Hub — ИИ Наставник</title>
     <meta name="theme-color" content="#131314">
+    <link rel="manifest" href="/manifest.webmanifest">
+    <link rel="apple-touch-icon" href="/static/apple-touch-icon.png">
+    <link rel="icon" type="image/png" href="/static/icon-192.png">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-title" content="EnumaAI">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <script id="theme-early">try{var t=localStorage.getItem('enuma_theme');if(t==='light'||(!t&&window.matchMedia&&matchMedia('(prefers-color-scheme: light)').matches)){document.documentElement.setAttribute('data-theme','light');document.querySelector('meta[name=theme-color]').setAttribute('content','#f8fafd')}}catch(e){}</script>
     <script id="door-early">try{var u=JSON.parse(localStorage.getItem('studyai_user')||'null');document.documentElement.classList.add(u?'has-user':'door-pending')}catch(e){document.documentElement.classList.add('door-pending')}</script>
     <script src="https://cdn.tailwindcss.com"></script>
@@ -1219,7 +1226,7 @@ html.door-pending #door-gate { display: block; }
     <div id="workspace-section" class="w-full max-w-6xl mx-auto px-4 lg:px-6 pb-24 scroll-mt-24">
         <div class="flex items-end justify-between mb-6 px-2">
             <h2 class="display text-4xl lg:text-6xl font-bold text-white" id="work-title">work</h2>
-            <span class="mono">01 — 08</span>
+            <span class="mono">01 — 15</span>
         </div>
 
         <div class="flex flex-col lg:flex-row gap-5">
@@ -1231,6 +1238,10 @@ html.door-pending #door-gate { display: block; }
                     <div class="space-y-2.5">
                         <h2 id="lbl-sec-1" class="mono">1. Материал</h2>
                         <input type="file" id="pdf-file" accept=".pdf,.docx,.xlsx,.txt" class="w-full text-xs text-neutral-400 cursor-pointer tile p-2">
+                        <div id="side-mat" class="tile p-2.5 flex items-center gap-2 text-xs" style="display:none">
+                            <span>📎</span><span id="side-mat-name" class="flex-1 min-w-0 truncate font-bold text-white"></span>
+                            <button type="button" id="side-mat-x" onclick="sideMatRemove()" class="btn-ghost px-2.5 py-1 text-[11px]" aria-label="Remove" title="Remove">✕</button>
+                        </div>
                         <input type="text" id="topic-input" placeholder="Немесе тақырып..." class="field">
                         <button onclick="uploadMaterial()" id="btn-upload" class="btn-accent w-full py-3 text-xs">🚀 ЖИ белсендіру</button>
                     </div>
@@ -1245,17 +1256,20 @@ html.door-pending #door-gate { display: block; }
                     </div>
 
                     <div class="space-y-1 pt-4 border-t border-white/10">
-                        <h2 id="lbl-sec-3" class="mono mb-2">3. Арнайы бөлімдер</h2>
+                        <h2 id="lbl-sec-3" class="mono mb-2">3. Негізгі бөлімдер</h2>
                         <button onclick="openAITeacherView()" class="mode-row"><span class="num">06</span><span id="btn-mode-teacher">🤖 1. ИИ Мұғалім (Видео & Ойын)</span><span class="arrow">→</span></button>
                         <button onclick="openTicketsView()" class="mode-row"><span class="num">07</span><span id="btn-mode-tickets">🎟️ 2. Билеттер (Ойын викторина)</span><span class="arrow">→</span></button>
                         <button onclick="openPlannerView()" class="mode-row"><span class="num">08</span><span id="btn-mode-planner">📅 Күнтізбе & ЖИ-Планер</span><span class="arrow">→</span></button>
                         <button onclick="openHumanizerView()" class="mode-row accent"><span class="num">09</span><span id="btn-mode-human">✍️ Мәтінді адамдандыру</span><span class="arrow">NEW</span></button>
-                        <button onclick="openCareerView()" class="mode-row accent"><span class="num">10</span><span id="btn-mode-career">🎓 11 сынып: түсу кеңесі</span><span class="arrow">NEW</span></button>
-                        <button onclick="openAbroadView()" class="mode-row accent"><span class="num">11</span><span id="btn-mode-abroad">🌍 Шетелге түсу</span><span class="arrow">NEW</span></button>
-                        <button onclick="openLetterView()" class="mode-row accent"><span class="num">12</span><span id="btn-mode-letter">✉️ Мотивациялық хат</span><span class="arrow">NEW</span></button>
-                        <button onclick="openSlidesView()" class="mode-row accent"><span class="num">13</span><span id="btn-mode-slides">🎞️ ЖИ-презентациялар</span><span class="arrow" style="color:var(--gold)">DEMO</span></button>
+                        <button onclick="openSlidesView()" class="mode-row accent"><span class="num">10</span><span id="btn-mode-slides">🎞️ ЖИ-презентациялар</span><span class="arrow" style="color:var(--gold)">DEMO</span></button>
                         <p id="slides-demo-sub" class="mono" style="font-size:.58rem;color:var(--gold);margin:-.15rem 0 .25rem 2.6rem">демо-версия · скоро обновление</p>
-                        <button onclick="openGroupsView()" class="mode-row accent"><span class="num">14</span><span id="btn-mode-groups">👥 Группы</span><span class="arrow"><span id="g-badge-side" class="g-badge hidden"></span><span id="g-new">NEW</span></span></button>
+                        <button onclick="openGroupsView()" class="mode-row accent"><span class="num">11</span><span id="btn-mode-groups">👥 Группы</span><span class="arrow"><span id="g-badge-side" class="g-badge hidden"></span><span id="g-new">NEW</span></span></button>
+                    </div>
+                    <div class="space-y-1 pt-4 border-t border-white/10">
+                        <h2 id="lbl-sec-4" class="mono mb-2">🎒 Оқушыларға</h2>
+                        <button onclick="openCareerView()" class="mode-row accent"><span class="num">12</span><span id="btn-mode-career">🎓 11 сынып: түсу кеңесі</span><span class="arrow">NEW</span></button>
+                        <button onclick="openAbroadView()" class="mode-row accent"><span class="num">13</span><span id="btn-mode-abroad">🌍 Шетелге түсу</span><span class="arrow">NEW</span></button>
+                        <button onclick="openLetterView()" class="mode-row accent"><span class="num">14</span><span id="btn-mode-letter">✉️ Мотивациялық хат</span><span class="arrow">NEW</span></button>
                         <button onclick="openEntView()" class="mode-row" style="opacity:.6"><span class="num">15</span><span id="btn-mode-ent">🎯 Подготовка к ЕНТ</span><span class="arrow" style="color:var(--gold)" id="ent-soon">СКОРО</span></button>
                     </div>
                 </div>
@@ -5149,7 +5163,7 @@ lab();
   const KEY = 'studyai_lang', LANGS = ['kz', 'ru', 'en'];
   const sel = document.getElementById('lang-select');
   const COLORS = ['#8ab4f8', '#8b5cf6', '#ff5d73', '#3de0ff', '#ffd23f'];
-  const SECTIONS = ['quiz', 'cards', 'summary', 'explain', 'chat', 'teacher', 'tickets', 'planner', 'human', 'career', 'abroad', 'letter', 'slides', 'groups'];
+  const SECTIONS = ['quiz', 'cards', 'summary', 'explain', 'chat', 'teacher', 'tickets', 'planner', 'human', 'slides', 'groups', 'career', 'abroad', 'letter'];
 
   // --- главная: карточки разделов (берём подписи прямо из бокового меню — они уже переведены) ---
   function homeVisible() {
@@ -5279,6 +5293,91 @@ lab();
   sync();
 })();
 
+</script>
+<script id="v9-js">
+(function () {
+  const $ = id => document.getElementById(id);
+  const LG = () => { const l = (typeof selectedLang !== 'undefined') ? selectedLang : 'ru'; return ['ru','kz','en'].includes(l) ? l : 'ru'; };
+  const T = {
+    ru: { sec3: '3. Главные разделы', sec4: '🎒 Для школьников', rm: 'Убрать файл и загрузить другой', ins: 'Установить как приложение', insT: 'Добавить на экран телефона', ios: 'Нажмите «Поделиться» ⎋ внизу Safari → «На экран “Домой”».', and: 'Откройте меню браузера ⋮ → «Установить приложение» / «Добавить на главный экран».', done: 'Уже установлено' },
+    kz: { sec3: '3. Негізгі бөлімдер', sec4: '🎒 Оқушыларға', rm: 'Файлды алып тастап, басқасын жүктеу', ins: 'Қолданба ретінде орнату', insT: 'Телефон экранына қосу', ios: 'Safari төменіндегі «Бөлісу» ⎋ → «Басты экранға» басыңыз.', and: 'Браузер мәзірі ⋮ → «Қолданбаны орнату» / «Басты экранға қосу».', done: 'Орнатылған' },
+    en: { sec3: '3. Main sections', sec4: '🎒 For students', rm: 'Remove file and upload another', ins: 'Install as app', insT: 'Add to your home screen', ios: 'Tap Share ⎋ at the bottom of Safari → “Add to Home Screen”.', and: 'Open browser menu ⋮ → “Install app” / “Add to Home screen”.', done: 'Already installed' }
+  };
+  function labels() {
+    const t = T[LG()];
+    if ($('lbl-sec-3')) $('lbl-sec-3').textContent = t.sec3;
+    if ($('lbl-sec-4')) $('lbl-sec-4').textContent = t.sec4;
+    if ($('side-mat-x')) { $('side-mat-x').title = t.rm; $('side-mat-x').setAttribute('aria-label', t.rm); }
+    document.querySelectorAll('[data-i="install"]').forEach(e => e.textContent = t.ins);
+  }
+  // ---- 2. Убрать загруженный материал ----
+  let pickedName = '';
+  function updSide() {
+    const box = $('side-mat'), fi = $('pdf-file'); if (!box) return;
+    const has = !!(typeof currentDocId !== 'undefined' && currentDocId);
+    const picked = fi && fi.files && fi.files.length ? fi.files[0].name : '';
+    const name = picked || (has ? (String(currentDocId).startsWith('topic_') ? String(currentDocId).slice(6) : (pickedName || '✅')) : '');
+    box.style.display = name ? 'flex' : 'none';
+    if (name) $('side-mat-name').textContent = name;
+    if (fi) fi.style.display = name ? 'none' : '';
+  }
+  window.sideMatRemove = function () {
+    const fi = $('pdf-file'), ti = $('topic-input');
+    if (fi) { fi.value = ''; fi.style.display = ''; }
+    if (ti) ti.value = '';
+    currentDocId = null; pickedName = '';
+    if (typeof window.mqChange === 'function') window.mqChange();
+    updSide();
+  };
+  const fi0 = $('pdf-file');
+  if (fi0) fi0.addEventListener('change', () => { if (fi0.files.length) pickedName = fi0.files[0].name; updSide(); });
+  const _um = window.uploadMaterial;
+  if (_um) window.uploadMaterial = async function () {
+    const r = await _um.apply(this, arguments);
+    const fi = $('pdf-file');
+    if (fi && fi.files.length && currentDocId) { pickedName = fi.files[0].name; fi.value = ''; }
+    updSide(); return r;
+  };
+  setInterval(updSide, 1200);
+
+  // ---- 3. Установка как приложение ----
+  let dip = null;
+  const standalone = () => matchMedia('(display-mode: standalone)').matches || navigator.standalone === true;
+  const isIOS = /iphone|ipad|ipod/i.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+  const isMobile = /android|iphone|ipad|ipod|mobile/i.test(navigator.userAgent) || (navigator.maxTouchPoints > 1 && innerWidth < 900);
+  if ('serviceWorker' in navigator) window.addEventListener('load', () => navigator.serviceWorker.register('/sw.js').catch(() => {}));
+  window.addEventListener('beforeinstallprompt', e => { e.preventDefault(); dip = e; });
+  window.addEventListener('appinstalled', () => { dip = null; hideInstall(); });
+  function hideInstall() { document.querySelectorAll('.pwa-install').forEach(b => b.style.display = 'none'); }
+  window.installApp = async function () {
+    const t = T[LG()];
+    if (dip) { dip.prompt(); try { await dip.userChoice; } catch (e) {} dip = null; return; }
+    const m = document.createElement('div');
+    m.style.cssText = 'position:fixed;inset:0;z-index:100;background:rgba(0,0,0,.75);display:flex;align-items:center;justify-content:center;padding:1rem';
+    m.onclick = ev => { if (ev.target === m) m.remove(); };
+    m.innerHTML = '<div class="bento-card" style="max-width:22rem;width:100%;border-radius:28px;padding:1.5rem;text-align:center"><div style="font-size:2rem">📲</div><h3 class="display text-lg font-bold text-white" style="margin:.4rem 0">' + t.insT + '</h3><p class="text-sm text-neutral-300" style="margin-bottom:1rem">' + (isIOS ? t.ios : t.and) + '</p><button class="btn-accent w-full py-3 text-xs" onclick="this.closest(\'div[style*=fixed]\').remove()">OK</button></div>';
+    document.body.appendChild(m);
+  };
+  function addInstallButtons() {
+    if (standalone() || !isMobile) return;
+    // в мобильное меню
+    const menu = $('nav-menu');
+    if (menu && !menu.querySelector('.pwa-install')) {
+      const b = document.createElement('button'); b.className = 'mi pwa-install'; b.type = 'button'; b.onclick = () => { menu.classList.add('off'); installApp(); };
+      b.innerHTML = '<span>📲 <span data-i="install"></span></span><span>→</span>'; b.style.color = 'var(--accent)';
+      menu.insertBefore(b, menu.firstChild);
+    }
+    // плавающая кнопка на главной
+    if (!document.querySelector('.pwa-fab')) {
+      const f = document.createElement('button'); f.type = 'button'; f.className = 'pwa-install pwa-fab'; f.onclick = installApp;
+      f.style.cssText = 'position:fixed;left:12px;bottom:14px;z-index:35;padding:.65rem 1rem;border-radius:999px;background:var(--accent,#8ab4f8);color:#131314;font-weight:800;font-size:12px;box-shadow:0 8px 24px rgba(0,0,0,.35);border:0';
+      f.innerHTML = '📲 <span data-i="install"></span>'; document.body.appendChild(f);
+    }
+    labels();
+  }
+  const _cl = window.changeLanguage; if (_cl) window.changeLanguage = function () { _cl.apply(this, arguments); labels(); };
+  labels(); updSide(); addInstallButtons();
+})();
 </script>
 </body>
 </html>
