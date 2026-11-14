@@ -114,7 +114,7 @@ _patch_supabase_retries()
 INDEX_FILE = Path(__file__).parent / "templates" / "index.html"
 STATIC_DIR = Path(__file__).parent / "static"
 
-HISTORY_TYPES = {"quiz", "flashcards", "summary", "simple", "plan", "teacher", "tickets"}
+HISTORY_TYPES = {"quiz", "flashcards", "summary", "simple", "plan", "teacher", "tickets", "abroad", "letter"}
 LANG_LINE = {
     "kz": "Жауапты қазақ тілінде бер.",
     "ru": "Отвечай на русском языке.",
@@ -3283,6 +3283,273 @@ def ai_teacher_more(topic: str = Form(...), comment: str = Form(""), doc_id: str
     ctx = fit_context(get_doc_text(doc_id, user) or "")
     qs, left, _ = paid_n(user, MORE_QUESTIONS_COST, lambda: _gen_questions(topic, comment, ctx, lang, prev))
     return {"questions": qs, "tokens_left": left}
+
+
+# ==================== ПОСТУПЛЕНИЕ ЗА РУБЕЖ + МОТИВАЦИОННЫЕ ПИСЬМА ====================
+ABROAD_NOTE = ("Суммы, сроки и требования — ориентиры и меняются каждый год. Перед подачей обязательно сверьтесь "
+               "с официальным сайтом программы или университета.")
+
+# Проверенная база по странам: id → данные. Цифры — округлённые ориентиры для граждан Казахстана (в год, USD).
+ABROAD_KB = {
+    "de": {"name": "Германия", "flag": "🇩🇪", "lang": "немецкий (часть магистратур — английский)", "tuition": "0–500 (госуниверситеты почти бесплатны; сбор за семестр ~150–350 €)",
+           "living": "11 000–13 000", "work": "до 120 полных дней / 240 полудней в год", "post_study": "18 месяцев на поиск работы",
+           "langreq": "TestDaF/DSH (B2–C1) или IELTS 6.0–6.5 для программ на английском", "best_for": ["engineering", "it", "science", "economics", "humanities"],
+           "intakes": "зимний семестр (заявки обычно до 15 июля, часть вузов — до 31 мая или 15 января), летний семестр",
+           "scholarships": [
+               {"name": "DAAD", "covers": "ежемесячная стипендия ~934 € (магистр), страховка, перелёт", "level": "магистратура, PhD", "link": "https://www.daad.de"},
+               {"name": "Deutschlandstipendium", "covers": "300 € в месяц от вуза и частных спонсоров", "level": "бакалавриат, магистратура", "link": "https://www.deutschlandstipendium.de"}],
+           "note": "Бесплатное обучение, но нужен блокированный счёт (~11 900 €/год) для визы. Для бакалавриата часто нужен подготовительный год (Studienkolleg)."},
+    "cz": {"name": "Чехия", "flag": "🇨🇿", "lang": "чешский (бесплатно) или английский (платно)", "tuition": "0 на чешском; 2 000–7 000 на английском",
+           "living": "7 000–9 000", "work": "без ограничений по часам при визе студента", "post_study": "9 месяцев на поиск работы",
+           "langreq": "чешский B2 для бесплатных программ; IELTS 5.5–6.5 для английских", "best_for": ["engineering", "it", "medicine", "arts", "science"],
+           "intakes": "осень; заявки чаще всего с февраля по апрель–май",
+           "scholarships": [{"name": "Czech Government Scholarship", "covers": "стипендия и проживание для магистров/PhD из ряда стран", "level": "магистратура, PhD", "link": "https://www.msmt.cz"}],
+           "note": "Один из самых доступных вариантов в ЕС по стоимости жизни. Бесплатный год чешского при подготовке."},
+    "pl": {"name": "Польша", "flag": "🇵🇱", "lang": "польский / английский", "tuition": "2 000–5 000 (платные программы); есть стипендии на полное покрытие",
+           "living": "5 500–8 000", "work": "разрешена работа студентам", "post_study": "9 месяцев на поиск работы",
+           "langreq": "IELTS 5.5–6.5 или польский B2", "best_for": ["engineering", "it", "medicine", "economics", "science"],
+           "intakes": "осень (заявки до июня–июля), некоторые вузы — весной",
+           "scholarships": [{"name": "NAWA (Polish National Agency for Academic Exchange)", "covers": "программы для студентов и преподавателей, стипендии", "level": "магистратура, PhD", "link": "https://nawa.gov.pl"}],
+           "note": "Дешёвая жизнь, ЕС-диплом, быстрые сроки подачи документов."},
+    "hu": {"name": "Венгрия", "flag": "🇭🇺", "lang": "английский / венгерский", "tuition": "0 по Stipendium Hungaricum; иначе 3 000–8 000",
+           "living": "6 500–9 000", "work": "разрешена работа студентам", "post_study": "9 месяцев на поиск работы",
+           "langreq": "IELTS 5.5–6.5 / TOEFL; для медицины — вступительные экзамены", "best_for": ["medicine", "engineering", "it", "economics", "science"],
+           "intakes": "осень; конкурс Stipendium Hungaricum — обычно январь–февраль",
+           "scholarships": [{"name": "Stipendium Hungaricum", "covers": "полное обучение, ежемесячная стипендия, жильё, медстраховка", "level": "бакалавриат, магистратура, PhD", "link": "https://stipendiumhungaricum.hu"}],
+           "note": "Казахстан — страна-участница программы Stipendium Hungaricum, один из самых реалистичных грантов на полное покрытие."},
+    "it": {"name": "Италия", "flag": "🇮🇹", "lang": "итальянский / английский", "tuition": "500–4 000 (сбор зависит от дохода семьи)",
+           "living": "8 000–12 000", "work": "до 20 часов в неделю", "post_study": "12 месяцев на поиск работы",
+           "langreq": "IELTS 5.5–6.5 или итальянский B2", "best_for": ["arts", "engineering", "humanities", "economics", "medicine"],
+           "intakes": "осень; предварительная регистрация через Universitaly в начале года",
+           "scholarships": [{"name": "Региональные стипендии DSU (диритто алло студио)", "covers": "освобождение от платы, питание, жильё по критериям дохода и оценок", "level": "все уровни", "link": "https://www.universitaly.it"},
+                            {"name": "Italian Government Scholarships (MAECI)", "covers": "ежемесячная стипендия и страховка", "level": "магистратура, PhD", "link": "https://studyinitaly.esteri.it"}],
+           "note": "Сильны дизайн, архитектура, инженерия. Сбор снижается при подаче справок о доходах."},
+    "tr": {"name": "Турция", "flag": "🇹🇷", "lang": "турецкий / английский", "tuition": "0 по Türkiye Burslari; иначе 2 000–10 000",
+           "living": "4 500–7 000", "work": "ограничено", "post_study": "по короткому разрешению",
+           "langreq": "английский B2 / турецкий B2; год языковой подготовки при стипендии", "best_for": ["engineering", "medicine", "economics", "humanities", "it"],
+           "intakes": "осень; заявки на Türkiye Burslari — обычно январь–февраль",
+           "scholarships": [{"name": "Türkiye Burslari", "covers": "обучение, жильё, ежемесячная стипендия, перелёт, год турецкого языка", "level": "бакалавриат, магистратура, PhD", "link": "https://turkiyeburslari.gov.tr"}],
+           "note": "Близкая культура и язык для казахстанцев, недорогая жизнь, сильная государственная стипендия."},
+    "kr": {"name": "Южная Корея", "flag": "🇰🇷", "lang": "корейский / английский", "tuition": "0 по GKS; иначе 4 000–9 000",
+           "living": "8 000–11 000", "work": "до 20–25 часов в неделю", "post_study": "до 2 лет по визе поиска работы",
+           "langreq": "TOPIK 3–4 / IELTS 5.5–6.5; год языка при GKS", "best_for": ["it", "engineering", "arts", "economics", "science"],
+           "intakes": "весна и осень; GKS — обычно февраль–март",
+           "scholarships": [{"name": "Global Korea Scholarship (GKS)", "covers": "обучение, ~900 000 вон в месяц, перелёт, год корейского", "level": "бакалавриат, магистратура, PhD", "link": "https://www.studyinkorea.go.kr"}],
+           "note": "Сильные IT и электроника. GKS — одна из лучших стипендий мира по уровню покрытия."},
+    "jp": {"name": "Япония", "flag": "🇯🇵", "lang": "японский / английский", "tuition": "3 500–6 000 (гос. университеты); 0 по MEXT",
+           "living": "9 000–12 000", "work": "до 28 часов в неделю", "post_study": "до 1 года по визе поиска работы",
+           "langreq": "JLPT N2 / IELTS 6.0; EJU для бакалавриата", "best_for": ["engineering", "it", "science", "arts", "humanities"],
+           "intakes": "апрель и октябрь; MEXT — через посольство, обычно апрель–май",
+           "scholarships": [{"name": "MEXT Scholarship", "covers": "обучение, ~117 000–145 000 иен в месяц, перелёт", "level": "бакалавриат, магистратура, PhD", "link": "https://www.studyinjapan.go.jp"}],
+           "note": "Высокий уровень науки и технологий, но высокая конкуренция за MEXT."},
+    "cn": {"name": "Китай", "flag": "🇨🇳", "lang": "китайский / английский", "tuition": "0 по CSC; иначе 2 500–6 000",
+           "living": "3 500–6 000", "work": "ограничено", "post_study": "ограничено",
+           "langreq": "HSK 4–5 / IELTS 6.0", "best_for": ["engineering", "it", "medicine", "economics", "science"],
+           "intakes": "осень; CSC — подача обычно с января по апрель",
+           "scholarships": [{"name": "Chinese Government Scholarship (CSC)", "covers": "обучение, жильё, ежемесячная стипендия, страховка", "level": "бакалавриат, магистратура, PhD", "link": "https://www.campuschina.org"},
+                            {"name": "Silk Road Scholarship", "covers": "полная или частичная стипендия для стран «Пояса и пути»", "level": "магистратура, PhD", "link": "https://www.campuschina.org"}],
+           "note": "Недорогая жизнь, огромный выбор грантов, быстро растущие университеты."},
+    "uk": {"name": "Великобритания", "flag": "🇬🇧", "lang": "английский", "tuition": "15 000–35 000+",
+           "living": "14 000–20 000", "work": "до 20 часов в неделю", "post_study": "Graduate Route — 2 года (3 для PhD)",
+           "langreq": "IELTS 6.0–7.5", "best_for": ["economics", "humanities", "science", "engineering", "law"],
+           "intakes": "осень; UCAS до 31 января (Oxbridge — до 15 октября)",
+           "scholarships": [{"name": "Chevening", "covers": "полное обучение, проживание, перелёт, виза", "level": "магистратура (1 год)", "link": "https://www.chevening.org"},
+                            {"name": "Болашак (для граждан Казахстана)", "covers": "полное покрытие для граждан Казахстана", "level": "магистратура, PhD", "link": "https://bolashak.gov.kz"}],
+           "note": "Магистратура длится 1 год, что экономит время и деньги. Chevening требует опыт работы от 2 лет."},
+    "us": {"name": "США", "flag": "🇺🇸", "lang": "английский", "tuition": "20 000–60 000+ (с финансовой помощью дешевле)",
+           "living": "12 000–20 000", "work": "на кампусе до 20 часов", "post_study": "OPT 1–3 года по специальности",
+           "langreq": "TOEFL 80–100+ / IELTS 6.5–7.5, SAT/ACT (часть вузов — test-optional)", "best_for": ["it", "science", "economics", "engineering", "arts"],
+           "intakes": "осень; Early Action в ноябре, Regular — до января",
+           "scholarships": [{"name": "Need-based aid в топ-вузах (Harvard, MIT, Yale и др.)", "covers": "до 100% потребности семьи, без возврата", "level": "бакалавриат", "link": "https://www.commonapp.org"},
+                            {"name": "Fulbright", "covers": "полное покрытие магистратуры/PhD", "level": "магистратура, PhD", "link": "https://foreign.fulbrightonline.org"},
+                            {"name": "Болашак", "covers": "полное покрытие для граждан Казахстана", "level": "магистратура, PhD", "link": "https://bolashak.gov.kz"}],
+           "note": "Самая дорогая страна, но у богатых вузов есть полная помощь иностранцам — ключевое: сильное эссе, внеучебка и оценки."},
+    "ca": {"name": "Канада", "flag": "🇨🇦", "lang": "английский / французский", "tuition": "12 000–30 000",
+           "living": "12 000–16 000", "work": "до 24 часов в неделю", "post_study": "PGWP до 3 лет",
+           "langreq": "IELTS 6.0–7.0 / TOEFL 80–100", "best_for": ["it", "engineering", "science", "economics", "medicine"],
+           "intakes": "осень, часть — зима/лето; заявки за 8–10 месяцев",
+           "scholarships": [{"name": "Vanier CGS / университетские гранты", "covers": "для PhD ~50 000 CAD в год; для бакалавриата — вузовские награды", "level": "PhD, бакалавриат", "link": "https://vanier.gc.ca"},
+                            {"name": "Lester B. Pearson (Toronto)", "covers": "полное покрытие бакалавриата", "level": "бакалавриат", "link": "https://future.utoronto.ca/pearson"}],
+           "note": "Удобный путь к ПМЖ, но жильё в больших городах дорогое."},
+    "au": {"name": "Австралия", "flag": "🇦🇺", "lang": "английский", "tuition": "18 000–40 000",
+           "living": "16 000–22 000", "work": "до 48 часов в две недели", "post_study": "2–4 года по Temporary Graduate visa",
+           "langreq": "IELTS 6.0–7.0", "best_for": ["engineering", "it", "medicine", "science", "economics"],
+           "intakes": "февраль и июль",
+           "scholarships": [{"name": "Australia Awards", "covers": "полное обучение и проживание", "level": "магистратура", "link": "https://www.dfat.gov.au/people-to-people/australia-awards"},
+                            {"name": "Университетские гранты (например, ANU, Melbourne)", "covers": "частичное или полное покрытие по оценкам", "level": "все уровни", "link": "https://www.studyaustralia.gov.au"}],
+           "note": "Высокая цена жизни, но хорошая заработная плата для подработки."},
+    "ae": {"name": "ОАЭ", "flag": "🇦🇪", "lang": "английский", "tuition": "8 000–25 000",
+           "living": "9 000–14 000", "work": "ограничено", "post_study": "золотая виза для лучших выпускников",
+           "langreq": "IELTS 5.5–6.5", "best_for": ["economics", "engineering", "it", "arts"],
+           "intakes": "осень и весна",
+           "scholarships": [{"name": "Вузовские гранты (NYU Abu Dhabi, Khalifa University)", "covers": "NYUAD — полное покрытие по конкурсу", "level": "бакалавриат, магистратура", "link": "https://nyuad.nyu.edu"}],
+           "note": "Недалеко от Казахстана, без налога на доход. NYU Abu Dhabi очень конкурентен, но даёт полное финансирование."},
+    "my": {"name": "Малайзия", "flag": "🇲🇾", "lang": "английский", "tuition": "3 500–9 000",
+           "living": "4 000–6 000", "work": "ограничено", "post_study": "ограничено",
+           "langreq": "IELTS 5.5–6.5", "best_for": ["engineering", "it", "economics", "medicine"],
+           "intakes": "февраль, июнь, сентябрь",
+           "scholarships": [{"name": "Malaysia International Scholarship (MIS)", "covers": "обучение и ежемесячные выплаты", "level": "магистратура, PhD", "link": "https://biasiswa.mohe.gov.my"}],
+           "note": "Недорогое обучение на английском с филиалами британских и австралийских вузов."},
+    "kz_ab": {"name": "Двойные дипломы и обмен (из Казахстана)", "flag": "🎓", "lang": "английский", "tuition": "по условиям вашего вуза",
+           "living": "зависит от страны", "work": "по условиям страны", "post_study": "по условиям страны",
+           "langreq": "IELTS 6.0–6.5", "best_for": ["any"],
+           "intakes": "осень и весна; заявка в вузе за 6–12 месяцев",
+           "scholarships": [{"name": "Erasmus+ (обмен и Joint Master)", "covers": "ежемесячная стипендия, перелёт, обучение для участников", "level": "бакалавриат, магистратура", "link": "https://erasmus-plus.ec.europa.eu"},
+                            {"name": "Болашак", "covers": "полное покрытие для граждан Казахстана", "level": "магистратура, PhD, стажировка", "link": "https://bolashak.gov.kz"}],
+           "note": "Часто лучший первый шаг: семестр за рубежом без риска потерять место дома."},
+}
+ABROAD_KB_PROMPT = "\n".join(
+    f"{k} | {v['name']} | язык: {v['lang']} | обучение $/год: {v['tuition']} | жизнь $/год: {v['living']} | сильные направления: {', '.join(v['best_for'])} | "
+    f"стипендии: {'; '.join(s['name'] for s in v['scholarships'])}"
+    for k, v in ABROAD_KB.items())
+
+
+class AbroadIn(BaseModel):
+    answers: list[dict] = Field(max_length=10)
+    level: str = "bachelor"   # bachelor | master | phd | exchange
+    duration: str = ""
+    budget: str = ""
+    lang: str = "ru"
+
+
+@app.get("/api/abroad/info")
+def abroad_info():
+    """Публичный каталог стран и стипендий — стартовый экран раздела."""
+    return {"countries": [{"id": k, **v} for k, v in ABROAD_KB.items()], "note": ABROAD_NOTE}
+
+
+@app.post("/api/abroad")
+def abroad(body: AbroadIn, user: dict = Depends(current_user)):
+    rate_limit(f"abroad:{user['id']}", 10, 3600)
+    ans = "\n".join(f"- {_str(a.get('q'), 200)} → {_str(a.get('a'), 300)}" for a in body.answers)
+    level_names = {"bachelor": "бакалавриат", "master": "магистратура", "phd": "PhD", "exchange": "семестр по обмену"}
+    prompt = (
+        "Ты — консультант по поступлению в зарубежные вузы для студентов из Казахстана. Студент ответил на вопросы.\n"
+        f"ОТВЕТЫ:\n{ans}\nУровень: {level_names.get(body.level, 'бакалавриат')}. Срок обучения: {_str(body.duration, 80) or 'не указан'}. "
+        f"Бюджет: {_str(body.budget, 120) or 'не указан'}.\n\n"
+        f"ПРОВЕРЕННАЯ БАЗА СТРАН: id | страна | ...\n{ABROAD_KB_PROMPT}\n\n"
+        "ЗАДАЧА: выбери 5–6 стран из БАЗЫ (только их id), которые лучше всего подходят студенту, и отсортируй по убыванию. Для каждой:\n"
+        "• match — число 0–100: насколько страна подходит по интересам, уровню, сроку, бюджету и языку.\n"
+        "• why — 2–3 предложения: почему именно эта страна подходит ЭТОМУ студенту, с опорой на его ответы.\n"
+        "• programs — 2–3 направления/программы, которые стоит рассмотреть (названия реальных направлений, без выдуманных вузов).\n"
+        "• unis — 2–3 реальных известных университета страны. Не уверен в вузе — не включай.\n"
+        "• steps — 3–4 коротких конкретных шага подготовки именно для этой страны.\n"
+        "• risk — 1 предложение о главном риске или сложности.\n"
+        "Числа стоимости и стипендии НЕ пиши, сервер подставит их сам. "
+        "profile — краткий портрет студента (2 предложения). tips — 4 общих совета по подготовке документов.\n"
+        + lang_line(body.lang) + "\n"
+        'Верни ТОЛЬКО JSON: {"profile":"...","countries":[{"id":"de","match":85,"why":"...","programs":["..."],"unis":["..."],'
+        '"steps":["..."],"risk":"..."}],"tips":["..."]}'
+    )
+
+    def run():
+        d = parse_json(ask_ai(prompt, json_mode=True, max_tokens=4500, temperature=0.5))
+        if not isinstance(d, dict) or not isinstance(d.get("countries"), list) or not d["countries"]:
+            raise HTTPException(502, "ИИ вернул неверный формат. Попробуйте ещё раз.")
+        return d
+
+    d, left = paid(user, run)
+    out, seen = [], set()
+    for c in d["countries"][:8]:
+        if not isinstance(c, dict) or c.get("id") not in ABROAD_KB or c["id"] in seen:
+            continue
+        seen.add(c["id"])
+        kb = ABROAD_KB[c["id"]]
+        try:
+            match = max(0, min(100, int(c.get("match"))))
+        except (TypeError, ValueError):
+            match = 60
+        out.append({"id": c["id"], "match": match, "why": _str(c.get("why"), 500), "programs": _list(c.get("programs"), 4, 120),
+                    "unis": _list(c.get("unis"), 4, 90), "steps": _list(c.get("steps"), 5, 200), "risk": _str(c.get("risk"), 300), **kb})
+    if not out:
+        raise HTTPException(502, "ИИ не подобрал страны. Попробуйте ещё раз.")
+    out.sort(key=lambda x: -x["match"])
+    result = {"profile": _str(d.get("profile"), 500), "countries": out, "tips": _list(d.get("tips"), 6, 220), "note": ABROAD_NOTE, "tokens_left": left}
+    gid = save_generation(user["id"], "abroad", "Поступление за рубеж: " + ", ".join(c["name"] for c in out[:3]), json.dumps(result, ensure_ascii=False))
+    result["history_id"] = gid
+    return result
+
+
+class LetterIn(BaseModel):
+    kind: str = "admission"        # admission | exchange | scholarship
+    country: str = Field(default="", max_length=80)
+    university: str = Field(max_length=120)
+    program: str = Field(max_length=160)
+    name: str = Field(default="", max_length=80)
+    home_uni: str = Field(default="", max_length=120)
+    studying: str = Field(default="", max_length=800)       # что изучает сейчас
+    achievements: str = Field(default="", max_length=1200)  # проекты, результаты, исследования
+    why_country: str = Field(default="", max_length=800)
+    beyond: str = Field(default="", max_length=800)         # хобби, волонтёрство, спорт
+    goals: str = Field(default="", max_length=800)          # как применит знания
+    tone: str = "formal"          # formal | warm
+    length: str = "medium"        # short | medium | long
+    letter_lang: str = "en"       # en | ru | kz
+    lang: str = "ru"
+
+
+LETTER_KINDS = {
+    "admission": "поступление на программу (бакалавриат/магистратура)",
+    "exchange": "семестр по обмену из университета-партнёра",
+    "scholarship": "конкурс на стипендию",
+}
+LETTER_LANGS = {"en": "английском", "ru": "русском", "kz": "казахском"}
+LETTER_WORDS = {"short": "250–320", "medium": "350–450", "long": "480–600"}
+
+
+@app.post("/api/letter")
+def letter(body: LetterIn, user: dict = Depends(current_user)):
+    rate_limit(f"letter:{user['id']}", 15, 3600)
+    kind = body.kind if body.kind in LETTER_KINDS else "admission"
+    ll = body.letter_lang if body.letter_lang in LETTER_LANGS else "en"
+    words = LETTER_WORDS.get(body.length, LETTER_WORDS["medium"])
+    uni, prog = _str(body.university, 120), _str(body.program, 160)
+    if not uni or not prog:
+        raise HTTPException(400, "Укажите университет и программу.")
+    facts = "\n".join(f"{k}: {_str(v, 1200)}" for k, v in [
+        ("Имя автора", body.name), ("Страна", body.country), ("Университет", uni), ("Программа", prog), ("Родной вуз / школа", body.home_uni),
+        ("Что изучает сейчас", body.studying), ("Проекты, результаты, исследования", body.achievements),
+        ("Почему эта страна / город", body.why_country), ("Интересы вне учёбы (волонтёрство, спорт, творчество)", body.beyond),
+        ("Цели и как применит знания", body.goals)] if _str(v, 1200))
+    tone = ("тёплый и личный, но по-прежнему академичный" if body.tone == "warm" else "строгий академический, уверенный, без пафоса")
+    prompt = (
+        f"Ты — опытный редактор мотивационных писем для абитуриентов и студентов из Казахстана. Напиши мотивационное письмо: {LETTER_KINDS[kind]}.\n"
+        f"ФАКТЫ ОТ АВТОРА (используй ТОЛЬКО их, ничего не выдумывай):\n{facts}\n\n"
+        "СТРУКТУРА (строго соблюдай):\n"
+        f"1. Приветствие: «Dear Members of the Selection Committee,» (на {LETTER_LANGS[ll]} языке — эквивалент). Затем ровно 4 абзаца, затем прощание и подпись.\n"
+        f"2. Абзац 1 — зацепка: сразу назови конкретный университет «{uni}» и программу «{prog}», кратко объясни, почему выбрать нужно именно автора, "
+        "покажи энтузиазм и как программа поможет в учёбе, карьере или личностном росте. Пиши этот абзац в последнюю очередь, чтобы он точно отражал письмо.\n"
+        "3. Абзац 2 — академический опыт: что изучает, в каких проектах участвовал, чего добился (продукт, приложение, исследование, конференции, тема курсовой/диплома). "
+        "Обязательно свяжи это с конкретными направлениями или курсами программы (без выдуманных названий курсов и профессоров).\n"
+        "4. Абзац 3 — Beyond academics: почему привлекла эта страна/город, как период обучения поможет личностно (знакомства, студенческая жизнь, культурный обмен), "
+        "внеучебные интересы автора и как они связаны с культурой страны.\n"
+        "5. Абзац 4 — итог: кратко повтори главные мысли ДРУГИМИ словами, подчеркни важность участия, как применит знания, как использует компетенции по возвращении домой.\n"
+        "6. Закончи деловым прощанием («Yours sincerely,» / «Sincerely,» или эквивалент) и именем автора.\n\n"
+        "СТИЛЬ:\n"
+        f"• Тон: {tone}. Академичный формальный стиль, нейтральная лексика, никаких разговорных сокращений (do not, а не don't).\n"
+        "• Голос живого человека: конкретные детали из фактов, разная длина предложений, одна-две личные детали. "
+        "ЗАПРЕЩЕНЫ клише ИИ: «I am writing to express my profound interest», «passionate about», «in today's fast-paced world», «testament to», «tapestry», «delve», "
+        "«unwavering», «I am confident that», «cutting-edge» и их аналоги на других языках. Без восклицательных знаков и пустого пафоса.\n"
+        "• Если фактов для абзаца мало — пиши короче и честнее, не придумывай достижения, цифры, награды, названия. Не вставляй плейсхолдеры в квадратных скобках, "
+        "кроме имени автора, если оно не указано: тогда подпиши «[Your Name]».\n"
+        f"• Объём письма: {words} слов. Язык письма: {LETTER_LANGS[ll]}. Абзацы разделяй пустой строкой.\n"
+        f"• Также верни: subject — тема письма (1 строка), tips — 3 коротких совета на {('русском')} языке, что автору стоит дополнить в письме своим голосом, "
+        "чтобы оно не выглядело написанным ИИ.\n"
+        'Верни ТОЛЬКО JSON: {"subject":"...","letter":"полный текст письма с приветствием и подписью","tips":["..."]}'
+    )
+
+    def run():
+        d = parse_json(ask_ai(prompt, json_mode=True, max_tokens=3000, temperature=0.75))
+        if not isinstance(d, dict) or len(_str(d.get("letter"), 6000)) < 200:
+            raise HTTPException(502, "ИИ вернул неверный формат. Попробуйте ещё раз.")
+        return d
+
+    d, left = paid(user, run)
+    text = _str(d.get("letter"), 6000)
+    result = {"subject": _str(d.get("subject"), 200), "letter": text, "tips": _list(d.get("tips"), 4, 220),
+              "words": len(text.split()), "tokens_left": left}
+    result["history_id"] = save_generation(user["id"], "letter", f"Письмо: {uni}", json.dumps(result, ensure_ascii=False))
+    return result
 
 
 if __name__ == "__main__":
