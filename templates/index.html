@@ -4342,13 +4342,13 @@ window.openEntView = function () {
 // ======================= ПРОФИЛЬ СОЗДАТЕЛЯ: тексты на 3 языках =======================
 const CR = {
   ru: { kicker: 'Создатель', role: 'Создатель EnumaAI Hub', name: 'Ауезхан Нурдаулет', sub: 'Студент ЕНУ · Факультет информационных технологий',
-    bio: 'Привет! Я Ауезхан — студент факультета информационных технологий ЕНУ. Увлекаюсь разработкой и программированием, постоянно учусь и создаю цифровые продукты. EnumaAI Hub — мой проект: платформа, где ИИ помогает учиться проще, быстрее и интереснее.',
+    bio: 'Привет! Я Нурдаулет — студент факультета информационных технологий ЕНУ. Увлекаюсь разработкой и программированием, постоянно учусь и создаю цифровые продукты. EnumaAI Hub — мой проект: платформа, где ИИ помогает учиться проще, быстрее и интереснее.',
     t1: '🎓 ЕНУ', t2: '💻 Информационные технологии', t3: '⚙️ Разработка', t4: '🧠 Программирование', menu: 'Создатель', ent: '🎯 Подготовка к ЕНТ', soon: 'СКОРО' },
   kz: { kicker: 'Жасаушы', role: 'EnumaAI Hub жасаушысы', name: 'Ауезхан Нурдаулет', sub: 'ЕҰУ студенті · Ақпараттық технологиялар факультеті',
-    bio: 'Сәлем! Мен Ауезхан — ЕҰУ ақпараттық технологиялар факультетінің студентімін. Әзірлеу мен бағдарламалауға құмармын, үнемі үйреніп, цифрлық өнімдер жасаймын. EnumaAI Hub — менің жобам: жасанды интеллект оқуды жеңілдететін, жылдамдататын әрі қызықты ететін платформа.',
+    bio: 'Сәлем! Мен Нурдаулет — ЕҰУ ақпараттық технологиялар факультетінің студентімін. Әзірлеу мен бағдарламалауға құмармын, үнемі үйреніп, цифрлық өнімдер жасаймын. EnumaAI Hub — менің жобам: жасанды интеллект оқуды жеңілдететін, жылдамдататын әрі қызықты ететін платформа.',
     t1: '🎓 ЕҰУ', t2: '💻 Ақпараттық технологиялар', t3: '⚙️ Әзірлеу', t4: '🧠 Бағдарламалау', menu: 'Жасаушы', ent: '🎯 ҰБТ-ға дайындық', soon: 'ЖАҚЫНДА' },
   en: { kicker: 'Creator', role: 'Creator of EnumaAI Hub', name: 'Auezkhan Nurdaulet', sub: 'ENU student · Faculty of Information Technology',
-    bio: 'Hi! I’m Auezkhan — an Information Technology student at ENU. I’m passionate about software development and programming, always learning and building digital products. EnumaAI Hub is my project: a platform where AI makes studying easier, faster and more engaging.',
+    bio: 'Hi! I’m Nurdaulet — an Information Technology student at ENU. I’m passionate about software development and programming, always learning and building digital products. EnumaAI Hub is my project: a platform where AI makes studying easier, faster and more engaging.',
     t1: '🎓 ENU', t2: '💻 Information Technology', t3: '⚙️ Development', t4: '🧠 Programming', menu: 'Creator', ent: '🎯 UNT preparation', soon: 'SOON' }
 };
 function v6Labels() {
@@ -5200,7 +5200,7 @@ lab();
     box.innerHTML = `<div class="home-wrap quiz-slide-enter">
       <div class="home-head"><h3 id="welcome-title" class="display text-2xl font-bold text-white mb-1">${t.welcomeTitle}</h3>
       <p id="welcome-desc" class="text-sm text-neutral-400 max-w-md mx-auto">${t.welcomeDesc}</p></div>
-      <div class="home-grid">${cards}</div></div>`;
+      </div>`;
     box.querySelectorAll('.home-card').forEach(b => b.onclick = () => {
       const row = document.getElementById('btn-mode-' + b.dataset.k); const btn = row && row.closest('button'); if (btn) btn.click();
     });
