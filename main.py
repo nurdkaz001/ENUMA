@@ -1108,6 +1108,42 @@ def _words(t: str) -> list[str]:
     return re.findall(r"\w+", t.lower())
 
 
+DISCOURSE_RE = re.compile(
+    r"\b(?:таким образом|важно отметить|стоит отметить|следует отметить|кроме того|более того|помимо этого|в заключение|в целом|"
+    r"во-первых|во-вторых|в-третьих|тем не менее|в первую очередь|иными словами|прежде всего|"
+    r"moreover|furthermore|additionally|in addition|in conclusion|overall|however|therefore|thus|it is important to note|"
+    r"осылайша|сонымен қатар|қорытындылай келе|атап өткен жөн|алайда|жалпы алғанда|яғни)\b", re.I)
+
+
+def style_signals(text: str) -> dict:
+    """Объективные признаки «машинного» стиля (по описанию в статье Wikipedia «Artificial intelligence content detection»):
+    повторы слов, повторяющиеся вводные слова/связки, шаблонные начала предложений, слишком ровная длина предложений."""
+    words = _words(text)
+    long_w = [w for w in words if len(w) >= 5]
+    cnt: dict[str, int] = defaultdict(int)
+    for w in long_w:
+        cnt[w] += 1
+    rep_words = sorted(((w, n) for w, n in cnt.items() if n >= 3), key=lambda x: -x[1])[:5]
+    rep_ratio = round((1 - len(cnt) / len(long_w)) * 100) if long_w else 0
+    marks: dict[str, int] = defaultdict(int)
+    for mm in DISCOURSE_RE.findall(text):
+        marks[mm.lower()] += 1
+    sents = [s for s in re.split(r"(?<=[.!?…])\s+", text.strip()) if s.strip()]
+    lens = [len(_words(s)) for s in sents] or [0]
+    avg = sum(lens) / len(lens)
+    cv = round((sum((x - avg) ** 2 for x in lens) / len(lens)) ** 0.5 / avg, 2) if avg else 0.0
+    openers: dict[str, int] = defaultdict(int)
+    for s in sents:
+        w = _words(s)[:1]
+        if w:
+            openers[w[0]] += 1
+    return {
+        "repeat_words": [f"{w} ×{n}" for w, n in rep_words], "repeat_pct": rep_ratio,
+        "markers": [f"{k} ×{n}" for k, n in sorted(marks.items(), key=lambda x: -x[1])], "markers_total": sum(marks.values()),
+        "same_openers": [f"{k} ×{n}" for k, n in openers.items() if n >= 3], "length_variation": cv,
+    }
+
+
 @app.post("/api/humanize")
 def humanize(text: str = Form(...), lang: str = Form("ru"), user: dict = Depends(current_user)):
     """Оценка «похоже на ИИ» + глубокое переписывание живым языком + список изменений. 1 токен."""
@@ -1119,6 +1155,14 @@ def humanize(text: str = Form(...), lang: str = Form("ru"), user: dict = Depends
         "Выполни две задачи с текстом ниже.\n"
         "ЗАДАЧА 1 — анализ. Оцени по шкале 0–100, насколько текст похож на написанный нейросетью (ai_score), "
         "в одном предложении объясни вердикт и найди до 6 признаков: фраза из текста (до 8 слов) и почему она выдаёт ИИ.\n"
+        "Ищи признаки, которые перечисляет статья Wikipedia «Artificial intelligence content detection»: "
+        "(1) повторы одних и тех же слов и оборотов; (2) необычно ровная, «слишком правильная» грамматика и однотипная длина предложений; "
+        "(3) шаблонные переходы («таким образом», «кроме того», «важно отметить»); (4) повторяющиеся вводные слова и связки; "
+        "(5) повторяющиеся риторические шаблоны (одинаковая схема абзацев, «не только… но и», тезис–пример–вывод в каждом абзаце); "
+        "(6) галлюцинации — выдуманные факты, цифры, ссылки, имена. "
+        "Опирайся и на объективные сигналы, посчитанные программой (см. ниже), но не придумывай признаков, которых нет в тексте. "
+        "Помни: детекторы ошибаются, а текст человека, для которого язык неродной, часто ложно выглядит «машинным», "
+        "поэтому не завышай ai_score без явных признаков.\n"
         "ЗАДАЧА 2 — сначала определи СТИЛЬ исходного текста (style): научный, официально-деловой, публицистический, "
         "учебный, художественный или разговорный. Затем ГЛУБОКО перепиши текст (human_text), строго оставаясь В ЭТОМ СТИЛЕ "
         "и в рамках норм речевого этикета: вежливо, грамотно, уважительно. Текст должен читаться так, будто его написал другой "
@@ -1133,6 +1177,8 @@ def humanize(text: str = Form(...), lang: str = Form("ru"), user: dict = Depends
         "• Полностью исключи маркеры ИИ: «важно отметить», «таким образом», «в заключение», «несомненно», «ключевой аспект», "
         "«стоит упомянуть», «погрузиться в», «экосистема», «инновационный», «трансформация», «в современном мире», «играет роль».\n"
         "• Канцеляризмы меняй на простые глаголы («осуществляет процесс анализа» → «анализирует»), предпочитай активный залог.\n"
+        "• Убери повторы слов (подбирай синонимы или местоимения), не начинай подряд несколько предложений одним и тем же словом, "
+        "не ставь вводные слова и связки в каждом предложении, ломай одинаковую схему абзацев.\n"
         "СТРОГО ЗАПРЕЩЕНО: слова-паразиты и вставки («короче», «типа», «как бы», «ну», «прикинь», «кстати», «собственно говоря», "
         "«по сути», «на самом деле»), сленг, жаргон, просторечие, мат, панибратство — даже если исходный текст разговорный. "
         "Живость достигай ритмом фраз и точными словами, а не паразитами.\n"
@@ -1143,7 +1189,8 @@ def humanize(text: str = Form(...), lang: str = Form("ru"), user: dict = Depends
         "changes — 4–6 пар «было → стало», где after ЗАМЕТНО отличается от before (не просто пунктуация). "
         "Поля verdict и why пиши на языке интерфейса: " + lang_line(lang) + "\n"
         'Верни ТОЛЬКО JSON: {"style":"...","ai_score":0,"verdict":"...","markers":[{"phrase":"...","why":"..."}],'
-        '"human_text":"...","human_score":0,"changes":[{"before":"...","after":"..."}]}\n\nТЕКСТ:\n' + text
+        '"human_text":"...","human_score":0,"changes":[{"before":"...","after":"..."}]}\n\n'
+        "ОБЪЕКТИВНЫЕ СИГНАЛЫ ИСХОДНОГО ТЕКСТА (посчитаны программой): " + json.dumps(style_signals(text), ensure_ascii=False) + "\n\nТЕКСТ:\n" + text
     )
     orig_words = _words(text)
 
@@ -1170,6 +1217,7 @@ def humanize(text: str = Form(...), lang: str = Form("ru"), user: dict = Depends
         best["changes"] = [c for c in (best.get("changes") or []) if isinstance(c, dict)
                            and _words(str(c.get("before", ""))) != _words(str(c.get("after", "")))]
         best["changed_pct"] = max(0, min(100, round((1 - best_pct) * 100)))
+        best["signals"] = {"before": style_signals(text), "after": style_signals(str(best.get("human_text", "")))}
         return best
 
     d, left = paid(user, run)
